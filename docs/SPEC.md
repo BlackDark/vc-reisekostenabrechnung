@@ -1,6 +1,6 @@
 # Spezifikation: Reisekostenabrechnung (vc-reisekostenabrechnung)
 
-> **Status:** Entwurf zur Umsetzung · **Stand:** 09.10.2026 · **Repo:** `git@github.com:BlackDark/vc-reisekostenabrechnung.git` (privat)
+> **Status:** Entwurf zur Umsetzung · **Stand:** 09.10.2026 · **Repo:** `git@github.com:BlackDark/vc-reisekostenabrechnung.git` (öffentlich)
 > **Grundlage:** Grill-Interview Runde 1–3 (Q1–Q35), [`GLOSSARY.md`](../GLOSSARY.md), ADRs unter [`docs/adr/`](adr/), Recherchen [`steuer-reisekosten.md`](research/steuer-reisekosten.md) (im Folgenden **[R]**), [`stack.md`](research/stack.md) (**[S]**), [`beleg-kompression.md`](research/beleg-kompression.md) (**[K]**).
 > **Kein Steuerrat.** Die Rechenregeln bilden die zitierten Vorschriften ab; die fachliche Verantwortung für eine Abrechnung bleibt beim Nutzer.
 
@@ -1128,11 +1128,11 @@ services:
 
 Optionale Variablen (z. B. `TRUSTED_PROXIES`, `OIDC_*`) kommen über `env_file`; die App prüft beim Start Abhängigkeiten (z. B. `HEADER_AUTH_ENABLED=true` ohne `TRUSTED_PROXIES` → Startabbruch). Ein CI-Schritt prüft beide Dateien mit `docker compose config` gegen eine `.env` aus `.env.example`.
 
-`deploy/.env.example` listet alle Variablen aus 11 mit leeren Werten für Secrets und Kommentaren (nie echte oder Platzhalter-Passwörter wie `changeme`). Das private Paket auf ghcr.io erfordert `docker login ghcr.io` mit einem Token mit `read:packages` (oder Paket-Sichtbarkeit „public“ – Entscheidung Eduard, offene Punkte).
+`deploy/.env.example` listet alle Variablen aus 11 mit leeren Werten für Secrets und Kommentaren (nie echte oder Platzhalter-Passwörter wie `changeme`). Das Repo ist öffentlich (O5/O6); das Image auf ghcr.io wird mit dem ersten Release öffentlich gestellt (Manuelle Schritte).
 
 ## 18. CI/CD (GitHub Actions)
 
-Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (privat). Ziel: **PR-Laufzeit ≈ 3 Minuten** (Wanduhr) bei warmem Cache; nie ein ungetestetes Image veröffentlichen.
+Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-Laufzeit ≈ 3 Minuten** (Wanduhr) bei warmem Cache; nie ein ungetestetes Image veröffentlichen.
 
 ### 18.1 Grundregeln
 
@@ -1177,7 +1177,7 @@ Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go` (
 
 ### 18.3 Security in der CI
 
-- **CodeQL** (`codeql.yml`): `push` auf `main`, PRs, wöchentlich; Sprachen `go` (autobuild) und `javascript-typescript`; Ergebnisse in Code Scanning (bei privaten Repos setzt das GitHub Advanced Security/Code Security voraus – offener Punkt).
+- **CodeQL** (`codeql.yml`): `push` auf `main`, PRs, wöchentlich; Sprachen `go` (autobuild) und `javascript-typescript`; Ergebnisse in Code Scanning. Das Repo ist öffentlich, daher ist CodeQL ohne GitHub Advanced Security nutzbar (O5). CodeQL ist kein Pflicht-Check.
 - **Trivy**: Image-Scan im CI (`scan`) und beim Release vor dem Push gegen das gebaute Image.
 - **govulncheck** im Job `go`; Renovate-Sicherheitsupdates jederzeit (19).
 - **Signatur und Nachweise** (Release und `publish-edge`): BuildKit-Attestierungen `provenance: mode=max` und `sbom: true` am Image-Index; `cosign sign --yes <image>@<digest>` keyless (OIDC, `id-token: write`); zusätzlich `actions/attest-build-provenance` (GitHub-Attestierung); SBOM (SPDX-JSON via `anchore/sbom-action`) als Release-Asset.
@@ -1237,7 +1237,7 @@ Kein „Bump“-Button/Workflow, der auf `main` pusht; kein geteiltes Workflow-R
 
 ### 18.9 README
 
-Kurz und deutsch: Banner (`docs/assets/banner.svg`), Badges (CI-Status, Plattformen `linux/amd64 | linux/arm64`, Image-Größe), ein Satz Zweck, Screenshot-Tabelle (desktop/mobile aus `docs/screenshots/`, 18.4), Quickstart (`curl` von `deploy/docker-compose.yml` und `deploy/.env.example`, `.env` ausfüllen, `docker compose up -d`), Konfigurationsverweis auf 11, Links auf SPEC/MILESTONES/ADRs/Glossar, Disclaimer **„keine Steuerberatung“**. Solange Repo und Paket privat sind, gelten die Einschränkungen aus O6 (Token für `curl`, `docker login ghcr.io`, Badges).
+Kurz und **englisch** (Vorgabe des Owners; deutsche Fachbegriffe bleiben): Banner (`docs/assets/banner.svg`), Badges (CI-Status, Plattformen `linux/amd64 | linux/arm64`, Image-Größe), ein Satz Zweck, Screenshot-Tabelle (desktop/mobile aus `docs/screenshots/`, 18.4), Quickstart (`curl` von `deploy/docker-compose.yml` und `deploy/.env.example`, `.env` ausfüllen, `docker compose up -d`), Konfigurationsverweis auf 11, Links auf SPEC/MILESTONES/ADRs/Glossar, Disclaimer **„keine Steuerberatung“**. Repo und Quickstart sind öffentlich, ohne Token (O6).
 
 ## 19. Abhängigkeitspflege (Renovate)
 
@@ -1307,17 +1307,17 @@ Testdaten: Belegfotos aus [K] (frei lizenzierte Commons-Bilder + synthetische) a
 | O2 | **Eine Pauschale je Tag über mehrere Arbeitgeber** (4.5): v1 rechnet nutzerweit | Eduard: Gibt es realistisch Reisen für zwei Arbeitgeber am selben Tag? Sonst so lassen | Eduard |
 | O3 | **PDF/A-3b**: Typst 0.15.1 kann in PDF/A-Modi keine PDFs als Bild einbetten → PDF-Belege werden gerastert (300 ppi, JPEG) und das Original als eingebettete Datei (PDF/A-3) mitgeliefert; veraPDF-Validierung noch nicht gelaufen | In M5 mit veraPDF prüfen; Rasterung kostet Vektortext im sichtbaren Teil (Original bleibt eingebettet und im ZIP). Abweichung zu Q22 („Belege als angehängte Seiten“) nur in der Technik, nicht im Ergebnis | Umsetzung |
 | O4 | **release-please `draft` + `force-tag-creation`** (18.7) nicht praktisch geprüft | In M1 mit Test-Release `0.1.0` verifizieren, sonst Fallback aus 18.7 | Umsetzung |
-| O5 | **CodeQL im privaten Repo** setzt GitHub Code Security (kostenpflichtig) voraus | Eduard entscheidet: Lizenz, Repo öffentlich machen, oder CodeQL erst bei Veröffentlichung; Workflow ist vorbereitet und bei fehlender Lizenz nicht Pflicht-Check | Eduard |
-| O6 | **Privates Repo/Paket**: README-Badges (CI, Image-Größe) rendern nur für eingeloggte Mitglieder bzw. gar nicht für private ghcr-Pakete; Quickstart-`curl` auf raw-URLs braucht ein Token; `docker pull` braucht `docker login ghcr.io` | Plattform-Badge statisch; Image-Größe steht in den Release-Notes (18.7), eine dynamische Größen-Badge (z. B. ghcr-badge) erst bei öffentlichem Paket; Quickstart mit Token bzw. `gh api` beschreiben; alternativ Repo/Paket öffentlich machen | Eduard |
+| O5 | **CodeQL** | Erledigt: das Repo ist öffentlich, `codeql.yml` läuft (go und javascript-typescript) und ist kein Pflicht-Check | erledigt |
+| O6 | **Öffentliches Repo** | Erledigt: Badges rendern, der Quickstart braucht kein Token. Die Image-Größe steht in den Release-Notes; die Badge bleibt statisch, bis das ghcr-Paket öffentlich ist | erledigt |
 | O7 | **ADR 0005 (Farb-AVIF) ist `proposed`**: Praxistest mit 15–20 eigenen Belegen fehlt; AVIF-Encode-Zeit von `gen2brain/avif` (WASM via wazero) im Container ungemessen | Eduard schickt Belegfotos; Messung in M4; Fallback WebP ist konfigurierbar | Eduard + Umsetzung |
-| O8 | **Router** `sv-router` vs. `svelte-spa-router` | Spike in M1 (History-Routing mit SPA-Fallback, typisierte Parameter, Lazy-Routes) | Umsetzung |
+| O8 | **Router** `sv-router` vs. `svelte-spa-router` | Erledigt in M1: `sv-router` 0.19.0 (History-Routing, typisierte Pfade, Lazy-`import()`). `svelte-spa-router` ist hash-basiert und fällt damit weg | erledigt |
 | O9 | **Glossar-Kandidaten**: Ortswechsel, Belegnummer, Abrechnungsnummer, Belegdatei, Unterkunft (Reisetag-Feld), Warnung/Blocker, Auszahlungsbetrag, Erstattungsbetrag | in die nächste Grill-Runde bzw. beim Start von M2 ins Glossar übernehmen | Eduard |
 | O10 | **Dreimonatsfrist-Heuristik** (4.14): Schwelle „Woche mit ≥ 3 Tagen“ und Fristbeginn sind eine Auslegung von Rz. 55 | bei Fehlalarmen nachschärfen; nur Warnung | – |
 | O11 | **Deutsche USt in Fremdwährung** (§ 16 Abs. 6 UStG, BMF-Monatskurse) | v1 Hinweis; bei Bedarf BMF-Datenportal-CSV als zweite Kursquelle | – |
 | O12 | **Satztabelle 2027**: BMF-Schreiben erwartet Nov./Dez. 2026 ([R] 2.1); JStG 2026 (u. a. 24 Monate erste Tätigkeitsstätte Inland ab 2027) noch nicht verabschiedet | Admin-CSV-Import ist in M2 vorhanden; Release mit 2027er Daten, sobald veröffentlicht | – |
 | O13 | **Frühstück herausrechnen** statt Kürzung (4.8) weicht nur in Randfällen ab | v1 Kürzung; Variante auf Später-Liste | – |
 | O14 | Erste Tätigkeitsstätte/Wohnung werden nicht modelliert; der Nutzer entscheidet, ob eine Reise vorliegt (UI-Hinweis Entfernungspauschale ≠ Reisekosten) | so lassen | – |
-| O15 | Renovate als gehostete GitHub-App (Mend) auf dem privaten Repo installieren | Eduard installiert die App für `BlackDark/vc-reisekostenabrechnung` | Eduard |
+| O15 | Renovate als gehostete GitHub-App (Mend) installieren | Eduard installiert die App für `BlackDark/vc-reisekostenabrechnung` | Eduard |
 | O16 | **Litestream als UID 65532** im scratch-Image (Schreibrechte auf `/data/.reisekosten.db-litestream`, kein HOME) nicht erprobt | in M8 testen; Fallback: Sidecar ohne `user`, aber read-only + `cap_drop` | Umsetzung |
 
 ### Gefundene Widersprüche (und wie sie aufgelöst wurden)

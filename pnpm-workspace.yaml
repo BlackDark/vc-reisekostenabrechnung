@@ -1,0 +1,6 @@
+packages:
+  - web
+  - e2e
+ignoreScripts: false
+minimumReleaseAgeExclude:
+  - vite@8.3.4

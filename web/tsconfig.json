@@ -1,0 +1,23 @@
+{
+	"extends": "@tsconfig/svelte/tsconfig.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"ignoreDeprecations": "6.0",
+		"types": [
+			"vite/client",
+			"vite-plugin-pwa/svelte",
+			"vite-plugin-pwa/client"
+		],
+		"baseUrl": ".",
+		"paths": {
+			"$lib": ["./src/lib"],
+			"$lib/*": ["./src/lib/*"]
+		}
+	},
+	"include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.d.ts"]
+}

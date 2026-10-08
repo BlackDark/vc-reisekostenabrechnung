@@ -1,0 +1,17 @@
+name: reisekosten
+services:
+  app:
+    image: ghcr.io/blackdark/vc-reisekostenabrechnung:${APP_VERSION:-latest}
+    restart: unless-stopped
+    read_only: true
+    user: "65532:65532"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=512m"]
+    ports: ["${APP_PORT:-8080}:8080"]
+    env_file: .env
+    environment:
+      APP_BASE_URL: ${APP_BASE_URL:?fehlt – öffentliche URL setzen}
+    volumes: ["data:/data"]
+volumes:
+  data:

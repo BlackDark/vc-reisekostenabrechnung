@@ -1,7 +1,7 @@
 # Meilensteine
 
 > Vertikale, jeweils auslieferbare Schritte zur Umsetzung von [`SPEC.md`](SPEC.md). Jeder Meilenstein endet mit einem Release über release-please (Versionen `0.x`, `1.0.0` nach M9), einem grünen CI-Lauf und einem lauffähigen Multi-Arch-Image auf ghcr.io.
-> Repo: `git@github.com:BlackDark/vc-reisekostenabrechnung.git` (privat). Stand: 09.10.2026.
+> Repo: `git@github.com:BlackDark/vc-reisekostenabrechnung.git` (öffentlich). Stand: 09.10.2026.
 
 **Definition of Done (für jeden Task):** Code + Tests (Unit/Integration, wo sinnvoll E2E), OpenAPI und Generat aktuell, UI-Texte in `de` **und** `en`, Glossarbegriffe korrekt, Audit-Ereignisse für Zustandsänderungen, CI grün („CI ok“), Conventional-Commit-PR-Titel, Doku (SPEC/ADR) angepasst, falls eine Entscheidung abweicht.
 
@@ -25,7 +25,7 @@
 
 **Spec:** 2, 3.6, 9 (Auth, Betrieb), 10 (ohne 10.9-Details), 11, 13 (Grundgerüst), 14 (Grundgerüst), 15, 16, 17, 18.1, 18.2, 18.5, 18.7, 19.
 
-**Nicht enthalten:** Fachobjekte, CodeQL/Trivy/cosign/SBOM, Screenshot-Durchlauf, README-Feinschliff (→ M9).
+**Nicht enthalten:** Fachobjekte, Trivy/cosign/SBOM, Screenshot-Durchlauf, README-Feinschliff (→ M9). CodeQL ist enthalten, weil das Repo öffentlich ist (SPEC O5).
 
 **Abnahmekriterien**
 - `curl` von `deploy/docker-compose.yml` + `.env.example`, `.env` ausfüllen, `docker compose up -d` startet die App auf amd64 **und** arm64 (Image aus ghcr.io); fehlende Pflichtvariablen brechen mit `… fehlt` ab.

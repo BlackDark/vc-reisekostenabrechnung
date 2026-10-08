@@ -1,0 +1,40 @@
+{
+	"name": "web",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy localStorage preferredLanguage baseLocale --emit-ts-declarations && vite build",
+		"codegen": "openapi-typescript ../api/openapi.yaml -o src/lib/api/schema.ts",
+		"check": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy localStorage preferredLanguage baseLocale --emit-ts-declarations && svelte-check --tsconfig ./tsconfig.json && vitest run --coverage",
+		"preview": "vite preview"
+	},
+	"dependencies": {
+		"@fontsource-variable/inter": "5.3.0",
+		"@inlang/paraglide-js": "2.26.0",
+		"cn": "0.4.0",
+		"openapi-fetch": "0.17.0",
+		"sv-router": "0.19.0",
+		"workbox-window": "7.4.1",
+		"tailwind-variants": "3.3.1"
+	},
+	"devDependencies": {
+		"@inlang/plugin-m-function-matcher": "2.2.17",
+		"@inlang/plugin-message-format": "4.4.5",
+		"@sveltejs/vite-plugin-svelte": "7.3.1",
+		"@tailwindcss/vite": "4.3.3",
+		"@testing-library/svelte": "5.4.2",
+		"@tsconfig/svelte": "5.0.8",
+		"@vitest/coverage-v8": "5.0.3",
+		"jsdom": "30.1.2",
+		"openapi-typescript": "7.13.0",
+		"svelte": "5.57.2",
+		"svelte-check": "4.7.6",
+		"tailwindcss": "4.3.3",
+		"typescript": "6.0.3",
+		"vite": "8.3.4",
+		"vite-plugin-pwa": "2.0.0",
+		"vitest": "5.0.3"
+	}
+}
