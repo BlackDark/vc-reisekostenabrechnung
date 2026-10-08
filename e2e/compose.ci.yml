@@ -1,0 +1,30 @@
+# Started by CI with host networking so the app, the mock IdP, and Playwright share 127.0.0.1.
+services:
+  mock-oauth:
+    image: ghcr.io/navikt/mock-oauth2-server:6.0.5@sha256:5ed2f078c6503147860a5114f06414257bb7eeccc68b0e806bdf0869f2602509
+    network_mode: host
+    environment:
+      SERVER_PORT: "8089"
+  app:
+    image: vc-reisekosten:ci
+    network_mode: host
+    read_only: true
+    user: "65532:65532"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=256m"]
+    volumes: ["rkdata:/data"]
+    environment:
+      APP_BASE_URL: http://127.0.0.1:8080
+      COOKIE_SECURE: "false"
+      LISTEN_ADDR: ":8080"
+      INITIAL_ADMIN_USERNAME: smoke
+      INITIAL_ADMIN_PASSWORD: smoke-password-1
+      OIDC_ENABLED: "true"
+      OIDC_ISSUER_URL: http://127.0.0.1:8089/default
+      OIDC_CLIENT_ID: reisekosten
+      OIDC_ADMIN_GROUP: rk-admins
+      OIDC_ALLOWED_GROUP: rk-users
+      OIDC_BUTTON_LABEL: SSO
+volumes:
+  rkdata:
