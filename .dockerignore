@@ -1,0 +1,12 @@
+.git
+node_modules
+**/dist
+docs/research
+e2e
+coverage
+playwright-report
+test-results
+*.db
+*.db-wal
+*.db-shm
+deploy/.env

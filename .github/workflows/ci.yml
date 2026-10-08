@@ -1,0 +1,272 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      caller:
+        description: Concurrency prefix so a caller does not deadlock with this workflow
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ inputs.caller || github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && inputs.caller == '' }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      go: ${{ steps.out.outputs.go }}
+      web: ${{ steps.out.outputs.web }}
+      image: ${{ steps.out.outputs.image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        if: github.event_name == 'pull_request'
+        id: filter
+        with:
+          filters: |
+            go:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'db/**'
+              - 'api/**'
+              - 'internal/**'
+              - '.golangci.yml'
+            web:
+              - 'web/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - 'biome.json'
+              - 'scripts/check-i18n.mjs'
+              - 'scripts/bundle-budget.mjs'
+            image:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'db/**'
+              - 'api/**'
+              - 'internal/**'
+              - 'web/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'assets/**'
+              - 'e2e/**'
+              - 'deploy/**'
+              - 'scripts/**'
+      - id: out
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "go=${{ steps.filter.outputs.go }}" >> "$GITHUB_OUTPUT"
+            echo "web=${{ steps.filter.outputs.web }}" >> "$GITHUB_OUTPUT"
+            echo "image=${{ steps.filter.outputs.image }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+            echo "web=true" >> "$GITHUB_OUTPUT"
+            echo "image=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  go:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.14.0
+      - run: go test -race -shuffle=on -coverprofile=coverage.out ./...
+      - run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+      - run: govulncheck ./...
+      - run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o /tmp/reisekosten-arm64 ./cmd/reisekosten
+
+  codegen:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.10.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: bash scripts/codegen-check.sh
+      - run: bash scripts/postgres-probe.sh
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.10.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec biome ci .
+      - run: pnpm --filter web check
+      - run: pnpm --filter web build
+      - run: node scripts/check-i18n.mjs
+      - run: node scripts/bundle-budget.mjs
+
+  image:
+    needs: changes
+    if: needs.changes.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver: docker-container
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: cache-mount
+          key: buildkit-${{ hashFiles('pnpm-lock.yaml', 'go.sum') }}
+      - uses: reproducible-containers/buildkit-cache-dance@5422eac04292c961a382e0f584ea0f03ad9da723 # v3.4.0
+        with:
+          cache-map: |
+            {
+              "pnpm-store": "cache-mount/pnpm-store",
+              "go-mod": "cache-mount/go-mod",
+              "go-build": "cache-mount/go-build"
+            }
+          skip-extraction: false
+      - run: bash scripts/compose-check.sh
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          outputs: type=oci,dest=/tmp/image.oci.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+      - run: python3 scripts/oci-size.py /tmp/image.oci.tar
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: vc-reisekosten:ci
+          cache-from: type=gha
+          provenance: false
+          sbom: false
+      - run: docker save vc-reisekosten:ci | zstd -T0 -o image-amd64.tar.zst
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-amd64
+          path: image-amd64.tar.zst
+          retention-days: 3
+
+  smoke:
+    needs: image
+    if: needs.image.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: image-amd64
+      - run: zstd -d image-amd64.tar.zst -c | docker load
+      - run: bash scripts/smoke.sh vc-reisekosten:ci
+
+  e2e:
+    needs: image
+    if: needs.image.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: image-amd64
+      - run: zstd -d image-amd64.tar.zst -c | docker load
+      - name: Start mock IdP and app
+        run: bash scripts/e2e-up.sh
+      - name: Playwright
+        run: |
+          docker run --rm --network host \
+            -e CI=true \
+            -e E2E_BASE_URL=http://127.0.0.1:8080 \
+            -e E2E_PASSWORD=smoke-password-1 \
+            -e E2E_OIDC=1 \
+            -v "$PWD":/work -w /work \
+            mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f \
+            bash -lc 'npm install -g pnpm@12.10.1 && pnpm install --frozen-lockfile && pnpm --filter e2e test'
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+          if-no-files-found: ignore
+
+  pr-titel:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Conventional commit title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          printf '%s\n' "$TITLE" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z0-9._/-]+\))?!?: .+'
+
+  ci-ok:
+    needs: [changes, go, codegen, web, image, smoke, e2e, pr-titel]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Aggregate
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          GO: ${{ needs.go.result }}
+          CODEGEN: ${{ needs.codegen.result }}
+          WEB: ${{ needs.web.result }}
+          IMAGE: ${{ needs.image.result }}
+          SMOKE: ${{ needs.smoke.result }}
+          E2E: ${{ needs.e2e.result }}
+          TITLE: ${{ needs.pr-titel.result }}
+        run: |
+          python3 - << 'PY'
+          import os, sys
+          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "TITLE"]
+          bad = [name for name in names if os.environ[name] not in ("success", "skipped")]
+          print({name: os.environ[name] for name in names})
+          sys.exit(1 if bad else 0)
+          PY
