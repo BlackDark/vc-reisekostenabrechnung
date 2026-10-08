@@ -2,7 +2,8 @@
 node_modules
 **/dist
 docs/research
-e2e
+e2e/*
+!e2e/package.json
 coverage
 playwright-report
 test-results
