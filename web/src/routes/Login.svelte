@@ -73,7 +73,7 @@
 </form>
 {#if config?.oidc}
 	<p class="mt-4">
-		<a class="underline" href="/api/v1/auth/oidc/start">{config.oidc_button_label || m.login_sso()}</a>
+		<a class="underline" href="/api/v1/auth/oidc/start" target="_self">{config.oidc_button_label || m.login_sso()}</a>
 	</p>
 {/if}
 {#if config?.setup_erforderlich}

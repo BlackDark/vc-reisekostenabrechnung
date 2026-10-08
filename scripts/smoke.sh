@@ -53,8 +53,9 @@ if [ "$code" != "200" ]; then
   cat /tmp/login.json >&2 || true
   fail "login $code"
 fi
-docker exec "$name" /usr/local/bin/reisekosten export-sample --out /tmp/sample.pdf || fail "export-sample"
-docker cp "$name":/tmp/sample.pdf /tmp/sample.pdf
+# docker cp cannot read files on the /tmp tmpfs, so the sample is written on the data volume.
+docker exec "$name" /usr/local/bin/reisekosten export-sample --out /data/sample.pdf || fail "export-sample"
+docker cp "$name":/data/sample.pdf /tmp/sample.pdf || fail "pdf copy"
 head -c 5 /tmp/sample.pdf | grep -q '%PDF' || fail "pdf magic"
 healthy=0
 for i in $(seq 1 20); do
