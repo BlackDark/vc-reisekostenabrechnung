@@ -5,6 +5,8 @@ name=rk-smoke
 vol=rk-smoke-data
 pw=$(mktemp)
 printf '%s' 'smoke-password-1' > "$pw"
+# The container runs as uid 65532 and cannot read a 0600 file owned by the runner.
+chmod a+r "$pw"
 cleanup() {
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker volume rm "$vol" >/dev/null 2>&1 || true

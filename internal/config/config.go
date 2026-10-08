@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -118,9 +119,9 @@ func Load() (Config, error) {
 		InitialAdminUser:    lookup("INITIAL_ADMIN_USERNAME"),
 		InitialAdminMail:    lookup("INITIAL_ADMIN_EMAIL"),
 		AuthPasswordEnabled: lookupBool("AUTH_PASSWORD_ENABLED", true),
-		Argon2MemoryKiB:     uint32(lookupInt("ARGON2_MEMORY_KIB", 65536, &errs)),
-		Argon2Time:          uint32(lookupInt("ARGON2_TIME", 3, &errs)),
-		Argon2Threads:       uint8(lookupInt("ARGON2_THREADS", 4, &errs)),
+		Argon2MemoryKiB:     lookupUint32("ARGON2_MEMORY_KIB", 65536, &errs),
+		Argon2Time:          lookupUint32("ARGON2_TIME", 3, &errs),
+		Argon2Threads:       lookupUint8("ARGON2_THREADS", 4, &errs),
 		StorageBackend:      lookupDefault("STORAGE_BACKEND", "local"),
 		UploadMaxBytes:      int64(lookupInt("UPLOAD_MAX_BYTES", 26214400, &errs)),
 		TypstPath:           lookupDefault("TYPST_PATH", "/usr/local/bin/typst"),
@@ -324,6 +325,24 @@ func lookupBool(key string, def bool) bool {
 		return def
 	}
 	return b
+}
+
+func lookupUint32(key string, def uint32, errs *[]string) uint32 {
+	n := lookupInt(key, int(def), errs)
+	if n < 0 || n > math.MaxUint32 {
+		*errs = append(*errs, key+" is out of range")
+		return def
+	}
+	return uint32(n)
+}
+
+func lookupUint8(key string, def uint8, errs *[]string) uint8 {
+	n := lookupInt(key, int(def), errs)
+	if n < 0 || n > math.MaxUint8 {
+		*errs = append(*errs, key+" is out of range")
+		return def
+	}
+	return uint8(n)
 }
 
 func lookupInt(key string, def int, errs *[]string) int {
