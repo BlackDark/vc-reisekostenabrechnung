@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Reisekostenabrechnung">
+  <rect width="1280" height="320" rx="24" fill="#0f172a"/>
+  <g fill="none" stroke="#38bdf8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="96" y="70" width="140" height="180" rx="12"/>
+    <path d="M126 115h80M126 150h80M126 185h50"/>
+    <path d="M196 220l18 18 34-40"/>
+  </g>
+  <text x="300" y="160" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="72" font-weight="700" fill="#f8fafc">Reisekostenabrechnung</text>
+  <text x="302" y="220" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="32" fill="#94a3b8">Reisen · Belege · Pauschalen · PDF/A-Export – selbst gehostet</text>
+</svg>
