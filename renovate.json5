@@ -1,0 +1,175 @@
+// Renovate-Konfiguration für vc-reisekostenabrechnung
+// Richtlinie: docs/SPEC.md, Abschnitt 19 "Abhängigkeitspflege (Renovate)".
+// Validieren: npx --package renovate -- renovate-config-validator renovate.json5
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    // recommended + Digest-Pinning (Docker, Actions), Dev-Deps pinnen,
+    // Abandonment-Erkennung, npm-Mindestalter 3 Tage, wöchentliche Lockfile-Pflege
+    'config:best-practices',
+    ':semanticCommits', // passt zu release-please (Conventional Commits)
+    ':timezone(Europe/Berlin)',
+    ':label(dependencies)',
+    ':enableVulnerabilityAlertsWithLabel(security)',
+    // "# renovate: datasource=… depName=…"-Kommentare in Dockerfile, Workflows, Makefile
+    'customManagers:dockerfileVersions',
+    'customManagers:githubActionsVersions',
+    'customManagers:makefileVersions',
+    // $schema-Version in biome.json mit @biomejs/biome synchron halten
+    'customManagers:biomeVersions',
+  ],
+
+  // Spikes und Recherche-Artefakte sind kein Produktcode
+  ignorePaths: ['**/node_modules/**', 'docs/research/**'],
+
+  // Montags früh, außerhalb der Arbeitszeit; Sicherheitsupdates jederzeit
+  schedule: ['* 0-5 * * 1'],
+  prHourlyLimit: 0,
+  prConcurrentLimit: 10,
+  rebaseWhen: 'conflicted',
+  dependencyDashboard: true,
+  configMigration: true,
+
+  // Lieferkette: neue Versionen erst nach Abkühlzeit vorschlagen
+  minimumReleaseAge: '3 days',
+  internalChecksFilter: 'strict',
+
+  // Automerge nur, wenn alle Pflicht-Checks grün sind (Branch-Schutz auf main)
+  platformAutomerge: true,
+  automergeType: 'pr',
+  automergeStrategy: 'squash',
+
+  lockFileMaintenance: {
+    enabled: true,
+    automerge: true,
+    schedule: ['* 0-5 * * 1'],
+  },
+
+  postUpdateOptions: ['gomodTidy', 'gomodUpdateImportPaths', 'pnpmDedupe'],
+
+  vulnerabilityAlerts: {
+    schedule: ['at any time'],
+    minimumReleaseAge: null,
+    automerge: false,
+  },
+
+  packageRules: [
+    // ---------- Automerge-Politik ----------
+    {
+      description: 'devDependencies: patch/minor automatisch mergen (nach grüner CI)',
+      matchDepTypes: ['devDependencies'],
+      matchUpdateTypes: ['patch', 'minor'],
+      automerge: true,
+    },
+    {
+      description: 'GitHub Actions: Digest-, Patch- und Minor-Updates automatisch mergen',
+      matchManagers: ['github-actions'],
+      matchUpdateTypes: ['digest', 'pinDigest', 'patch', 'minor'],
+      automerge: true,
+    },
+    {
+      description: 'Docker-Digest-Refreshes (z. B. distroless :nonroot) automatisch mergen',
+      matchDatasources: ['docker'],
+      matchUpdateTypes: ['digest', 'pinDigest'],
+      automerge: true,
+    },
+    {
+      description: 'Major-Updates nie automatisch, sichtbar markieren',
+      matchUpdateTypes: ['major'],
+      automerge: false,
+      addLabels: ['major'],
+    },
+
+    // ---------- Gruppen ----------
+    {
+      description: 'Node.js überall gemeinsam (Docker-Image, .node-version, engines)',
+      groupName: 'node',
+      matchDepNames: ['node', 'nodejs/node'],
+      matchDatasources: ['docker', 'node-version', 'github-releases'],
+    },
+    {
+      description: 'Nur Node-LTS-Linie 24 bis zum bewussten Wechsel',
+      matchDepNames: ['node', 'nodejs/node'],
+      allowedVersions: '<25',
+    },
+    {
+      description: 'Go-Toolchain: go.mod (go/toolchain) und golang-Docker-Image gemeinsam',
+      groupName: 'go toolchain',
+      matchDepNames: ['go', 'golang'],
+    },
+    {
+      description: 'golang.org/x/* gemeinsam',
+      groupName: 'golang.org/x',
+      matchManagers: ['gomod'],
+      matchPackageNames: ['golang.org/x/**'],
+    },
+    {
+      description: 'Code-Generatoren für SQL und OpenAPI gemeinsam (Generat muss neu erzeugt werden)',
+      groupName: 'codegen',
+      matchPackageNames: [
+        'github.com/sqlc-dev/sqlc',
+        'github.com/pressly/goose/v3',
+        'github.com/oapi-codegen/oapi-codegen/v2',
+        'github.com/oapi-codegen/runtime',
+        'openapi-typescript',
+        'openapi-fetch',
+      ],
+    },
+    {
+      description: 'Svelte-Ökosystem gemeinsam',
+      groupName: 'svelte',
+      matchPackageNames: [
+        'svelte',
+        '@sveltejs/**',
+        'svelte-check',
+        'bits-ui',
+        'shadcn-svelte',
+        '@lucide/svelte',
+        'tailwind-variants',
+        'cn',
+        '@testing-library/svelte',
+      ],
+    },
+    {
+      description: 'Vite, Vitest und PWA-Plugin gemeinsam',
+      groupName: 'vite',
+      matchPackageNames: ['vite', 'vitest', '@vitest/**', 'vite-plugin-pwa', '@vite-pwa/**', 'workbox-**'],
+    },
+    {
+      description: 'Tailwind gemeinsam',
+      groupName: 'tailwind',
+      matchPackageNames: ['tailwindcss', '@tailwindcss/**'],
+    },
+    {
+      description: 'Playwright: npm-Paket und Docker-Image müssen gleich sein',
+      groupName: 'playwright',
+      matchPackageNames: ['@playwright/test', 'playwright', 'mcr.microsoft.com/playwright'],
+    },
+    {
+      description: 'Docker-Build-Actions gemeinsam',
+      groupName: 'docker actions',
+      matchManagers: ['github-actions'],
+      matchPackageNames: ['docker/**'],
+    },
+    {
+      description: 'Typst (Image im Dockerfile) einzeln, Export-Golden-Tests müssen laufen',
+      matchPackageNames: ['ghcr.io/typst/typst'],
+      groupName: 'typst',
+      automerge: false,
+      addLabels: ['export'],
+    },
+
+    // ---------- Bewusste Versionsgrenzen ----------
+    {
+      description: 'svelte-check unterstützt TypeScript 7 noch nicht (ADR 0004); Grenze manuell aufheben',
+      matchPackageNames: ['typescript'],
+      allowedVersions: '<7',
+    },
+    {
+      description: 'Pre-1.0-Pakete: Minor kann breaking sein, nicht automergen',
+      matchCurrentVersion: '<1.0.0',
+      matchUpdateTypes: ['minor'],
+      automerge: false,
+    },
+  ],
+}

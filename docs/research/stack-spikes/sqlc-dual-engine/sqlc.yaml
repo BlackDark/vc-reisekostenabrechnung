@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - engine: sqlite
+    schema: db/migrations
+    queries: db/queries
+    gen: { go: { package: sqlitedb, out: internal/store/sqlitedb, emit_interface: true } }
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries
+    gen: { go: { package: pgdb, out: internal/store/pgdb, emit_interface: true } }
