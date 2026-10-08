@@ -2,6 +2,12 @@ import { expect, type Page, test } from "@playwright/test";
 
 const password = process.env.E2E_PASSWORD || "smoke-password-1";
 
+test.afterEach(async ({ page }, info) => {
+	if (info.status === info.expectedStatus) return;
+	console.log("page url", page.url());
+	console.log((await page.content()).slice(0, 1200));
+});
+
 async function noHorizontalScroll(page: Page) {
 	const overflow = await page.evaluate(
 		() => document.documentElement.scrollWidth > window.innerWidth + 1,

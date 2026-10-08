@@ -59,7 +59,11 @@ export default defineConfig({
 				],
 				runtimeCaching: [
 					{
-						urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+						// Navigations such as the OIDC start redirect must be handled by the
+						// browser. NetworkOnly follows the cross-origin 302 inside the worker
+						// and the login page never appears.
+						urlPattern: ({ request, url }) =>
+							request.mode !== "navigate" && url.pathname.startsWith("/api/"),
 						handler: "NetworkOnly",
 					},
 				],
