@@ -1,0 +1,496 @@
+openapi: 3.1.0
+info:
+  title: Reisekostenabrechnung API
+  version: 0.1.0
+  description: Walking-skeleton authentication and profile API.
+servers:
+  - url: /
+paths:
+  /api/v1/auth/config:
+    get:
+      operationId: getAuthConfig
+      tags: [auth]
+      summary: Active login methods
+      responses:
+        "200":
+          description: Configuration the login page needs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthConfig"
+  /api/v1/auth/login:
+    post:
+      operationId: postAuthLogin
+      tags: [auth]
+      summary: Password login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nutzer"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/Problem"
+  /api/v1/auth/logout:
+    post:
+      operationId: postAuthLogout
+      tags: [auth]
+      summary: End the current session
+      responses:
+        "204":
+          description: Signed out
+  /api/v1/auth/oidc/start:
+    get:
+      operationId: getAuthOidcStart
+      tags: [auth]
+      summary: Start the OIDC authorization code flow with PKCE
+      responses:
+        "302":
+          description: Redirect to the identity provider
+          headers:
+            Location:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/Problem"
+  /api/v1/auth/oidc/callback:
+    get:
+      operationId: getAuthOidcCallback
+      tags: [auth]
+      summary: OIDC redirect URI
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: error
+          in: query
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect back to the app
+          headers:
+            Location:
+              schema:
+                type: string
+  /api/v1/auth/setup:
+    post:
+      operationId: postAuthSetup
+      tags: [auth]
+      summary: Create the first Admin with the setup token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupRequest"
+      responses:
+        "201":
+          description: Admin created and signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nutzer"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+  /api/v1/auth/me:
+    get:
+      operationId: getAuthMe
+      tags: [auth]
+      summary: Current Nutzer
+      responses:
+        "200":
+          description: Current Nutzer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nutzer"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/auth/passwort:
+    put:
+      operationId: putAuthPasswort
+      tags: [auth]
+      summary: Change the current Nutzer password
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswortRequest"
+      responses:
+        "204":
+          description: Password updated
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/me:
+    get:
+      operationId: getMe
+      tags: [profil]
+      summary: Profile of the current Nutzer
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nutzer"
+        "401":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchMe
+      tags: [profil]
+      summary: Update the profile
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfilPatch"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nutzer"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/me/sessions:
+    get:
+      operationId: getMeSessions
+      tags: [profil]
+      summary: Active sessions of the current Nutzer
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/me/sessions/{id}:
+    delete:
+      operationId: deleteMeSession
+      tags: [profil]
+      summary: End one session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Session ended
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/nutzer:
+    get:
+      operationId: getAdminNutzer
+      tags: [admin]
+      summary: List Nutzer
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: Nutzer page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NutzerListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postAdminNutzer
+      tags: [admin]
+      summary: Create a Nutzer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NutzerCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nutzer"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/nutzer/{id}:
+    patch:
+      operationId: patchAdminNutzer
+      tags: [admin]
+      summary: Update a Nutzer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NutzerAdminPatch"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nutzer"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+components:
+  parameters:
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema:
+        type: string
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+    FieldError:
+      type: object
+      required: [pointer, code]
+      properties:
+        pointer:
+          type: string
+        code:
+          type: string
+    AuthConfig:
+      type: object
+      required: [passwort, oidc, header, setup_erforderlich, default_locale]
+      properties:
+        passwort:
+          type: boolean
+        oidc:
+          type: boolean
+        oidc_button_label:
+          type: string
+        oidc_auto_redirect:
+          type: boolean
+        header:
+          type: boolean
+        header_logout_url:
+          type: string
+        setup_erforderlich:
+          type: boolean
+        default_locale:
+          type: string
+          enum: [de, en]
+    LoginRequest:
+      type: object
+      required: [benutzername, passwort]
+      properties:
+        benutzername:
+          type: string
+        passwort:
+          type: string
+    SetupRequest:
+      type: object
+      required: [token, benutzername, passwort, anzeigename]
+      properties:
+        token:
+          type: string
+        benutzername:
+          type: string
+        passwort:
+          type: string
+        anzeigename:
+          type: string
+        email:
+          type: string
+    PasswortRequest:
+      type: object
+      required: [neues_passwort]
+      properties:
+        aktuelles_passwort:
+          type: string
+        neues_passwort:
+          type: string
+    ProfilPatch:
+      type: object
+      properties:
+        anzeigename:
+          type: string
+        sprache:
+          type: string
+          enum: [de, en]
+        personalnummer:
+          type: string
+        ki_erlaubt:
+          type: boolean
+    Nutzer:
+      type: object
+      required: [id, anzeigename, benutzername, ist_admin, sprache, ki_erlaubt, aktiv, version]
+      properties:
+        id:
+          type: string
+        anzeigename:
+          type: string
+        email:
+          type: string
+        benutzername:
+          type: string
+        ist_admin:
+          type: boolean
+        sprache:
+          type: string
+        personalnummer:
+          type: string
+        ki_erlaubt:
+          type: boolean
+        aktiv:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    NutzerListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Nutzer"
+        next_cursor:
+          type: string
+    NutzerCreate:
+      type: object
+      required: [anzeigename, benutzername, passwort]
+      properties:
+        anzeigename:
+          type: string
+        benutzername:
+          type: string
+        email:
+          type: string
+        passwort:
+          type: string
+        ist_admin:
+          type: boolean
+        sprache:
+          type: string
+          enum: [de, en]
+    NutzerAdminPatch:
+      type: object
+      properties:
+        aktiv:
+          type: boolean
+        ist_admin_lokal:
+          type: boolean
+        passwort:
+          type: string
+    Session:
+      type: object
+      required: [id, letzte_nutzung, aktuell]
+      properties:
+        id:
+          type: string
+        user_agent:
+          type: string
+        ip:
+          type: string
+        letzte_nutzung:
+          type: string
+          format: date-time
+        aktuell:
+          type: boolean

@@ -1,0 +1,28 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - internal/api
+      - internal/store/sqlitedb
+
+linters:
+  default: standard
+  exclusions:
+    generated: lax
+    paths:
+      - internal/api
+      - internal/store/sqlitedb
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
