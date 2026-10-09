@@ -252,7 +252,7 @@ func (a *App) jobPDF(ctx context.Context, jobID, belegID string) error {
 	} else {
 		settings := a.pipeSettings()
 		for page := 1; page <= pages; page++ {
-			png, err := belegpipe.RenderPDFPage(bin, pdf, page)
+			png, err := belegpipe.RenderPDFPage(ctx, bin, pdf, page)
 			if err != nil {
 				return err
 			}

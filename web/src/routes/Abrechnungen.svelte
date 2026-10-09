@@ -4,6 +4,7 @@
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Empty from "$lib/components/ui/empty";
+	import { formatRange } from "$lib/dates";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -50,7 +51,7 @@
 						<StatusBadge status={row.status} />
 					</span>
 					<span class="text-muted-foreground mt-1 block">
-						{row.von} – {row.bis}
+						{formatRange(row.von, row.bis, session.locale)}
 						{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
 					</span>
 				</a>

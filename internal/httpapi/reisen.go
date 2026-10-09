@@ -80,13 +80,8 @@ func (a *App) PatchReise(w http.ResponseWriter, r *http.Request, id api.Id, para
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	var body api.ReiseWrite
@@ -133,13 +128,8 @@ func (a *App) PatchReisetag(w http.ResponseWriter, r *http.Request, id api.Id, d
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	var body api.ReisetagPatch
@@ -197,13 +187,8 @@ func (a *App) PatchFahrt(w http.ResponseWriter, r *http.Request, id api.Id, para
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	var body api.FahrtWrite
@@ -290,13 +275,8 @@ func (a *App) PatchVorlage(w http.ResponseWriter, r *http.Request, id api.Id, pa
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	var body api.VorlageWrite

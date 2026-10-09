@@ -18,7 +18,7 @@ Invalid combinations stop the process with a clear error (every login method off
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `LOG_FORMAT` | `json` | `json` or `text` |
 | `DEFAULT_LOCALE` | `de` | `de` or `en` |
-| `TZ_DEFAULT` | `Europe/Berlin` | Time zone for a new trip |
+| `TZ_DEFAULT` | `Europe/Berlin` | Validated, not applied. A new trip still defaults to `Europe/Berlin` unless the trip sets a zone |
 | `TRUSTED_PROXIES` | empty | Comma-separated CIDRs. Client IP from `X-Forwarded-For`, and header auth, only from these addresses |
 | `COOKIE_SECURE` | `true` | Set `false` only for local HTTP |
 | `SESSION_IDLE_TIMEOUT` | `168h` | |
@@ -71,7 +71,7 @@ Invalid combinations stop the process with a clear error (every login method off
 | `BELEG_AVIF_QUALITY` | `40` | 1–100 |
 | `BELEG_AVIF_SPEED` | `6` | 0 is slow, 10 is fast |
 | `BELEG_WEBP_QUALITY` | `55` | When `BELEG_FORMAT=webp` |
-| `BELEG_JPEG_QUALITY` | `70` | JPEG copy embedded in the PDF |
+| `BELEG_JPEG_QUALITY` | `70` | JPEG derivative of a photo receipt. A PDF-source receipt embedded in the export still uses quality 70 |
 | `BELEG_ERFASSUNG_KARENZ` | `720h` | How long the capture JPEG is kept after confirmation |
 | **Optional receipt reading** | | |
 | `AI_ENABLED` | `false` | Suggestions only, and only after the user opts in |
@@ -86,7 +86,7 @@ Invalid combinations stop the process with a clear error (every login method off
 | `FX_ECB_URL` | ECB data API | Listed for operators. This build fetches the compiled-in ECB host |
 | `FX_TIMEOUT` | | Listed in `.env.example`. This build uses a compiled-in 4 second fetch timeout |
 | `TYPST_PATH` | `/usr/local/bin/typst` | |
-| `EXPORT_TIMEOUT` | `120s` | |
+| `EXPORT_TIMEOUT` | `120s` | Loaded and not applied. Typst export uses a fixed 60 second timeout |
 | `EXPORT_PDF_STANDARD` | `a-3b` | Listed for operators. This build always writes PDF/A-3b |
 | **Rate limits** | | |
 | `RATE_LIMIT_LOGIN` | `5/m` | Per client IP |

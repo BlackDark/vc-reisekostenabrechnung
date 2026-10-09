@@ -14,7 +14,7 @@
 	import * as Sheet from "$lib/components/ui/sheet";
 	import * as Tabs from "$lib/components/ui/tabs";
 	import * as Tooltip from "$lib/components/ui/tooltip";
-	import { formatWhen } from "$lib/dates";
+	import { formatRange, formatWhen } from "$lib/dates";
 	import { dayTypeLabel, kostenartLabel, warningLabel } from "$lib/labels";
 	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
@@ -297,7 +297,7 @@
 		<div class="min-w-0">
 			<h1 class="truncate text-2xl font-semibold tracking-tight">{trip.anlass}</h1>
 			<p class="text-muted-foreground mt-1 text-sm" data-field="zeitraum">
-				{formatWhen(trip.beginn, session.locale)} – {formatWhen(trip.ende, session.locale)}
+				{formatRange(trip.beginn, trip.ende, session.locale, "auto")}
 			</p>
 		</div>
 		<div class="flex flex-wrap items-center gap-2">

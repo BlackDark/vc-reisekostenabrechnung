@@ -6,7 +6,7 @@
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { formatWhen } from "$lib/dates";
-	import { euro } from "$lib/money";
+	import { euro, parseEuroToCents } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
@@ -41,17 +41,11 @@
 		if (!arbeitgeber && employers[0]) arbeitgeber = employers[0].id;
 	}
 
-	function cents(raw: string): number {
-		const n = Number(raw.trim().replace(/\s/g, "").replace(",", "."));
-		if (!Number.isFinite(n)) return 0;
-		return Math.round(n * 100);
-	}
-
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		error = "";
 		const res = await api.POST("/api/v1/vorschuesse", {
-			body: { arbeitgeber_id: arbeitgeber, datum, betrag_cent: cents(betrag), notiz },
+			body: { arbeitgeber_id: arbeitgeber, datum, betrag_cent: parseEuroToCents(betrag), notiz },
 		});
 		if (!res.data) {
 			error = m.save_failed();

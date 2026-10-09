@@ -3,8 +3,6 @@ package httpapi
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/belegpipe"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/export"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
 )
@@ -84,7 +83,7 @@ func (a *App) jobExport(ctx context.Context, jobID, exportID string) error {
 	if err := a.putBlob(ctx, zipKey, doc.ZIP); err != nil {
 		return err
 	}
-	return a.store.CompleteExport(ctx, jobID, exportID, pdfKey, sha256Hex(doc.PDF), zipKey, sha256Hex(doc.ZIP), string(doc.JSON))
+	return a.store.CompleteExport(ctx, jobID, exportID, pdfKey, belegpipe.SHA256Hex(doc.PDF), zipKey, belegpipe.SHA256Hex(doc.ZIP), string(doc.JSON))
 }
 
 func (a *App) exportSources(ctx context.Context, nutzerID string, snap export.Snapshot) ([]export.Source, error) {
@@ -190,7 +189,7 @@ func renderExport(typst string, snap export.Snapshot, sources []export.Source, d
 }
 
 func (a *App) putBlob(ctx context.Context, key string, body []byte) error {
-	return a.blobs.PutIfAbsent(ctx, key, bytes.NewReader(body), sha256Hex(body))
+	return a.blobs.PutIfAbsent(ctx, key, bytes.NewReader(body), belegpipe.SHA256Hex(body))
 }
 
 func (a *App) readBlob(ctx context.Context, key string) ([]byte, error) {
@@ -213,9 +212,4 @@ func writeFile(w http.ResponseWriter, mime, name string, immutable bool, body []
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)
-}
-
-func sha256Hex(body []byte) string {
-	sum := sha256.Sum256(body)
-	return hex.EncodeToString(sum[:])
 }

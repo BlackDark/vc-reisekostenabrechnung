@@ -148,9 +148,8 @@ func (a *App) PostBelegNeuAufbereiten(w http.ResponseWriter, r *http.Request, id
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present || !valid {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	profil := formProfil(r)
@@ -203,9 +202,8 @@ func (a *App) PostBelegBestaetigen(w http.ResponseWriter, r *http.Request, id ap
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present || !valid {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	row, err := a.store.ConfirmBeleg(r.Context(), n.ID, id, version, a.karenz(), a.actor(r, n))
@@ -220,9 +218,8 @@ func (a *App) PostBelegStornieren(w http.ResponseWriter, r *http.Request, id api
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present || !valid {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	var body api.BelegStorno
@@ -241,9 +238,8 @@ func (a *App) DeleteBeleg(w http.ResponseWriter, r *http.Request, id api.Id, par
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present || !valid {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	keys, err := a.store.DeleteBeleg(r.Context(), n.ID, id, version, a.actor(r, n))

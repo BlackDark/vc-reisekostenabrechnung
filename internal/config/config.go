@@ -15,7 +15,6 @@ import (
 // Config is the validated process configuration. Secrets are never logged.
 type Config struct {
 	AppBaseURL       string
-	Origin           string
 	ListenAddr       string
 	DataDir          string
 	DBPath           string

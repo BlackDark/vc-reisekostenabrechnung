@@ -31,3 +31,13 @@ export function formatWhen(
 		...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
 	}).format(date);
 }
+
+/** Inclusive display range. Dates stay dates; a stamp with a time keeps the clock. */
+export function formatRange(
+	from: string,
+	to: string,
+	locale: string,
+	mode: "auto" | "date" = "date",
+): string {
+	return `${formatWhen(from, locale, mode)} – ${formatWhen(to, locale, mode)}`;
+}

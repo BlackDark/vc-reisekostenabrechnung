@@ -127,12 +127,11 @@ func (a *App) PatchMe(w http.ResponseWriter, r *http.Request, params api.PatchMe
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
-	if !valid || version != n.Version {
+	if version != n.Version {
 		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
 		return
 	}
@@ -186,12 +185,11 @@ func (a *App) PutAuthPasswort(w http.ResponseWriter, r *http.Request, params api
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
-	if !valid || version != n.Version {
+	if version != n.Version {
 		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
 		return
 	}
@@ -433,12 +431,11 @@ func (a *App) PatchAdminNutzer(w http.ResponseWriter, r *http.Request, id string
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
-	if !valid || version != target.Version {
+	if version != target.Version {
 		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
 		return
 	}

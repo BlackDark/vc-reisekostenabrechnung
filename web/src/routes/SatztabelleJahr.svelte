@@ -29,9 +29,9 @@
 	let rows = $state<Rate[]>([]);
 	let log = $state<Override[]>([]);
 	let field = $state("vma_24h");
-	let land = $state("FR");
-	let satzort = $state("FR-PARIS");
-	let euros = $state("61");
+	let land = $state("");
+	let satzort = $state("");
+	let euros = $state("");
 	let grund = $state("");
 	let error = $state("");
 	let importNote = $state("");
