@@ -1219,10 +1219,9 @@ Squash-Merges mit Conventional Commits auf main
         │    └─ PRs, die mit GITHUB_TOKEN erstellt/aktualisiert werden, starten KEINE Workflows →
         │       release-please.yml startet danach explizit `gh workflow run ci.yml --repo <repo> --ref <release-PR-Branch>`
         │       (workflow_dispatch ist von der Sperre ausgenommen); die Check-Runs hängen am Head-Commit des PR,
-        │       der Pflicht-Check „CI ok“ wird dadurch erfüllt. Der Dispatch läuft nur, wenn release-please
-        │       einen Release-PR erzeugt oder aktualisiert hat. HTTP 403 wegen der Repo-Einstellung
-        │       „Allow GitHub Actions to create and approve pull requests“ wird als Warning annotiert,
-        │       der Job bleibt grün.
+        │       der Pflicht-Check „CI ok“ wird dadurch erfüllt. Der Dispatch läuft nur, wenn das Output `pr`
+        │       gesetzt ist (PR erzeugt oder aktualisiert). `--repo` ist nötig: ohne Checkout ruft `gh`
+        │       vorher `git` auf und stirbt mit `fatal: not a git repository`, bevor die API erreicht wird.
         └─ nach Merge des Release-PR: legt Tag vX.Y.Z und Release als Entwurf an (`draft: true`, `force-tag-creation: true`)
              └─ Tag-Push durch GITHUB_TOKEN startet ebenfalls nichts → `gh workflow run release.yml --ref vX.Y.Z`
 release.yml (workflow_dispatch auf dem Tag; zusätzlich push: tags v* für manuell gesetzte Tags)

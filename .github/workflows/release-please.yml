@@ -28,7 +28,7 @@ jobs:
           number=$(printf '%s' "$RP_PR" | jq -r '.number // empty')
           if [ -z "$branch" ]; then
             echo "Release Please returned a PR payload without headBranchName; CI was not dispatched."
-            exit 0
+            exit 1
           fi
           echo "Release PR #${number} (${branch}) was created or updated."
           bash scripts/dispatch-workflow.sh ci.yml "$branch"
