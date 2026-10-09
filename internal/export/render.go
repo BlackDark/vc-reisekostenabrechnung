@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -231,6 +232,9 @@ func viewModel(s Snapshot, bilder, attached []map[string]any, draft bool) map[st
 	var overview []map[string]string
 	var trips []map[string]any
 	var bewirt []string
+	var eigen []string
+	vatDE := map[int64]*vatAcc{}
+	vatForeign := map[string]*vatAcc{}
 	for _, reise := range s.Reisen {
 		overview = append(overview, map[string]string{
 			"nr": strconv.Itoa(reise.Nr), "text": reise.Anlass + " · " + reise.Beginn + " – " + reise.Ende,
@@ -242,7 +246,13 @@ func viewModel(s Snapshot, bilder, attached []map[string]any, draft bool) map[st
 		}
 		var days []string
 		for _, day := range reise.Reisetage {
-			days = append(days, fmt.Sprintf("%s %s %s %s %s", day.Datum, day.Tagesart, day.LandISO, t("Verpflegung", "Meals"), euroLabel(day.VerpflegungCent)))
+			days = append(days, fmt.Sprintf("%s %s %d min %s %s · %s %s · %s %s/%s/%s · %s %s · %s %s · %s",
+				day.Datum, day.Tagesart, day.AbwesenheitMin, day.LandISO, day.Satzort,
+				t("Pauschale", "Allowance"), euroLabel(day.PauschaleCent),
+				t("Kürzung F/M/A", "Deduction B/L/D"), euroLabel(day.KuerzungFruehCent), euroLabel(day.KuerzungMittagCent), euroLabel(day.KuerzungAbendCent),
+				t("Verpflegung", "Meals"), euroLabel(day.VerpflegungCent),
+				t("Übernachtung", "Lodging"), euroLabel(day.UebernachtungCent),
+				strings.Join(day.RegelIDs, ",")))
 		}
 		var rides []string
 		for _, f := range reise.Fahrten {
@@ -250,9 +260,21 @@ func viewModel(s Snapshot, bilder, attached []map[string]any, draft bool) map[st
 		}
 		var expenses []string
 		for _, a := range reise.Ausgaben {
-			expenses = append(expenses, fmt.Sprintf("%s %s %s %s %s", a.Datum, a.Kostenart, a.Leistender, a.Belegnummern, euroLabel(a.BetragEURCent)))
+			var shares []string
+			for _, p := range a.Anteile {
+				shares = append(shares, fmt.Sprintf("%s %s", p.Land, percentLabel(p.Satz)))
+				addVAT(vatDE, vatForeign, p)
+			}
+			expenses = append(expenses, fmt.Sprintf("%s %s %s %s %s %s", a.Datum, a.Kostenart, a.Leistender, a.Belegnummern, euroLabel(a.BetragEURCent), strings.Join(shares, ", ")))
+			if a.Rechnungsart == "eigenbeleg" {
+				eigen = append(eigen, fmt.Sprintf("%s · %s · %s · %s · %s", a.Datum, a.Leistender, a.Beschreibung, a.Belegnummern, euroLabel(a.BetragEURCent)))
+			}
 			if a.Bewirtung != nil {
-				bewirt = append(bewirt, fmt.Sprintf("%s · %s · %s · %s · %s", a.Belegnummern, a.Bewirtung.Anlass, a.Bewirtung.Ort, a.Bewirtung.Teilnehmer, euroLabel(a.BetragEURCent)))
+				bewirt = append(bewirt, fmt.Sprintf("%s · %s · %s · %s · %s · %s · %s %s · %s %s · %s",
+					a.Belegnummern, a.Bewirtung.Anlass, a.Bewirtung.Ort, a.Datum, a.Bewirtung.Teilnehmer, a.Bewirtung.Bewirtender,
+					t("abziehbar", "deductible"), euroLabel(a.BewirtungAbziehbarCent),
+					t("nicht abziehbar", "non-deductible"), euroLabel(a.BewirtungNichtCent),
+					a.Bewirtung.Bestaetigt))
 			}
 		}
 		trips = append(trips, map[string]any{
@@ -296,8 +318,25 @@ func viewModel(s Snapshot, bilder, attached []map[string]any, draft bool) map[st
 	if bewirt == nil {
 		bewirt = []string{}
 	}
+	if eigen == nil {
+		eigen = []string{}
+	}
 	if protocol == nil {
 		protocol = []string{}
+	}
+	var warnings []string
+	for _, w := range s.WarnungenQuittiert {
+		warnings = append(warnings, w.Code+" · "+warnText(w.Code, de)+" · "+w.ObjektID)
+	}
+	if warnings == nil {
+		warnings = []string{}
+	}
+	var sources []string
+	for _, jahr := range s.Satztabellen {
+		sources = append(sources, fmt.Sprintf("%d · %s", jahr.Jahr, jahr.Quelle))
+	}
+	if len(sources) == 0 {
+		sources = []string{t("Keine Satztabelle im Snapshot.", "No rate table in the snapshot.")}
 	}
 	summen := append(rows, advances...)
 	return map[string]any{
@@ -307,22 +346,168 @@ func viewModel(s Snapshot, bilder, attached []map[string]any, draft bool) map[st
 		"arbeitgeber": s.Arbeitgeber.Name, "anschrift": s.Arbeitgeber.Anschrift,
 		"nutzer": s.Nutzer.Name, "nutzer_zeile": nutzer, "meta": meta,
 		"summen": summen, "auszahlung_label": payLabel, "auszahlung": euroLabel(s.Abrechnung.AuszahlungCent),
-		"hinweis":          t("Steuerfrei nach § 3 Nr. 16 EStG, soweit nicht anders gekennzeichnet.", "Tax-free under § 3 no. 16 EStG unless marked otherwise."),
-		"bestaetigung":     t("Elektronisch eingereicht.", "Submitted electronically.") + " " + s.Abrechnung.EingereichtAm,
-		"freigabe":         t("Freigabe Arbeitgeber", "Employer approval"),
-		"uebersicht_titel": t("Reiseübersicht", "Trips"),
-		"uebersicht":       overview,
-		"tage_titel":       t("Tagesberechnung", "Daily calculation"),
-		"fahrten_titel":    t("Fahrten", "Journeys"),
-		"ausgaben_titel":   t("Ausgaben", "Expenses"),
-		"summe_label":      t("Reisesumme", "Trip total"),
-		"reisen":           trips,
-		"bewirtung_titel":  t("Bewirtung", "Entertainment"),
-		"bewirtungen":      bewirt,
-		"protokoll_titel":  t("Protokoll", "Protocol"),
-		"protokoll":        protocol,
-		"bilder":           bilder, "dateien": attached,
+		"hinweis":           t("Steuerfrei nach § 3 Nr. 16 EStG, soweit nicht anders gekennzeichnet.", "Tax-free under § 3 no. 16 EStG unless marked otherwise."),
+		"bestaetigung":      t("Elektronisch eingereicht.", "Submitted electronically.") + " " + s.Abrechnung.EingereichtAm,
+		"freigabe":          t("Freigabe Arbeitgeber", "Employer approval"),
+		"uebersicht_titel":  t("Reiseübersicht", "Trips"),
+		"uebersicht":        overview,
+		"tage_titel":        t("Tagesberechnung", "Daily calculation"),
+		"fahrten_titel":     t("Fahrten", "Journeys"),
+		"ausgaben_titel":    t("Ausgaben", "Expenses"),
+		"summe_label":       t("Reisesumme", "Trip total"),
+		"reisen":            trips,
+		"bewirtung_titel":   t("Bewirtungs-Eigenbelege", "Entertainment records"),
+		"bewirtungen":       bewirt,
+		"eigenbeleg_titel":  t("Eigenbelege", "Substitute receipts"),
+		"eigenbelege":       eigen,
+		"ust_titel":         t("Umsatzsteuer", "VAT"),
+		"ust":               vatLines(vatDE, de),
+		"ust_ausland_titel": t("Ausländische Umsatzsteuer", "Foreign VAT"),
+		"ust_ausland":       foreignLines(vatForeign),
+		"keine_ust":         t("Keine Umsatzsteuer auf Einzelnachweisen.", "No VAT on individual receipts."),
+		"ust_hinweis":       t("Ausländische Umsatzsteuer ist keine deutsche Vorsteuer (Vorsteuer-Vergütung).", "Foreign VAT is not German input VAT."),
+		"ust_pauschale":     t("Pauschalen ohne Vorsteuer.", "Allowances do not include input VAT."),
+		"hinweise_titel":    t("Hinweise und quittierte Warnungen", "Notes and acknowledged warnings"),
+		"warnungen":         warnings,
+		"keine_warnung":     t("Keine quittierten Warnungen.", "No acknowledged warnings."),
+		"quellen_titel":     t("Rechtsgrundlagen und Satztabellen", "Legal basis and rate tables"),
+		"quellen":           append([]string{t("§ 3 Nr. 16 EStG; BMF-Schreiben zu Reisekosten.", "§ 3 no. 16 EStG; BMF circulars on travel expenses.")}, sources...),
+		"protokoll_titel":   t("Protokoll", "Protocol"),
+		"protokoll":         protocol,
+		"kein_protokoll":    t("Keine Protokolleinträge im Snapshot.", "No protocol entries in the snapshot."),
+		"bilder":            bilder, "dateien": attached,
 	}
+}
+
+type vatAcc struct {
+	land          string
+	satz          int64
+	netto, ust    int64
+	brutto, vorst int64
+}
+
+func addVAT(de map[int64]*vatAcc, foreign map[string]*vatAcc, p Anteil) {
+	if p.Land == "" || p.Land == "DE" {
+		row := de[p.Satz]
+		if row == nil {
+			row = &vatAcc{land: "DE", satz: p.Satz}
+			de[p.Satz] = row
+		}
+		row.netto += p.NettoCent
+		row.ust += p.UstCent
+		row.brutto += p.BruttoCent
+		if p.Vorsteuer {
+			row.vorst += p.UstCent
+		}
+		return
+	}
+	key := p.Land + "/" + strconv.FormatInt(p.Satz, 10)
+	row := foreign[key]
+	if row == nil {
+		row = &vatAcc{land: p.Land, satz: p.Satz}
+		foreign[key] = row
+	}
+	row.netto += p.NettoCent
+	row.ust += p.UstCent
+	row.brutto += p.BruttoCent
+}
+
+func vatLines(rows map[int64]*vatAcc, de bool) []string {
+	if len(rows) == 0 {
+		return []string{}
+	}
+	keys := make([]int64, 0, len(rows))
+	for k := range rows {
+		keys = append(keys, k)
+	}
+	sortInt(keys)
+	label := "vorsteuerfähig"
+	if !de {
+		label = "input VAT"
+	}
+	out := make([]string, 0, len(keys))
+	for _, k := range keys {
+		row := rows[k]
+		out = append(out, fmt.Sprintf("DE %s · Netto %s · USt %s · Brutto %s · %s %s",
+			percentLabel(row.satz), euroLabel(row.netto), euroLabel(row.ust), euroLabel(row.brutto), label, euroLabel(row.vorst)))
+	}
+	return out
+}
+
+func foreignLines(rows map[string]*vatAcc) []string {
+	if len(rows) == 0 {
+		return []string{}
+	}
+	keys := make([]string, 0, len(rows))
+	for k := range rows {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([]string, 0, len(keys))
+	for _, k := range keys {
+		row := rows[k]
+		out = append(out, fmt.Sprintf("%s %s · Netto %s · USt %s · Brutto %s",
+			row.land, percentLabel(row.satz), euroLabel(row.netto), euroLabel(row.ust), euroLabel(row.brutto)))
+	}
+	return out
+}
+
+func percentLabel(hundredths int64) string {
+	sign := ""
+	if hundredths < 0 {
+		sign = "-"
+		hundredths = -hundredths
+	}
+	return fmt.Sprintf("%s%d,%02d %%", sign, hundredths/100, hundredths%100)
+}
+
+func sortInt(v []int64) {
+	sort.Slice(v, func(i, j int) bool { return v[i] < v[j] })
+}
+
+func warnText(code string, de bool) string {
+	deText := map[string]string{
+		"W01": "Fehlender Beleg",
+		"W02": "Rechnung über 250 € lautet nicht auf den Arbeitgeber",
+		"W03": "Dreimonatsfrist",
+		"W04": "Möglicherweise doppelt erfasst",
+		"W05": "Eigenbeleg, keine Vorsteuer",
+		"W06": "Bewirtung ohne TSE-Bestätigung",
+		"W07": "Gestellte Mahlzeit",
+		"W08": "Keine übliche Mahlzeit",
+		"W09": "Kraftstoff neben Kilometerpauschale",
+		"W10": "Ausländische Umsatzsteuer",
+		"W11": "Ausgabedatum außerhalb der Reise",
+		"W12": "Mehr gewährt als zusteht",
+		"W13": "Umsatzsteuer weicht ab",
+		"W14": "Reise ohne Erstattungsbetrag",
+	}
+	enText := map[string]string{
+		"W01": "Missing receipt",
+		"W02": "Invoice over 250 € is not in the employer's name",
+		"W03": "Three-month limit",
+		"W04": "Possible duplicate",
+		"W05": "Substitute receipt, no input VAT",
+		"W06": "Entertainment without a TSE confirmation",
+		"W07": "Provided meal",
+		"W08": "Meal above the usual limit",
+		"W09": "Fuel alongside the mileage allowance",
+		"W10": "Foreign VAT",
+		"W11": "Expense date outside the trip",
+		"W12": "More was granted than is due",
+		"W13": "VAT amount differs",
+		"W14": "Trip without a reimbursement amount",
+	}
+	if de {
+		if s, ok := deText[code]; ok {
+			return s
+		}
+		return code
+	}
+	if s, ok := enText[code]; ok {
+		return s
+	}
+	return code
 }
 
 func stringsOrEmpty(items []string) []string {

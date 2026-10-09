@@ -18,7 +18,9 @@ type Querier interface {
 	ConfirmBeleg(ctx context.Context, arg ConfirmBelegParams) (Beleg, error)
 	CountAktiveAdmins(ctx context.Context) (int64, error)
 	CountAktiveArbeitgeber(ctx context.Context, nutzerID string) (int64, error)
+	CountDoneJobsSince(ctx context.Context, arg CountDoneJobsSinceParams) (int64, error)
 	CountNutzer(ctx context.Context) (int64, error)
+	CountOpenJobsByArt(ctx context.Context, art string) (int64, error)
 	CreateIdentitaet(ctx context.Context, arg CreateIdentitaetParams) (NutzerIdentitaet, error)
 	CreateNutzer(ctx context.Context, arg CreateNutzerParams) (Nutzer, error)
 	DeleteAbrechnungEntwurf(ctx context.Context, arg DeleteAbrechnungEntwurfParams) (int64, error)
@@ -28,6 +30,8 @@ type Querier interface {
 	DeleteAuslandssaetze(ctx context.Context, jahr int64) error
 	DeleteBelegOffen(ctx context.Context, arg DeleteBelegOffenParams) (int64, error)
 	DeleteBelegdateiVariante(ctx context.Context, arg DeleteBelegdateiVarianteParams) error
+	DeleteBelegdateienByBeleg(ctx context.Context, belegID string) error
+	DeleteBelegtexteByBeleg(ctx context.Context, belegID string) error
 	DeleteFahrt(ctx context.Context, arg DeleteFahrtParams) (int64, error)
 	DeleteIdentitaet(ctx context.Context, arg DeleteIdentitaetParams) error
 	DeleteJobsForBeleg(ctx context.Context, belegID *string) error
@@ -42,6 +46,7 @@ type Querier interface {
 	DeleteTaetigkeitsstaette(ctx context.Context, arg DeleteTaetigkeitsstaetteParams) error
 	DeleteVorlage(ctx context.Context, arg DeleteVorlageParams) (int64, error)
 	DeleteVorschussOffen(ctx context.Context, arg DeleteVorschussOffenParams) (int64, error)
+	ExtendBelegFrist(ctx context.Context, arg ExtendBelegFristParams) error
 	FailExportRow(ctx context.Context, arg FailExportRowParams) error
 	FailJobRow(ctx context.Context, arg FailJobRowParams) error
 	FindBelegByDateiSHA(ctx context.Context, arg FindBelegByDateiSHAParams) (Beleg, error)
@@ -125,6 +130,8 @@ type Querier interface {
 	ListReisenAll(ctx context.Context, nutzerID string) ([]Reise, error)
 	ListReisenByArbeitgeberStatus(ctx context.Context, arg ListReisenByArbeitgeberStatusParams) ([]Reise, error)
 	ListReisetage(ctx context.Context, reiseID string) ([]Reisetag, error)
+	ListRetentionBelege(ctx context.Context) ([]ListRetentionBelegeRow, error)
+	ListRetentionExporte(ctx context.Context) ([]ListRetentionExporteRow, error)
 	ListSatzOverrides(ctx context.Context, jahr int64) ([]SatzOverride, error)
 	ListSatztabellen(ctx context.Context) ([]Satztabelle, error)
 	ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNutzerParams) ([]Session, error)
@@ -136,12 +143,15 @@ type Querier interface {
 	ListVorschuesseOfAbrechnung(ctx context.Context, arg ListVorschuesseOfAbrechnungParams) ([]Vorschuss, error)
 	ListWechselkurse(ctx context.Context, waehrung string) ([]Wechselkur, error)
 	ListWechselkurseAll(ctx context.Context) ([]Wechselkur, error)
+	MarkBelegInhaltGeloescht(ctx context.Context, arg MarkBelegInhaltGeloeschtParams) error
 	MarkBelegdateienFest(ctx context.Context, belegID string) error
 	MarkBezahlt(ctx context.Context, arg MarkBezahltParams) (Abrechnung, error)
 	MarkBezahltZurueck(ctx context.Context, arg MarkBezahltZurueckParams) (Abrechnung, error)
 	MarkEinreichung(ctx context.Context, arg MarkEinreichungParams) (Abrechnung, error)
 	MarkEntsperrt(ctx context.Context, arg MarkEntsperrtParams) (Abrechnung, error)
 	MarkExportErsetzt(ctx context.Context, arg MarkExportErsetztParams) error
+	MarkExportInhaltGeloescht(ctx context.Context, arg MarkExportInhaltGeloeschtParams) error
+	MaxBelegFristOfAbrechnung(ctx context.Context, abrechnungID string) (string, error)
 	MaxBelegtextVersion(ctx context.Context, belegID string) (int64, error)
 	MaxExportVersion(ctx context.Context, abrechnungID string) (int64, error)
 	NextAbrechnungsnummer(ctx context.Context, arg NextAbrechnungsnummerParams) (int64, error)

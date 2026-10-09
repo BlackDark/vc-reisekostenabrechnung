@@ -638,7 +638,7 @@ RK-2026-007_v1/
 
 ### 7.3 PDF-Layout (Typst)
 
-- Typst ist ein eingebettetes externes Binary (`/usr/local/bin/typst`), Aufruf: `typst compile --root <tmp> --font-path /usr/share/fonts/app --ignore-system-fonts --pdf-standard a-3b --input data=abrechnung.json abrechnung.typ out.pdf` mit Timeout (`EXPORT_TIMEOUT`) in einem Temp-Verzeichnis unter `/tmp`. Die Typst-Layouts nutzen keine `@preview`-Pakete (kein Netzzugriff beim Export; `--package-path` zeigt auf ein leeres Verzeichnis). Sie liegen in `internal/export/templates/` (per `embed`), Fonts (Inter/Source Sans 3 o. ä., OFL) in `assets/fonts/`.
+- Typst ist ein eingebettetes externes Binary (`/usr/local/bin/typst`), Aufruf: `typst compile --root <tmp> --font-path /usr/share/fonts/app --ignore-system-fonts --pdf-standard a-3b --input data=abrechnung.json abrechnung.typ out.pdf` mit Timeout (`EXPORT_TIMEOUT`) in einem Temp-Verzeichnis unter `/tmp`. Die Typst-Layouts nutzen keine `@preview`-Pakete (kein Netzzugriff beim Export; `--package-path` zeigt auf ein leeres Verzeichnis). Sie liegen in `internal/export/templates/` (per `embed`). Das Layout setzt Libertinus Serif, den Typst einbettet (OFL). `assets/fonts/` bleibt leer, damit das Image die Schrift nicht ein zweites Mal trägt.
 - **PDF/A-3b** (Vorgabe von Eduard zur CI-Validierung): Spike vom 09.10.2026 mit Typst 0.15.1 auf der Box:
   - `--pdf-standard a-3b` und `a-3u` funktionieren mit Tabellen, JPEG-Bildern und **Dateianhängen** (`#pdf.attach(…, relationship: "source")`); `pdfdetach -list` zeigt die eingebetteten Dateien.
   - **Typst kann in PDF/A-Modi keine PDF-Dateien als Bild einbetten** („embedding PDFs is currently not supported in this export mode“). PDF/A-2b verbietet zudem eingebettete Dateien.
@@ -1321,7 +1321,7 @@ Testdaten: Belegfotos aus [K] (frei lizenzierte Commons-Bilder + synthetische) a
 | O13 | **Frühstück herausrechnen** statt Kürzung (4.8) weicht nur in Randfällen ab | v1 Kürzung; Variante auf Später-Liste | – |
 | O14 | Erste Tätigkeitsstätte/Wohnung werden nicht modelliert; der Nutzer entscheidet, ob eine Reise vorliegt (UI-Hinweis Entfernungspauschale ≠ Reisekosten) | so lassen | – |
 | O15 | Renovate als gehostete GitHub-App (Mend) installieren | Eduard installiert die App für `BlackDark/vc-reisekostenabrechnung` | Eduard |
-| O16 | **Litestream als UID 65532** im scratch-Image (Schreibrechte auf `/data/.reisekosten.db-litestream`, kein HOME) nicht erprobt | in M8 testen; Fallback: Sidecar ohne `user`, aber read-only + `cap_drop` | Umsetzung |
+| O16 | **Litestream als UID 65532** im scratch-Image | Erprobt in M8: `user: 65532:65532`, read-only, `cap_drop: ALL`, `tmpfs /tmp`, `HOME=/tmp` (scratch hat kein Home). Der CI-Job `backup` repliziert und stellt eine Datei-Replik wieder her (`scripts/litestream-smoke.sh`). Litestream 0.5 schreibt die Replik in den Replica-Pfad und legt zusätzlich neben der Datenbank `.reisekosten.db-litestream` an. Beides gehört UID 65532, deshalb muss `/data` für diese UID beschreibbar sein. | erledigt |
 
 ### Gefundene Widersprüche (und wie sie aufgelöst wurden)
 

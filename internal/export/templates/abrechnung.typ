@@ -5,10 +5,10 @@
   margin: (top: 1.8cm, bottom: 1.6cm, x: 1.5cm),
   header: if d.entwurf { align(center, text(fill: rgb("#b0b0b0"), size: 22pt)[ENTWURF]) } else { none },
   footer: context [
-    #d.nummer v#d.version · #d.fuss · #counter(page).display()
+    #d.nummer v#d.version · #d.fuss · #counter(page).display("1")/#counter(page).final().first()
   ],
 )
-#set text(size: 10pt, lang: d.lang)
+#set text(font: "Libertinus Serif", size: 10pt, lang: d.lang)
 
 = #d.titel
 
@@ -84,8 +84,54 @@
   ]
 ]
 
-#if d.protokoll.len() > 0 [
-  == #d.protokoll_titel
+#if d.eigenbelege.len() > 0 [
+  #pagebreak()
+  == #d.eigenbeleg_titel
+  #for e in d.eigenbelege [
+    - #e
+  ]
+]
+
+#pagebreak()
+== #d.ust_titel
+#if d.ust.len() == 0 [
+  #d.keine_ust
+] else [
+  #for u in d.ust [
+    #u
+    #linebreak()
+  ]
+]
+#if d.ust_ausland.len() > 0 [
+  === #d.ust_ausland_titel
+  #for u in d.ust_ausland [
+    #u
+    #linebreak()
+  ]
+]
+#v(4pt)
+#d.ust_hinweis
+
+#d.ust_pauschale
+
+== #d.hinweise_titel
+#if d.warnungen.len() == 0 [
+  #d.keine_warnung
+] else [
+  #for w in d.warnungen [
+    - #w
+  ]
+]
+
+== #d.quellen_titel
+#for q in d.quellen [
+  - #q
+]
+
+== #d.protokoll_titel
+#if d.protokoll.len() == 0 [
+  #d.kein_protokoll
+] else [
   #for p in d.protokoll [
     - #p
   ]

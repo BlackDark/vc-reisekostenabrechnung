@@ -273,5 +273,15 @@
 	"abrechnung_status_bezahlt": "Bezahlt",
 	"abrechnung_erstattung": "Erstattung",
 	"abrechnung_vorschuss_sum": "Vorschuss",
-	"abrechnung_auszahlung": "Auszahlung"
+	"abrechnung_auszahlung": "Auszahlung",
+	"nav_aufbewahrung": "Aufbewahrung",
+	"aufbewahrung_title": "Aufbewahrung",
+	"aufbewahrung_hint": "Dateien dürfen erst nach dem 31.12. des achten Jahres gelöscht werden. Die Ablaufhemmung (§ 147 Abs. 3 Satz 5 AO) kann die Frist verlängern, wenn die Festsetzungsfrist noch läuft. Gelöscht werden die Dateien; Belegnummer, SHA-256, Zeitpunkt und Grund bleiben im Protokoll.",
+	"aufbewahrung_empty": "Keine Belege oder Exporte mit Frist.",
+	"aufbewahrung_expired": "Frist abgelaufen",
+	"aufbewahrung_delete": "Abgelaufene Dateien löschen",
+	"aufbewahrung_ack": "Ich habe den Hinweis zur Ablaufhemmung gelesen. Die ausgewählten Fristen sind abgelaufen.",
+	"aufbewahrung_art_beleg": "Beleg",
+	"aufbewahrung_art_export": "Export",
+	"aufbewahrung_deleted": "Dateien gelöscht"
 }

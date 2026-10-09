@@ -12,17 +12,31 @@ import (
 	"strings"
 )
 
-// Sample writes one PDF/A-3b for the container smoke test.
-func Sample(typstPath, outPath string) error {
+// SampleLang writes one PDF/A-3b. lang is de (inland) or en.
+func SampleLang(typstPath, lang, outPath string) error {
 	set, err := sampleSet(typstPath)
 	if err != nil {
 		return err
 	}
-	doc := set["inland"]
+	name := "inland"
+	if lang == "en" {
+		name = "en"
+	} else if lang != "" && lang != "de" {
+		return fmt.Errorf("unsupported lang %s", lang)
+	}
+	doc, ok := set[name]
+	if !ok {
+		return fmt.Errorf("missing sample %s", name)
+	}
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return err
 	}
 	return os.WriteFile(outPath, doc.PDF, 0o644)
+}
+
+// Sample writes the German inland PDF/A-3b for the container smoke test.
+func Sample(typstPath, outPath string) error {
+	return SampleLang(typstPath, "de", outPath)
 }
 
 // Samples writes the veraPDF variants (Inland, Ausland, PDF receipt, XML, Bewirtung, en).
@@ -169,13 +183,18 @@ func demoSnapshot(lang string) Snapshot {
 				Leistender: "Café", Rechnungsart: "kleinbetragsrechnung", Waehrung: "EUR",
 				BetragCent: 1250, BetragEURCent: 1250,
 				Anteile: []Anteil{{Nr: 1, Land: "DE", Satz: 1900, NettoCent: 1050, UstCent: 200, BruttoCent: 1250, Vorsteuer: true}},
+			}, {
+				ID: "a2", Datum: "2026-10-02", Kostenart: "verpflegung", Rechnungsart: "eigenbeleg",
+				Leistender: "Ada", Beschreibung: "Frühstück", Waehrung: "EUR",
+				BetragCent: 500, BetragEURCent: 500,
+				Anteile: []Anteil{{Nr: 1, Land: "FR", Satz: 1000, NettoCent: 455, UstCent: 45, BruttoCent: 500, Vorsteuer: false}},
 			}},
 		}},
 		Belege: []Beleg{{
 			ID: "b1", Nummer: "2026-0042", Typ: "foto", Status: "bestaetigt", SHA256: strings.Repeat("aa", 32),
 			PipelineVersion: "m7", Dateien: []Datei{{Variante: "export_jpeg", Seite: 1, MIME: "image/jpeg", SHA256: strings.Repeat("bb", 32), Name: "2026-0042_s1.jpg"}},
 		}},
-		WarnungenQuittiert: []Quittung{},
+		WarnungenQuittiert: []Quittung{{Code: "W14", ObjektID: "r1"}},
 		Protokoll:          []Ereignis{{Zeitpunkt: "2026-10-09T12:00:00Z", AkteurArt: "nutzer", Aktion: "abrechnung.eingereicht", ObjektTyp: "abrechnung", ObjektID: "a"}},
 	}
 }

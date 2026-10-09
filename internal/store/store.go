@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"strings"
 	"time"
 
 	"github.com/pressly/goose/v3"
@@ -75,6 +76,38 @@ func (s *Store) Close() error {
 // Ping checks the write pool.
 func (s *Store) Ping(ctx context.Context) error {
 	return s.write.PingContext(ctx)
+}
+
+// Optimize refreshes SQLite statistics. Serve runs it at start and once a day.
+func (s *Store) Optimize(ctx context.Context) error {
+	_, err := s.write.ExecContext(ctx, "PRAGMA optimize")
+	return err
+}
+
+// QuickCheck runs PRAGMA quick_check and returns an error unless every row is ok.
+func (s *Store) QuickCheck(ctx context.Context) error {
+	rows, err := s.write.QueryContext(ctx, "PRAGMA quick_check")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+	var msgs []string
+	for rows.Next() {
+		var msg string
+		if err := rows.Scan(&msg); err != nil {
+			return err
+		}
+		if msg != "ok" {
+			msgs = append(msgs, msg)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if len(msgs) > 0 {
+		return fmt.Errorf("quick_check: %s", strings.Join(msgs, "; "))
+	}
+	return nil
 }
 
 // Migrate applies embedded goose migrations.

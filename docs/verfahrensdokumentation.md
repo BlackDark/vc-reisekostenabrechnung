@@ -28,4 +28,6 @@ Schlägt die Aufbereitung fehl, bleibt der Beleg `fehlgeschlagen` und kann neu a
 
 ## Aufbewahrung
 
-`aufbewahren_bis` ist der 31. Dezember des achten Jahres nach dem Bestätigungsjahr. Speicherort: lokales Volume oder S3 in der EU/EWR (`S3_DATA_LOCATION`).
+`aufbewahren_bis` ist der 31. Dezember des achten Jahres nach dem späteren Jahr aus Bestätigung und Einreichung. Speicherort: lokales Volume oder S3 in der EU/EWR (`S3_DATA_LOCATION`).
+
+Eine Löschung vor diesem Datum lehnt der Server ab. Danach löscht ein Admin die Dateien nur nach dem Hinweis auf die Ablaufhemmung (§ 147 Abs. 3 Satz 5 AO). Belegnummer, SHA-256, Zeitpunkt und Grund bleiben im Protokoll. Die Erfassungs-JPEG wird nach `BELEG_ERFASSUNG_KARENZ` automatisch entfernt; Archivbeleg und Original nicht.

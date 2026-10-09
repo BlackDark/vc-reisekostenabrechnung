@@ -58,8 +58,9 @@ type Config struct {
 	RateUpload Rate
 	RateAI     Rate
 
-	JobWorkers int
-	AI         AI
+	JobWorkers      int
+	RetentionReport bool
+	AI              AI
 }
 
 // AI is the optional OpenAI-compatible receipt reader. It stays off unless
@@ -152,6 +153,7 @@ func Load() (Config, error) {
 		TypstPath:           lookupDefault("TYPST_PATH", "/usr/local/bin/typst"),
 		ExportTimeout:       lookupDuration("EXPORT_TIMEOUT", 120*time.Second, &errs),
 		JobWorkers:          lookupInt("JOB_WORKERS", 2, &errs),
+		RetentionReport:     lookupBool("RETENTION_REPORT_ENABLED", true),
 	}
 	aiKey, err := secret("AI_API_KEY")
 	if err != nil {
