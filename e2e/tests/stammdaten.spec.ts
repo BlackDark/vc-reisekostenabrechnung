@@ -96,8 +96,12 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 		await expect(year2026).toBeVisible();
 	}
 	await year2026.click();
-	await page.getByLabel(/^Suche|^Search/).fill("Paris");
+	await page.getByLabel(/^Suche|^Search/).fill("London");
 	await page.getByRole("button", { name: /^Suche$|^Search$/ }).click();
+	// The override form defaults to FR / FR-PARIS. Point it at London so the
+	// Paris meal rates used by the trip tour stay intact.
+	await page.locator("#ov-land").fill("GB");
+	await page.locator("#ov-place").fill("GB-LONDON");
 	const euros = String(80 + (Date.now() % 15));
 	await page.getByLabel(/Euro|amount/).fill(euros);
 	await page.getByLabel(/Grund|Reason/).fill(`E2E ${stamp}`);

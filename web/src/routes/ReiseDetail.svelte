@@ -48,7 +48,7 @@
 	let confirmOpen = $state(false);
 	let pendingDelete = $state<string | null>(null);
 	const dayGrid =
-		"md:grid-cols-[8.5rem_7.5rem_minmax(0,1.4fr)_repeat(3,5.75rem)] md:items-center md:gap-x-3";
+		"grid-cols-[8.5rem_7.5rem_minmax(9rem,1.4fr)_repeat(3,5.75rem)] items-center gap-x-3";
 	let fahrtOpen = $state(false);
 	let vorlageOpen = $state(false);
 
@@ -336,8 +336,10 @@
 			</Tabs.List>
 		</div>
 
-		<Tabs.Content value="days" class="mt-3">
-			<div class="text-muted-foreground hidden px-3 text-xs md:grid {dayGrid}">
+		<Tabs.Content value="days" class="mt-3 min-w-0">
+			<div class="min-w-0 max-w-full overflow-x-auto">
+			<div class="min-w-[48rem]">
+			<div class="text-muted-foreground grid px-3 text-xs {dayGrid}">
 				<span>{m.reise_day()}</span>
 				<span>{m.reise_tagesart()}</span>
 				<span>{m.reise_land()}</span>
@@ -352,7 +354,7 @@
 						<article class="bg-card rounded-xl border" data-datum={day.datum}>
 							<details open={index === 0}>
 								<summary class="cursor-pointer list-none px-3 py-2 marker:content-none [&::-webkit-details-marker]:hidden">
-									<span class="grid grid-cols-2 gap-x-3 gap-y-1 {dayGrid}">
+									<span class="grid {dayGrid}">
 										<span class="font-medium">{formatWhen(day.datum, session.locale, "date")}</span>
 										<span>{dayTypeLabel(tag?.tagesart)}</span>
 										<span class="min-w-0">{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</span>
@@ -454,6 +456,8 @@
 					{/each}
 				</div>
 			</Tooltip.Provider>
+			</div>
+			</div>
 			{#if overnightReceipts > 0}
 				<p class="mt-2 flex items-center justify-between gap-3 px-3 text-sm" data-field="uebernachtung-belege">
 					<span>{m.reise_overnight_receipts()}</span>

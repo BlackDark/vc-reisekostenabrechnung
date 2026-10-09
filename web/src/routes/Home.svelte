@@ -110,8 +110,8 @@
 		<StatCard label={m.home_receipts()} value={receipts === null ? "…" : String(receipts.length)} />
 	</div>
 
-	<div class="mt-4 grid gap-3 md:grid-cols-2">
-		<section aria-label={m.home_open()}>
+	<div class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
+		<section class="min-w-0" aria-label={m.home_open()}>
 			<p class="text-sm font-medium">{m.home_open()}</p>
 			{#if openTrips === null}
 				<Skeleton class="mt-2 h-24 w-full" />
@@ -122,9 +122,9 @@
 					</Empty.Header>
 				</Empty.Root>
 			{:else}
-				<ul class="mt-2 grid gap-2">
+				<ul class="mt-2 grid min-w-0 grid-cols-1 gap-2">
 					{#each openTrips as trip (trip.id)}
-						<li>
+						<li class="min-w-0">
 							<a
 								class="bg-card hover:bg-muted block rounded-xl border px-3 py-2 transition-colors"
 								href={p("/reisen/:id", { params: { id: trip.id } })}
@@ -141,7 +141,7 @@
 			{/if}
 		</section>
 
-		<section aria-label={m.home_receipts()}>
+		<section class="min-w-0" aria-label={m.home_receipts()}>
 			<p class="text-sm font-medium">{m.home_receipts()}</p>
 			{#if receipts === null}
 				<Skeleton class="mt-2 h-24 w-full" />
@@ -152,11 +152,11 @@
 					</Empty.Header>
 				</Empty.Root>
 			{:else}
-				<ul class="mt-2 grid gap-2">
+				<ul class="mt-2 grid min-w-0 grid-cols-1 gap-2">
 					{#each receipts as file (file.id)}
-						<li>
+						<li class="min-w-0">
 							<a
-								class="bg-card hover:bg-muted flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
+								class="bg-card hover:bg-muted flex min-w-0 items-center justify-between gap-2 overflow-hidden rounded-xl border px-3 py-2 text-sm"
 								href={p("/belege/:id", { params: { id: file.id } })}
 							>
 								<span class="min-w-0 truncate">{file.belegnummer || file.id}</span>
