@@ -109,6 +109,9 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	await expect(
 		page.getByRole("heading", { name: "Rate tables", exact: true }),
 	).toBeVisible();
+	await expect(
+		page.getByRole("link", { name: "2026", exact: true }),
+	).toBeVisible();
 	const year2027 = page.getByRole("link", { name: "2027", exact: true });
 	const yearsBefore = await year2027.count();
 	await page.locator("#import-csv").setInputFiles({
