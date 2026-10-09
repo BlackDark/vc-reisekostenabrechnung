@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { api } from "$lib/api";
+	import { Button } from "$lib/components/ui/button";
+	import * as Empty from "$lib/components/ui/empty";
+	import { Skeleton } from "$lib/components/ui/skeleton";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -13,7 +16,7 @@
 		datum?: string | null;
 	};
 
-	let todos = $state<Todo[]>([]);
+	let todos = $state<Todo[] | null>(null);
 
 	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
@@ -61,20 +64,29 @@
 </script>
 
 {#if session.ready && session.nutzer}
-	<h1 class="text-2xl font-semibold">{m.home_title()}</h1>
-	<p class="mt-3">
-		<a class="underline" href={p("/reisen/neu")}>{m.reise_new()}</a>
-	</p>
+	<div class="flex flex-wrap items-end justify-between gap-3">
+		<h1 class="text-2xl font-semibold tracking-tight">{m.home_title()}</h1>
+		<Button href={p("/reisen/neu")}>{m.reise_new()}</Button>
+	</div>
 	<section class="mt-6" aria-label={m.home_todo()}>
 		<h2 class="text-lg font-medium">{m.home_todo()}</h2>
-		{#if todos.length === 0}
-			<p class="mt-2 text-sm">{m.home_todo_empty()}</p>
+		{#if todos === null}
+			<div class="mt-3 grid gap-2">
+				<Skeleton class="h-14 w-full" />
+				<Skeleton class="h-14 w-full" />
+			</div>
+		{:else if todos.length === 0}
+			<Empty.Root class="mt-3 border">
+				<Empty.Header>
+					<Empty.Title>{m.home_todo_empty()}</Empty.Title>
+				</Empty.Header>
+			</Empty.Root>
 		{:else}
-			<ul class="mt-2 grid gap-2">
+			<ul class="mt-3 grid gap-2">
 				{#each todos as item (`${item.beleg_id ?? ""}-${item.ausgabe_id ?? ""}-${item.reise_id ?? ""}-${item.code}-${item.anlass ?? ""}-${item.datum ?? ""}`)}
 					<li>
 						<a
-							class="block rounded border px-3 py-2"
+							class="bg-card hover:bg-muted block rounded-xl border px-4 py-3 text-sm transition-colors"
 							href={href(item)}
 						>
 							{label(item.code)}{#if item.code !== "W04" && item.anlass}: {item.anlass}{/if}

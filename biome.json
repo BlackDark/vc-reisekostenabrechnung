@@ -45,5 +45,13 @@
 				"organizeImports": "on"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["web/src/lib/components/ui/**"],
+			"linter": {
+				"enabled": false
+			}
+		}
+	]
 }

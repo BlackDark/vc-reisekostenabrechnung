@@ -14,7 +14,7 @@ Self-hosted web app for a German **Reisekostenabrechnung** (travel expense claim
 
 German and English. Several people, each seeing only their own trips. Sign in with a password, with OIDC (Pocket ID is the example), or with a header from a reverse proxy you trust.
 
-The interface is light. There is no dark theme.
+The interface uses shadcn-svelte. Dark is the default. Light and the system setting are in the header, and the choice is remembered.
 
 ## What it does
 
@@ -27,14 +27,16 @@ The interface is light. There is no dark theme.
 
 ## Screenshots
 
-Taken by the Playwright tour (`e2e/tests/seiten.spec.ts`) with a sample employer, a trip to Paris, a hotel receipt, and a September claim. Desktop is 1280×800. Mobile is a Pixel 7.
+Taken by the Playwright tour (`e2e/tests/00-seiten.spec.ts`) with a sample employer, a trip to Paris, a hotel receipt, and a September claim. Desktop is 1280×800. Mobile is a Pixel 7. The tour uses the dark theme. Two extra frames show the light theme.
 
 | | Desktop | Mobile |
 |---|---|---|
-| Trips | <img alt="Trips, desktop" src="docs/assets/screenshots/desktop/reisen.png" width="360"> | <img alt="Trips, mobile" src="docs/assets/screenshots/mobile/reisen.png" width="180"> |
-| A trip, with allowances | <img alt="Trip to Paris, desktop" src="docs/assets/screenshots/desktop/reise-detail.png" width="360"> | <img alt="Trip to Paris, mobile" src="docs/assets/screenshots/mobile/reise-detail.png" width="180"> |
-| Capture a Beleg | <img alt="Receipt capture, desktop" src="docs/assets/screenshots/desktop/beleg-neu.png" width="360"> | <img alt="Receipt capture, mobile" src="docs/assets/screenshots/mobile/beleg-neu.png" width="180"> |
-| Abrechnung | <img alt="Expense claim, desktop" src="docs/assets/screenshots/desktop/abrechnung-detail.png" width="360"> | <img alt="Expense claim, mobile" src="docs/assets/screenshots/mobile/abrechnung-detail.png" width="180"> |
+| Trips | <img alt="Trips, desktop, dark" src="docs/assets/screenshots/desktop/reisen.png" width="360"> | <img alt="Trips, mobile, dark" src="docs/assets/screenshots/mobile/reisen.png" width="180"> |
+| A trip, with allowances | <img alt="Trip to Paris, desktop, dark" src="docs/assets/screenshots/desktop/reise-detail.png" width="360"> | <img alt="Trip to Paris, mobile, dark" src="docs/assets/screenshots/mobile/reise-detail.png" width="180"> |
+| Capture a Beleg | <img alt="Receipt capture, desktop, dark" src="docs/assets/screenshots/desktop/beleg-neu.png" width="360"> | <img alt="Receipt capture, mobile, dark" src="docs/assets/screenshots/mobile/beleg-neu.png" width="180"> |
+| Abrechnung | <img alt="Expense claim, desktop, dark" src="docs/assets/screenshots/desktop/abrechnung-detail.png" width="360"> | <img alt="Expense claim, mobile, dark" src="docs/assets/screenshots/mobile/abrechnung-detail.png" width="180"> |
+| Trips, light theme | <img alt="Trips, desktop, light" src="docs/assets/screenshots/desktop/reisen-light.png" width="360"> | <img alt="Trips, mobile, light" src="docs/assets/screenshots/mobile/reisen-light.png" width="180"> |
+| Sign-in, light theme | <img alt="Sign-in, desktop, light" src="docs/assets/screenshots/desktop/login-light.png" width="360"> | <img alt="Sign-in, mobile, light" src="docs/assets/screenshots/mobile/login-light.png" width="180"> |
 
 The same pass writes every route, desktop and mobile, under [docs/assets/screenshots](docs/assets/screenshots). CI uploads that set as the `screenshots` artifact. Refresh the copies in the repo with `pnpm screenshots:readme`.
 

@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import type { components } from "$lib/api/schema";
+	import StatusBadge from "$lib/components/status-badge.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p, route } from "../router";
@@ -154,8 +158,11 @@
 
 {#if beleg}
 	<p><a class="text-sm underline" href={p("/belege")}>{m.back()}</a></p>
-	<h1 class="mt-2 text-2xl font-semibold">{beleg.belegnummer || m.beleg_title()}</h1>
-	<p class="mt-2 text-sm">{m.beleg_status()}: {beleg.status}</p>
+	<h1 class="mt-2 text-2xl font-semibold tracking-tight">{beleg.belegnummer || m.beleg_title()}</h1>
+	<p class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+		{m.beleg_status()}
+		<StatusBadge status={beleg.status} />
+	</p>
 	{#if beleg.pipeline_version}
 		<p class="text-sm">{m.about_pipeline()}: {beleg.pipeline_version}</p>
 	{/if}
@@ -168,15 +175,15 @@
 		<img class="mt-4 w-full" data-testid="beleg-preview" src={`/api/v1/belege/${beleg.id}/vorschau`} alt={m.beleg_preview()} />
 	{/if}
 	{#if ready && kiOn && beleg.typ !== "e_rechnung_xml"}
-		<button class="mt-4 rounded border px-3 py-3" type="button" data-testid="ki-auslesen" disabled={kiBusy} onclick={() => void readKI()}>{m.ki_read()}</button>
+		<Button variant="outline" class="mt-4" type="button" data-testid="ki-auslesen" disabled={kiBusy} onclick={() => void readKI()}>{m.ki_read()}</Button>
 		{#if kiBusy || ki?.status === "laeuft"}
 			<p class="mt-2 text-sm">{m.ki_running()}</p>
 		{:else if ki?.status === "nicht_erreichbar"}
 			<p class="mt-2 text-sm" role="alert">{m.ki_unreachable()}</p>
 		{:else if ki?.status === "leer"}
-			<p class="mt-2 text-sm">{m.ki_empty()}</p>
+			<p class="mt-2 text-sm text-muted-foreground">{m.ki_empty()}</p>
 		{:else if ki?.status === "vorschlag" && ki.vorschlag}
-			<section class="mt-3 grid gap-1 rounded border p-3 text-sm" data-testid="ki-vorschlag">
+			<section class="mt-3 grid gap-1 bg-card rounded-xl border p-3 text-sm" data-testid="ki-vorschlag">
 				<p class="font-medium">{m.ki_suggestion()}</p>
 				<p>{ki.vorschlag.leistender}</p>
 				<p>{((ki.vorschlag.betrag_brutto_cent ?? 0) / 100).toFixed(2)} {ki.vorschlag.waehrung}</p>
@@ -188,7 +195,7 @@
 						{/each}
 					</p>
 				{/if}
-				<button class="mt-2 rounded border px-3 py-3" type="button" data-testid="ki-verwerfen" onclick={() => { ki = null; }}>{m.ki_discard()}</button>
+				<Button variant="outline" class="mt-2" type="button" data-testid="ki-verwerfen" onclick={() => { ki = null; }}>{m.ki_discard()}</Button>
 			</section>
 		{/if}
 	{/if}
@@ -200,33 +207,33 @@
 	{/if}
 	{#if reisen.length > 0}
 		<div class="mt-4 grid gap-2">
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="ausgabe-reise">
 				{m.ausgabe_pick_reise()}
-				<select id="ausgabe-reise" class="rounded border px-3 py-3" bind:value={reiseId}>
+				<NativeSelect class="w-full" id="ausgabe-reise" bind:value={reiseId}>
 					{#each reisen as trip (trip.id)}
 						<option value={trip.id}>{trip.anlass}</option>
 					{/each}
-				</select>
+				</NativeSelect>
 			</label>
 			<a class="underline" data-testid="ausgabe-anlegen" href={`/reisen/${reiseId}/ausgaben/neu?beleg=${beleg.id}`}>{m.ausgabe_new()}</a>
 			{#if ki?.status === "vorschlag"}
-				<button class="rounded border px-3 py-3 text-left" type="button" data-testid="ki-uebernehmen" onclick={() => void acceptKI()}>{m.ki_accept()}</button>
+				<Button variant="outline" class="text-left" type="button" data-testid="ki-uebernehmen" onclick={() => void acceptKI()}>{m.ki_accept()}</Button>
 			{/if}
 		</div>
 	{/if}
 	<div class="mt-4 grid gap-2">
 		{#if beleg.status === "zur_bestaetigung"}
-			<button class="rounded bg-blue-800 px-3 py-3 text-white" type="button" onclick={() => void confirm()}>{m.beleg_confirm()}</button>
-			<button class="rounded border px-3 py-3" type="button" onclick={() => void reprocess()}>{m.beleg_reprocess()}</button>
-			<button class="rounded border px-3 py-3" type="button" onclick={() => void remove()}>{m.beleg_delete()}</button>
+			<Button type="button" onclick={() => void confirm()}>{m.beleg_confirm()}</Button>
+			<Button variant="outline" type="button" onclick={() => void reprocess()}>{m.beleg_reprocess()}</Button>
+			<Button variant="outline" type="button" onclick={() => void remove()}>{m.beleg_delete()}</Button>
 		{:else if beleg.status === "fehlgeschlagen" || beleg.status === "in_aufbereitung" || beleg.status === "hochgeladen"}
-			<button class="rounded border px-3 py-3" type="button" onclick={() => void remove()}>{m.beleg_delete()}</button>
+			<Button variant="outline" type="button" onclick={() => void remove()}>{m.beleg_delete()}</Button>
 		{:else if beleg.status === "bestaetigt"}
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="f-belegdetail-1">
 				{m.beleg_storno_reason()}
-				<input class="rounded border px-3 py-2" bind:value={grund} />
+				<Input id="f-belegdetail-1" bind:value={grund}  />
 			</label>
-			<button class="rounded border px-3 py-3" type="button" onclick={() => void storno()}>{m.beleg_storno()}</button>
+			<Button variant="outline" type="button" onclick={() => void storno()}>{m.beleg_storno()}</Button>
 		{/if}
 	</div>
 {/if}

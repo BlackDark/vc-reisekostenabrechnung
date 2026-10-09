@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import { Button } from "$lib/components/ui/button";
+	import * as Card from "$lib/components/ui/card";
+	import * as Field from "$lib/components/ui/field";
+	import { Input } from "$lib/components/ui/input";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
@@ -46,38 +49,41 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.login_title()}</h1>
-<form class="mt-4 grid max-w-sm gap-3" onsubmit={submit}>
-	<fieldset class="grid gap-3" disabled={!session.online}>
-		<label class="grid gap-1 text-sm" for="benutzername">
-			{m.login_username()}
-			<input id="benutzername" class="rounded border px-2 py-1" autocomplete="username" bind:value={benutzername} />
-		</label>
-		<label class="grid gap-1 text-sm" for="passwort">
-			{m.login_password()}
-			<input
-				id="passwort"
-				class="rounded border px-2 py-1"
-				type="password"
-				autocomplete="current-password"
-				bind:value={passwort}
-			/>
-		</label>
-		{#if failed}
-			<p class="text-sm text-red-700" role="alert">{m.login_failed()}</p>
+<Card.Root>
+	<Card.Header>
+		<h1 class="text-2xl font-semibold tracking-tight">{m.login_title()}</h1>
+		<Card.Description>{m.app_title()}</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form class="grid gap-4" onsubmit={submit}>
+			<fieldset class="grid gap-4" disabled={!session.online}>
+				<Field.Field>
+					<Field.Label for="benutzername">{m.login_username()}</Field.Label>
+					<Input id="benutzername" autocomplete="username" bind:value={benutzername} />
+				</Field.Field>
+				<Field.Field>
+					<Field.Label for="passwort">{m.login_password()}</Field.Label>
+					<Input id="passwort" type="password" autocomplete="current-password" bind:value={passwort} />
+				</Field.Field>
+				{#if failed}
+					<p class="text-destructive text-sm" role="alert">{m.login_failed()}</p>
+				{/if}
+				{#if config?.passwort !== false}
+					<Button type="submit" class="w-full">{m.login_submit()}</Button>
+				{/if}
+			</fieldset>
+		</form>
+		{#if config?.oidc}
+			<p class="mt-4 text-sm">
+				<a class="text-primary underline-offset-4 hover:underline" href="/api/v1/auth/oidc/start" target="_self">
+					{config.oidc_button_label || m.login_sso()}
+				</a>
+			</p>
 		{/if}
-		{#if config?.passwort !== false}
-			<Button type="submit">{m.login_submit()}</Button>
+		{#if config?.setup_erforderlich}
+			<p class="text-muted-foreground mt-4 text-sm">
+				<a class="underline-offset-4 hover:underline" href="/setup">{m.setup_title()}</a>
+			</p>
 		{/if}
-	</fieldset>
-</form>
-{#if config?.oidc}
-	<p class="mt-4">
-		<a class="underline" href="/api/v1/auth/oidc/start" target="_self">{config.oidc_button_label || m.login_sso()}</a>
-	</p>
-{/if}
-{#if config?.setup_erforderlich}
-	<p class="mt-4 text-sm">
-		<a class="underline" href="/setup">{m.setup_title()}</a>
-	</p>
-{/if}
+	</Card.Content>
+</Card.Root>

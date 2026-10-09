@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { api } from "$lib/api";
+	import DateField from "$lib/components/date-field.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
@@ -86,44 +90,44 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.abrechnung_new()}</h1>
+<h1 class="text-2xl font-semibold tracking-tight">{m.abrechnung_new()}</h1>
 <form class="mt-4 grid gap-3" onsubmit={save}>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="abrechnung-ag">
 		{m.reise_employer()}
-		<select id="abrechnung-ag" class="rounded border px-3 py-3" bind:value={arbeitgeber}>
+		<NativeSelect class="w-full" id="abrechnung-ag" bind:value={arbeitgeber}>
 			{#each employers as row (row.id)}
 				<option value={row.id}>{row.name}</option>
 			{/each}
-		</select>
+		</NativeSelect>
 	</label>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="abrechnung-art">
 		{m.abrechnung_period()}
-		<select id="abrechnung-art" class="rounded border px-3 py-3" bind:value={art}>
+		<NativeSelect class="w-full" id="abrechnung-art" bind:value={art}>
 			<option value="tag">{m.abrechnung_art_tag()}</option>
 			<option value="woche">{m.abrechnung_art_woche()}</option>
 			<option value="monat">{m.abrechnung_art_monat()}</option>
 			<option value="quartal">{m.abrechnung_art_quartal()}</option>
 			<option value="frei">{m.abrechnung_art_frei()}</option>
-		</select>
+		</NativeSelect>
 	</label>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="abrechnung-von">
 		{m.abrechnung_von()}
-		<input id="abrechnung-von" class="rounded border px-3 py-3" type="date" bind:value={von} required />
+		<DateField id="abrechnung-von" type="date" bind:value={von} required  />
 	</label>
 	{#if art === "frei"}
-		<label class="grid gap-1 text-sm">
+		<label class="grid gap-1 text-sm" for="abrechnung-bis">
 			{m.abrechnung_bis()}
-			<input id="abrechnung-bis" class="rounded border px-3 py-3" type="date" bind:value={bis} required />
+			<DateField id="abrechnung-bis" type="date" bind:value={bis} required  />
 		</label>
 	{/if}
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="abrechnung-titel">
 		{m.abrechnung_titel()}
-		<input id="abrechnung-titel" class="rounded border px-3 py-3" bind:value={titel} />
+		<Input id="abrechnung-titel" bind:value={titel}  />
 	</label>
 	{#if error}
 		<p class="text-sm" role="alert">{error}</p>
 	{/if}
-	<button class="rounded bg-blue-800 px-3 py-3 text-white" type="submit" data-testid="abrechnung-create">
+	<Button type="submit" data-testid="abrechnung-create">
 		{m.create()}
-	</button>
+	</Button>
 </form>

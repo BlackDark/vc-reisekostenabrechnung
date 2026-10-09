@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
@@ -82,56 +84,55 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.staette_title()}</h1>
+<h1 class="text-2xl font-semibold tracking-tight">{m.staette_title()}</h1>
 <form class="mt-4 grid max-w-sm gap-3" onsubmit={create}>
 	<fieldset class="grid gap-3" disabled={!session.online}>
 		<legend class="text-sm font-medium">{m.staette_new()}</legend>
 		<label class="grid gap-1 text-sm" for="st-name">
 			{m.staette_name()}
-			<input id="st-name" class="rounded border px-2 py-1" bind:value={bezeichnung} required />
+			<Input id="st-name" bind:value={bezeichnung} required  />
 		</label>
 		<label class="grid gap-1 text-sm" for="st-address">
 			{m.staette_address()}
-			<input id="st-address" class="rounded border px-2 py-1" bind:value={anschrift} />
+			<Input id="st-address" bind:value={anschrift}  />
 		</label>
 		<label class="grid gap-1 text-sm" for="st-land">
 			{m.staette_land()}
-			<select
+			<NativeSelect class="w-full"
 				id="st-land"
-				class="rounded border px-2 py-1"
 				bind:value={land}
 				onchange={() => loadPlaces()}
 			>
 				{#each lands as row (row.land_iso)}
 					<option value={row.land_iso}>{row.land_name_de}</option>
 				{/each}
-			</select>
+			</NativeSelect>
 		</label>
 		<label class="grid gap-1 text-sm" for="st-place">
 			{m.staette_place()}
-			<select id="st-place" class="rounded border px-2 py-1" bind:value={satzort}>
+			<NativeSelect class="w-full" id="st-place" bind:value={satzort}>
 				<option value="">{m.staette_rest()}</option>
 				{#each places.filter((place) => place.satzort) as place (place.satzort)}
 					<option value={place.satzort}>{place.ort_name || place.satzort}</option>
 				{/each}
-			</select>
+			</NativeSelect>
 		</label>
 		<label class="grid gap-1 text-sm" for="st-kunde">
 			{m.staette_customer()}
-			<input id="st-kunde" class="rounded border px-2 py-1" bind:value={kunde} />
+			<Input id="st-kunde" bind:value={kunde}  />
 		</label>
 		<Button type="submit">{m.create()}</Button>
-		{#if error}<p class="text-sm text-red-700" role="alert">{error}</p>{/if}
+		{#if error}<p class="text-sm text-destructive" role="alert">{error}</p>{/if}
 	</fieldset>
 </form>
 {#if items.length === 0}
-	<p class="mt-6 text-sm">{m.staette_empty()}</p>
+	<p class="mt-6 text-sm text-muted-foreground">{m.staette_empty()}</p>
 {:else}
 	<ul class="mt-6 grid gap-2 text-sm">
 		{#each items as row (row.id)}
-			<li class="flex items-center justify-between gap-2 rounded border p-3">
+			<li class="flex items-center justify-between gap-2 bg-card rounded-xl border p-3">
 				<span>{row.bezeichnung} · {row.land_iso}{row.satzort ? ` · ${row.satzort}` : ` · ${m.staette_rest()}`}</span>
-				<button type="button" class="underline" onclick={() => remove(row)}>{m.staette_delete()}</button>
+				<Button variant="link" size="sm" type="button" onclick={() => remove(row)}>{m.staette_delete()}</Button>
 			</li>
 		{/each}
 	</ul>

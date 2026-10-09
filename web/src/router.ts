@@ -1,16 +1,11 @@
 import { createRouter } from "sv-router";
-import Admin from "./routes/Admin.svelte";
-import Home from "./routes/Home.svelte";
-import Login from "./routes/Login.svelte";
-import Profil from "./routes/Profil.svelte";
-import Setup from "./routes/Setup.svelte";
 
-export const { p, navigate, route } = createRouter({
-	"/": Home,
-	"/login": Login,
-	"/setup": Setup,
-	"/profil": Profil,
-	"/admin": Admin,
+export const { p, navigate, route, isActive } = createRouter({
+	"/": () => import("./routes/Home.svelte"),
+	"/login": () => import("./routes/Login.svelte"),
+	"/setup": () => import("./routes/Setup.svelte"),
+	"/profil": () => import("./routes/Profil.svelte"),
+	"/admin": () => import("./routes/Admin.svelte"),
 	"/admin/aufbewahrung": () => import("./routes/Aufbewahrung.svelte"),
 	"/arbeitgeber": () => import("./routes/Arbeitgeber.svelte"),
 	"/arbeitgeber/:id": () => import("./routes/ArbeitgeberDetail.svelte"),

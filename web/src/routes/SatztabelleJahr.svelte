@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import { Button } from "$lib/components/ui/button";
+	import * as Empty from "$lib/components/ui/empty";
+	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
+	import * as Table from "$lib/components/ui/table";
 	import { euro } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -118,7 +122,7 @@
 </script>
 
 <p><a class="text-sm underline" href={p("/satztabellen")}>{m.back()}</a></p>
-<h1 class="mt-2 text-2xl font-semibold">{m.satz_title()} {jahr}</h1>
+<h1 class="mt-2 text-2xl font-semibold tracking-tight">{m.satz_title()} {jahr}</h1>
 <p class="mt-2 text-sm">{m.satz_status()}: {status === "aktiv" ? m.satz_active() : m.satz_draft()}</p>
 <p class="text-sm">{m.satz_source()}: {quelle}</p>
 <p class="text-sm">{m.satz_inland()}: {euro(inland, session.locale)} €</p>
@@ -126,37 +130,41 @@
 <form class="mt-4 flex flex-wrap items-end gap-2" onsubmit={search}>
 	<label class="grid gap-1 text-sm" for="satz-q">
 		{m.satz_search()}
-		<input id="satz-q" class="rounded border px-2 py-1" bind:value={query} />
+		<Input id="satz-q" bind:value={query}  />
 	</label>
 	<Button type="submit">{m.satz_search()}</Button>
 </form>
 
 {#if rows.length === 0}
-	<p class="mt-4 text-sm">{m.satz_empty()}</p>
+	<Empty.Root class="mt-4 border">
+		<Empty.Header>
+			<Empty.Title>{m.satz_empty()}</Empty.Title>
+		</Empty.Header>
+	</Empty.Root>
 {:else}
-	<div class="mt-4 overflow-x-auto">
-		<table class="w-full text-left text-sm">
-			<thead>
-				<tr>
-					<th class="py-1 pr-2">{m.satz_country()}</th>
-					<th class="py-1 pr-2">{m.satz_place()}</th>
-					<th class="py-1 pr-2">24 h</th>
-					<th class="py-1 pr-2">8 h</th>
-					<th class="py-1">Ü</th>
-				</tr>
-			</thead>
-			<tbody>
+	<div class="bg-card mt-4 rounded-xl border">
+		<Table.Root>
+			<Table.Header>
+				<Table.Row>
+					<Table.Head>{m.satz_country()}</Table.Head>
+					<Table.Head>{m.satz_place()}</Table.Head>
+					<Table.Head>24 h</Table.Head>
+					<Table.Head>8 h</Table.Head>
+					<Table.Head>Ü</Table.Head>
+				</Table.Row>
+			</Table.Header>
+			<Table.Body>
 				{#each rows as row (`${row.land_iso}-${row.satzort}`)}
-					<tr>
-						<td class="py-1 pr-2">{row.land_name_de}</td>
-						<td class="py-1 pr-2">{row.ort_name || row.satzort || m.staette_rest()}</td>
-						<td class="py-1 pr-2">{euro(row.vma_24h, session.locale)}</td>
-						<td class="py-1 pr-2">{euro(row.vma_8h, session.locale)}</td>
-						<td class="py-1">{euro(row.uebernachtung, session.locale)}</td>
-					</tr>
+					<Table.Row>
+						<Table.Cell>{row.land_name_de}</Table.Cell>
+						<Table.Cell>{row.ort_name || row.satzort || m.staette_rest()}</Table.Cell>
+						<Table.Cell>{euro(row.vma_24h, session.locale)}</Table.Cell>
+						<Table.Cell>{euro(row.vma_8h, session.locale)}</Table.Cell>
+						<Table.Cell>{euro(row.uebernachtung, session.locale)}</Table.Cell>
+					</Table.Row>
 				{/each}
-			</tbody>
-		</table>
+			</Table.Body>
+		</Table.Root>
 	</div>
 {/if}
 
@@ -169,35 +177,35 @@
 			<legend class="text-sm font-medium">{m.satz_override()}</legend>
 			<label class="grid gap-1 text-sm" for="ov-land">
 				{m.staette_land()}
-				<input id="ov-land" class="rounded border px-2 py-1" bind:value={land} />
+				<Input id="ov-land" bind:value={land}  />
 			</label>
 			<label class="grid gap-1 text-sm" for="ov-place">
 				{m.satz_place()}
-				<input id="ov-place" class="rounded border px-2 py-1" bind:value={satzort} />
+				<Input id="ov-place" bind:value={satzort}  />
 			</label>
 			<label class="grid gap-1 text-sm" for="ov-field">
 				{m.satz_field()}
-				<select id="ov-field" class="rounded border px-2 py-1" bind:value={field}>
+				<NativeSelect class="w-full" id="ov-field" bind:value={field}>
 					<option value="vma_24h">vma_24h</option>
 					<option value="vma_8h">vma_8h</option>
 					<option value="uebernachtung">uebernachtung</option>
 					<option value="vma_inland_24h">vma_inland_24h</option>
-				</select>
+				</NativeSelect>
 			</label>
 			<label class="grid gap-1 text-sm" for="ov-value">
 				{m.satz_value()}
-				<input id="ov-value" class="rounded border px-2 py-1" bind:value={euros} inputmode="numeric" />
+				<Input id="ov-value" bind:value={euros} inputmode="numeric"  />
 			</label>
 			<label class="grid gap-1 text-sm" for="ov-reason">
 				{m.satz_reason()}
-				<input id="ov-reason" class="rounded border px-2 py-1" bind:value={grund} required />
+				<Input id="ov-reason" bind:value={grund} required  />
 			</label>
 			<Button type="submit">{m.satz_override()}</Button>
 		</fieldset>
 	</form>
 	<label class="mt-4 grid max-w-sm gap-1 text-sm" for="satz-csv">
 		{m.satz_csv()}
-		<input id="satz-csv" type="file" accept="text/csv,.csv" onchange={upload} />
+		<Input id="satz-csv" type="file" accept="text/csv,.csv" onchange={upload}  />
 	</label>
 	<h2 class="mt-6 text-lg font-medium">{m.satz_log()}</h2>
 	<ul class="mt-2 grid gap-1 text-sm">
@@ -207,4 +215,4 @@
 	</ul>
 {/if}
 {#if importNote}<p class="mt-3 text-sm" role="status">{importNote}</p>{/if}
-{#if error}<p class="mt-3 text-sm text-red-700" role="alert">{error}</p>{/if}
+{#if error}<p class="mt-3 text-sm text-destructive" role="alert">{error}</p>{/if}

@@ -912,7 +912,7 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 - **Installation**: `beforeinstallprompt` (Android/Chromium-Desktop) als Button in den Einstellungen; iOS-Anleitung („Teilen → Zum Home-Bildschirm“).
 - **Kamera**: `capture="environment"`-Input (funktioniert in installierter PWA auf iOS und Android ohne Kamera-Berechtigungsdialog der App); `getUserMedia`-Live-Sucher ist Später-Liste.
 - **Responsiv**: Mobile-first (≥ 360 px), Desktop mit Tabellenansichten; kein horizontales Scrollen auf Mobilgeräten (E2E-geprüft, 18.4).
-- Lighthouse-PWA/Best-Practices im CI nicht als Gate, aber Budget: initiales JS ≤ 150 KB gzip, Startseite LCP < 2 s auf „Fast 4G“.
+- Lighthouse-PWA/Best-Practices im CI nicht als Gate. Die shadcn-Oberfläche hat Vorrang vor dem früheren 150-KB-gzip-Ziel für das initiale JS; `scripts/bundle-budget.mjs` schreibt die gzip-Größen von initialem JS, CSS und gesamtem JS ins Log. Startseite LCP < 2 s auf „Fast 4G“ bleibt ein Budget, kein hartes Gate.
 
 ## 14. Internationalisierung (de/en ab v1, Q35)
 

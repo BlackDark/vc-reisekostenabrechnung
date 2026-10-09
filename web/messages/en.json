@@ -283,5 +283,12 @@
 	"aufbewahrung_ack": "I have read the note on Ablaufhemmung. The selected retention periods have ended.",
 	"aufbewahrung_art_beleg": "Receipt",
 	"aufbewahrung_art_export": "Export",
-	"aufbewahrung_deleted": "Files deleted"
+	"aufbewahrung_deleted": "Files deleted",
+	"theme_label": "Appearance",
+	"theme_dark": "Dark",
+	"theme_light": "Light",
+	"theme_system": "System",
+	"nav_label": "Navigation",
+	"calendar_open": "Calendar",
+	"about_details": "Sources"
 }

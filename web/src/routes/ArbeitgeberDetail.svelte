@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { Textarea } from "$lib/components/ui/textarea";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p, route } from "../router";
@@ -72,24 +74,24 @@
 </script>
 
 <p><a class="text-sm underline" href={p("/arbeitgeber")}>{m.back()}</a></p>
-<h1 class="mt-2 text-2xl font-semibold">{m.arbeitgeber_edit()}</h1>
+<h1 class="mt-2 text-2xl font-semibold tracking-tight">{m.arbeitgeber_edit()}</h1>
 {#if loaded}
 	<form class="mt-4 grid max-w-sm gap-3" onsubmit={save}>
 		<label class="grid gap-1 text-sm" for="ag-name">
 			{m.arbeitgeber_name()}
-			<input id="ag-name" class="rounded border px-2 py-1" bind:value={name} required />
+			<Input id="ag-name" bind:value={name} required  />
 		</label>
 		<label class="grid gap-1 text-sm" for="ag-address">
 			{m.arbeitgeber_address()}
-			<textarea id="ag-address" class="rounded border px-2 py-1" bind:value={anschrift} required></textarea>
+			<Textarea id="ag-address" bind:value={anschrift} required></Textarea>
 		</label>
 		<Button type="submit">{m.save()}</Button>
 	</form>
 	<label class="mt-4 grid max-w-sm gap-1 text-sm" for="ag-logo">
 		{m.arbeitgeber_logo()}
-		<input id="ag-logo" type="file" accept="image/png,image/jpeg" onchange={upload} />
+		<Input id="ag-logo" type="file" accept="image/png,image/jpeg" onchange={upload}  />
 	</label>
-	<section class="mt-6 max-w-sm rounded border p-4" aria-label={m.letterhead()}>
+	<section class="mt-6 max-w-sm bg-card rounded-xl border p-4" aria-label={m.letterhead()}>
 		<h2 class="text-sm font-medium">{m.letterhead()}</h2>
 		{#if logoId}
 			<img class="mt-2 h-12 w-auto" alt={name} src={`/api/v1/arbeitgeber/${id}/logo`} />
@@ -97,5 +99,5 @@
 		<p class="mt-2 font-medium">{name}</p>
 		<p class="whitespace-pre-line text-sm">{anschrift}</p>
 	</section>
-	{#if error}<p class="mt-3 text-sm text-red-700" role="alert">{error}</p>{/if}
+	{#if error}<p class="mt-3 text-sm text-destructive" role="alert">{error}</p>{/if}
 {/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from "$lib/api";
+	import { Input } from "$lib/components/ui/input";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -41,7 +42,7 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.satz_title()}</h1>
+<h1 class="text-2xl font-semibold tracking-tight">{m.satz_title()}</h1>
 <ul class="mt-4 grid gap-2 text-sm">
 	{#each items as row (row.jahr)}
 		<li>
@@ -56,11 +57,11 @@
 {#if session.nutzer?.ist_admin}
 	<label class="mt-6 grid max-w-sm gap-1 text-sm" for="import-year">
 		{m.satz_title()}
-		<input id="import-year" class="rounded border px-2 py-1" bind:value={importYear} />
+		<Input id="import-year" bind:value={importYear}  />
 	</label>
 	<label class="mt-2 grid max-w-sm gap-1 text-sm" for="import-csv">
 		{m.satz_csv()}
-		<input id="import-csv" type="file" accept="text/csv,.csv" onchange={upload} />
+		<Input id="import-csv" type="file" accept="text/csv,.csv" onchange={upload}  />
 	</label>
-	{#if error}<p class="mt-2 text-sm text-red-700" role="alert">{error}</p>{/if}
+	{#if error}<p class="mt-2 text-sm text-destructive" role="alert">{error}</p>{/if}
 {/if}

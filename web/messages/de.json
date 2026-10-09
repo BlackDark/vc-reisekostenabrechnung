@@ -283,5 +283,12 @@
 	"aufbewahrung_ack": "Ich habe den Hinweis zur Ablaufhemmung gelesen. Die ausgewählten Fristen sind abgelaufen.",
 	"aufbewahrung_art_beleg": "Beleg",
 	"aufbewahrung_art_export": "Export",
-	"aufbewahrung_deleted": "Dateien gelöscht"
+	"aufbewahrung_deleted": "Dateien gelöscht",
+	"theme_label": "Darstellung",
+	"theme_dark": "Dunkel",
+	"theme_light": "Hell",
+	"theme_system": "System",
+	"nav_label": "Navigation",
+	"calendar_open": "Kalender",
+	"about_details": "Quellen"
 }
