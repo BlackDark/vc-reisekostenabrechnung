@@ -34,6 +34,14 @@ _Avoid_: Trip, Dienstgang, Fahrt, Eintrag
 Ein Kalendertag innerhalb einer Reise, für den Abwesenheitsdauer, maßgebliches Land und gestellte Mahlzeiten festgehalten sind.
 _Avoid_: Tag, Etappe
 
+**Ortswechsel**:
+Ankunft an einem Ort während einer Reise, mit Ortszeit, Land, Satzort und Verkehrsmittel. Die Rückfahrt ist kein eigener Ortswechsel, außer sie führt über ein weiteres Land und die Ankunft liegt vor 24 Uhr.
+_Avoid_: Etappe, Stopp, Wegpunkt
+
+**Unterkunft**:
+Art der Übernachtung in der Nacht nach einem Reisetag, zum Beispiel selbst bezahlt, gestellt oder keine.
+_Avoid_: Hotel, Unterbringung
+
 **Tätigkeitsstätte**:
 Ein Ort, an dem während einer Reise beruflich gearbeitet wird.
 _Avoid_: Einsatzort, Kundenstandort
@@ -97,6 +105,14 @@ _Avoid_: Master, Scan, Rohbild
 Ein vom Nutzer erstellter Ersatz, wenn für eine Ausgabe kein Beleg vorliegt.
 _Avoid_: Ersatzbeleg, Notiz
 
+**Belegnummer**:
+Lückenlose Nummer eines bestätigten Belegs. Sie wird bei der Bestätigung vergeben und nie wiederverwendet.
+_Avoid_: ID, Laufnummer
+
+**Belegdatei**:
+Eine Datei zu einem Beleg: Erfassung, Archiv, Vorschau, Export-JPEG oder Original.
+_Avoid_: Anhang, Variante
+
 ## Abrechnung
 
 **Abrechnung**:
@@ -110,6 +126,26 @@ _Avoid_: Periode, Filter
 **Vorschuss**:
 Ein Betrag, den der Arbeitgeber dem Nutzer vorab gezahlt hat und der in einer Abrechnung vom Erstattungsbetrag abgezogen wird.
 _Avoid_: Anzahlung, Abschlag
+
+**Abrechnungsnummer**:
+Lückenlose Nummer einer Abrechnung. Sie wird beim ersten Einreichen vergeben und nie wiederverwendet.
+_Avoid_: ID, Belegnummer
+
+**Erstattungsbetrag**:
+Summe der Reisesummen einer Abrechnung, bevor Vorschüsse abgezogen werden.
+_Avoid_: Gesamtsumme, Brutto
+
+**Auszahlungsbetrag**:
+Erstattungsbetrag abzüglich der verrechneten Vorschüsse. Ein negativer Betrag ist eine Rückzahlung an den Arbeitgeber.
+_Avoid_: Netto, Überweisung
+
+**Warnung**:
+Hinweis zu einer Reise, Ausgabe oder Abrechnung. Eine quittierte Warnung hält das Einreichen nicht auf.
+_Avoid_: Fehler, Alert
+
+**Blocker**:
+Hinweis, der das Einreichen verhindert, bis die Ursache behoben ist.
+_Avoid_: Fehler, Validierung
 
 **Abrechnungsstatus**:
 Der Stand einer Abrechnung: Entwurf, Eingereicht oder Bezahlt.

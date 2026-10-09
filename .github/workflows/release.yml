@@ -20,8 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write
+      contents: read
       packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      tags: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -39,8 +44,39 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
+      - name: Build archive for size and scan
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          outputs: type=oci,dest=/tmp/image.oci.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+      - name: Image size
+        run: python3 scripts/oci-size.py /tmp/image.oci.tar | tee image-size.txt
+      - name: Load linux/amd64 for Trivy
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: vc-reisekosten:scan
+          cache-from: type=gha
+          provenance: false
+          sbom: false
+      - name: Trivy before push
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: vc-reisekosten:scan
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
       - id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -50,25 +86,95 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: false
-          sbom: false
-      - name: Release notes
+          provenance: mode=max
+          sbom: true
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Sign the image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "ghcr.io/blackdark/vc-reisekostenabrechnung@${DIGEST}"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ghcr.io/blackdark/vc-reisekostenabrechnung
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ghcr.io/blackdark/vc-reisekostenabrechnung@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: |
+            sbom.spdx.json
+            image-size.txt
+          retention-days: 5
+
+  notes:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: release-assets
+      - name: Publish release notes and SBOM
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DIGEST: ${{ steps.build.outputs.digest }}
-          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
+          TAGS: ${{ needs.publish.outputs.tags }}
         run: |
           tag="${GITHUB_REF_NAME}"
           gh release view "$tag" --json body --jq .body > /tmp/notes.md
-          {
-            echo
-            echo "## Container image"
-            echo
-            echo "- Image: \`ghcr.io/blackdark/vc-reisekostenabrechnung\`"
-            echo "- Tags: ${TAGS}"
-            echo "- Digest: \`${DIGEST}\`"
-            echo "- Platforms: linux/amd64, linux/arm64"
-            echo "- Pull: \`docker pull ghcr.io/blackdark/vc-reisekostenabrechnung@${DIGEST}\`"
-          } >> /tmp/notes.md
+          python3 - << 'PY'
+          import os
+          import pathlib
+          text = pathlib.Path("/tmp/notes.md").read_text()
+          marker = "## Container image"
+          if marker in text:
+              text = text[: text.index(marker)].rstrip() + "\n"
+          sizes = pathlib.Path("image-size.txt").read_text().strip()
+          tags = os.environ["TAGS"].strip()
+          digest = os.environ["DIGEST"]
+          image = "ghcr.io/blackdark/vc-reisekostenabrechnung"
+          verify = (
+              "cosign verify \\\n"
+              "  --certificate-identity-regexp "
+              "'https://github.com/BlackDark/vc-reisekostenabrechnung/\\.github/workflows/release.yml@.*' \\\n"
+              "  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n"
+              f"  {image}@{digest}"
+          )
+          block = "\n".join([
+              "",
+              "## Container image",
+              "",
+              f"- Image: `{image}`",
+              "- Tags:",
+              "",
+              "```",
+              tags,
+              "```",
+              "",
+              f"- Digest: `{digest}`",
+              "- Platforms: linux/amd64, linux/arm64",
+              "- Compressed size:",
+              "",
+              "```",
+              sizes,
+              "```",
+              "",
+              f"- Pull: `docker pull {image}@{digest}`",
+              "- Verify:",
+              "",
+              "```",
+              verify,
+              "```",
+              "",
+          ])
+          pathlib.Path("/tmp/notes.md").write_text(text.rstrip() + "\n" + block)
+          PY
+          gh release upload "$tag" sbom.spdx.json --clobber
           gh release edit "$tag" --notes-file /tmp/notes.md --draft=false

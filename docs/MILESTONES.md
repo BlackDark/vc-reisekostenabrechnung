@@ -224,5 +224,5 @@
 3. **Signatur und Attestierungen** – `provenance: mode=max`, `sbom: true`, cosign keyless, `attest-build-provenance`, SBOM-Asset, `publish-edge` auf `main`. *AC:* `cosign verify` und `docker buildx imagetools inspect --format '{{json .SBOM}}'` funktionieren.
 4. **Screenshot-Durchlauf** – `seiten.spec.ts` mit Routenliste + Router-Abgleich, Konsolenfehler-Guard, Scrollbreiten-Check, Artefakt; `mobile-webkit` auf `main`. *AC:* Durchlauf in ≤ 90 s.
 5. **Release-Notes** – Abschnitt „Container-Image“ mit Tags, Digest, Plattformen, Image-Größe, `cosign verify`. *AC:* sichtbar in `v1.0.0`.
-6. **README** – Banner (`docs/assets/banner.svg`), Badges (CI, Plattformen, Image-Größe; O6 beachten), Screenshot-Tabelle aus `docs/screenshots/` (`pnpm screenshots:readme`), Quickstart, Konfigurationsauszug, Disclaimer. *AC:* README rendert auf GitHub ohne kaputte Bilder.
+6. **README** – Banner (`docs/assets/banner.svg`), Badges (CI, Plattformen, Image-Größe; O6 beachten), Screenshot-Tabelle aus `docs/assets/screenshots/` (`pnpm screenshots:readme`), Quickstart, Konfigurationsauszug, Disclaimer. *AC:* README rendert auf GitHub ohne kaputte Bilder.
 7. **Budgets und Abschluss** – Bundle-Budget, LCP-Messung, Durchsicht Später-Liste, Glossar-Kandidaten (O9) übernehmen, `1.0.0` über release-please. *AC:* alle Abnahmekriterien M1–M9 erfüllt.

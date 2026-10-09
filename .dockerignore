@@ -8,6 +8,7 @@ docs/research/*
 !docs/research/data/**
 e2e/*
 !e2e/package.json
+docs/assets/screenshots
 coverage
 playwright-report
 test-results
