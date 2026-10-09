@@ -8,6 +8,33 @@ import (
 	"testing"
 )
 
+func TestReproducible(t *testing.T) {
+	typst := os.Getenv("TYPST_PATH")
+	if typst == "" {
+		typst = "/usr/local/bin/typst"
+	}
+	if _, err := os.Stat(typst); err != nil {
+		t.Skip("typst not installed")
+	}
+	snap := demoSnapshot("de")
+	jpg := mustJPEG()
+	src := []Source{{
+		Name: "2026-0042_s1.jpg", MIME: "image/jpeg", Bytes: jpg, Art: "jpeg",
+		Nummer: "2026-0042", Seite: 1, Kopf: "Beleg 2026-0042",
+	}}
+	a, err := Render(typst, snap, src, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := Render(typst, snap, src, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(a.JSON, b.JSON) || !bytes.Equal(a.PDF, b.PDF) || !bytes.Equal(a.ZIP, b.ZIP) {
+		t.Fatalf("snapshot is not byte-stable pdf %d/%d zip %d/%d", len(a.PDF), len(b.PDF), len(a.ZIP), len(b.ZIP))
+	}
+}
+
 func TestCSVGoldenAndSchema(t *testing.T) {
 	snap := demoSnapshot("de")
 	body, err := canonical(snap)
@@ -97,6 +124,18 @@ func TestPDFStructure(t *testing.T) {
 		}
 		if name == "inland" && !bytes.Contains(text, []byte("2026-0042")) {
 			t.Fatalf("beleg missing %s", text)
+		}
+		if name == "inland" && !bytes.Contains(text, []byte("Umsatzsteuer")) {
+			t.Fatalf("vat missing %s", text)
+		}
+		if name == "inland" && !bytes.Contains(text, []byte("Eigenbelege")) {
+			t.Fatalf("eigenbeleg missing %s", text)
+		}
+		if name == "en" && !bytes.Contains(text, []byte("Substitute receipts")) {
+			t.Fatalf("en layout %s", text)
+		}
+		if name == "xml" && !bytes.Contains(text, []byte("2026-0044.xml")) {
+			t.Fatalf("xml placeholder %s", text)
 		}
 		if name == "pdf-beleg" || name == "xml" {
 			list, err := exec.Command("pdfdetach", "-list", pdf).CombinedOutput()

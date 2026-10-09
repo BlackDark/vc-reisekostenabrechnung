@@ -195,7 +195,8 @@ UPDATE export SET
   pdf_sha256 = sqlc.arg(pdf_sha256),
   zip_schluessel = sqlc.arg(zip_schluessel),
   zip_sha256 = sqlc.arg(zip_sha256),
-  snapshot = sqlc.arg(snapshot)
+  snapshot = sqlc.arg(snapshot),
+  aufbewahren_bis = sqlc.arg(aufbewahren_bis)
 WHERE id = sqlc.arg(id) AND status = 'in_erstellung'
 RETURNING *;
 

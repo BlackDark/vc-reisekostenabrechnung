@@ -11,6 +11,7 @@ export const { p, navigate, route } = createRouter({
 	"/setup": Setup,
 	"/profil": Profil,
 	"/admin": Admin,
+	"/admin/aufbewahrung": () => import("./routes/Aufbewahrung.svelte"),
 	"/arbeitgeber": () => import("./routes/Arbeitgeber.svelte"),
 	"/arbeitgeber/:id": () => import("./routes/ArbeitgeberDetail.svelte"),
 	"/taetigkeitsstaetten": () => import("./routes/Taetigkeitsstaetten.svelte"),

@@ -3,7 +3,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
-	import { navigate } from "../router";
+	import { navigate, p } from "../router";
 
 	type Nutzer = {
 		id: string;
@@ -105,6 +105,7 @@
 </script>
 
 <h1 class="text-2xl font-semibold">{m.admin_title()}</h1>
+<p class="mt-2 text-sm"><a class="underline" href={p("/admin/aufbewahrung")}>{m.nav_aufbewahrung()}</a></p>
 <form class="mt-4 grid max-w-sm gap-3" onsubmit={create}>
 	<fieldset class="grid gap-3" disabled={!session.online}>
 		<legend class="text-sm font-medium">{m.admin_create()}</legend>

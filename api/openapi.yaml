@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Reisekostenabrechnung API
-  version: 0.7.0
+  version: 0.8.0
   description: Abrechnungen, Exporte, Reisen, Pauschalen, Ausgaben, Belege, optionales KI-Auslesen, Fremdwährung, Bewirtung, Vorschüsse, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
 servers:
   - url: /
@@ -796,6 +796,48 @@ paths:
         "401":
           $ref: "#/components/responses/Problem"
         "403":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/aufbewahrung:
+    get:
+      operationId: getAdminAufbewahrung
+      tags: [admin]
+      summary: Retention report
+      responses:
+        "200":
+          description: Receipts and exports with their retention date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AufbewahrungBericht"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/aufbewahrung/loeschen:
+    post:
+      operationId: postAdminAufbewahrungLoeschen
+      tags: [admin]
+      summary: Delete expired receipt and export files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AufbewahrungLoeschen"
+      responses:
+        "200":
+          description: Updated retention report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AufbewahrungBericht"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
           $ref: "#/components/responses/Problem"
   /api/v1/reisen:
     get:
@@ -2884,6 +2926,55 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProtokollEreignis"
+    AufbewahrungPosten:
+      type: object
+      required: [art, id, nutzer_id, bezeichnung, aufbewahren_bis, abgelaufen, inhalt_geloescht, sha256]
+      properties:
+        art:
+          type: string
+          enum: [beleg, export]
+        id:
+          type: string
+        nutzer_id:
+          type: string
+        bezeichnung:
+          type: string
+        aufbewahren_bis:
+          type: string
+        abgelaufen:
+          type: boolean
+        inhalt_geloescht:
+          type: boolean
+        sha256:
+          type: string
+    AufbewahrungBericht:
+      type: object
+      required: [heute, hinweis_code, items]
+      properties:
+        heute:
+          type: string
+        hinweis_code:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AufbewahrungPosten"
+    AufbewahrungLoeschen:
+      type: object
+      required: [grund, ablaufhemmung_bestaetigt]
+      properties:
+        beleg_ids:
+          type: array
+          items:
+            type: string
+        export_ids:
+          type: array
+          items:
+            type: string
+        grund:
+          type: string
+        ablaufhemmung_bestaetigt:
+          type: boolean
     Ortswechsel:
       type: object
       required: [id, reihenfolge, ankunft, ankunft_zone, verkehrsmittel, land_iso]

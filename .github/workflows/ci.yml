@@ -326,6 +326,19 @@ jobs:
             "$HOME/verapdf/verapdf" --flavour 3b --format html "$pdf" > "reports/verapdf-${name}.html" || true
           done
           exit "$fail"
+      - name: Reject a file that is not PDF/A-3b
+        run: |
+          printf '%s\n' '%PDF-1.1' '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj' '2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj' 'trailer<</Root 1 0 R>>' '%%EOF' > /tmp/broken.pdf
+          set +e
+          out=$("$HOME/verapdf/verapdf" --flavour 3b --format text /tmp/broken.pdf)
+          code=$?
+          set -e
+          printf '%s\n' "$out"
+          if [ "$code" -eq 0 ] && printf '%s\n' "$out" | grep -q 'PASS'; then
+            echo "veraPDF accepted a PDF that is not PDF/A-3b"
+            exit 1
+          fi
+          echo "veraPDF rejected the broken PDF"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -333,6 +346,18 @@ jobs:
           path: reports
           retention-days: 7
           if-no-files-found: ignore
+
+  backup:
+    needs: changes
+    if: needs.changes.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Compose config
+        run: bash scripts/compose-config.sh
+      - name: Litestream restore as UID 65532
+        run: bash scripts/litestream-smoke.sh
 
   pr-titel:
     if: github.event_name == 'pull_request'
@@ -346,7 +371,7 @@ jobs:
           printf '%s\n' "$TITLE" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z0-9._/-]+\))?!?: .+'
 
   ci-ok:
-    needs: [changes, go, codegen, web, image, smoke, e2e, pdfa, pr-titel]
+    needs: [changes, go, codegen, web, image, smoke, e2e, pdfa, backup, pr-titel]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -361,11 +386,12 @@ jobs:
           SMOKE: ${{ needs.smoke.result }}
           E2E: ${{ needs.e2e.result }}
           PDFA: ${{ needs.pdfa.result }}
+          BACKUP: ${{ needs.backup.result }}
           TITLE: ${{ needs.pr-titel.result }}
         run: |
           python3 - << 'PY'
           import os, sys
-          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "TITLE"]
+          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "TITLE"]
           bad = [name for name in names if os.environ[name] not in ("success", "skipped")]
           print({name: os.environ[name] for name in names})
           sys.exit(1 if bad else 0)

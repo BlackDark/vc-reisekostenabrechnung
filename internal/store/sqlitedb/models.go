@@ -142,6 +142,8 @@ type Beleg struct {
 	ErstelltAm          time.Time
 	GeaendertAm         time.Time
 	Version             int64
+	InhaltGeloeschtAm   *time.Time
+	LoeschGrund         *string
 }
 
 type BelegNummer struct {
@@ -208,6 +210,9 @@ type Export struct {
 	ErsetztDurchVersion *int64
 	Status              string
 	Fehler              *string
+	AufbewahrenBis      *string
+	InhaltGeloeschtAm   *time.Time
+	LoeschGrund         *string
 }
 
 type Fahrt struct {

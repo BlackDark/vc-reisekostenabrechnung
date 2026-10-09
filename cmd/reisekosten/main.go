@@ -20,6 +20,7 @@ import (
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/config"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/export"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/httpapi"
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/maintain"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store"
 )
 
@@ -47,6 +48,10 @@ func main() {
 		err = cmdAudit(os.Args[2:])
 	case "export-sample":
 		err = cmdExport(os.Args[2:])
+	case "backup":
+		err = cmdBackup(os.Args[2:])
+	case "doctor":
+		err = cmdDoctor()
 	case "export-check":
 		err = cmdExportCheck(os.Args[2:])
 	case "version":
@@ -68,7 +73,9 @@ func usage() {
   healthcheck
   config check
   audit verify
-  export-sample [--out file-or-dir]
+  export-sample [--out file-or-dir] [--lang de|en]
+  backup --out file.tar
+  doctor
   export-check --dir dir
   version
 `)
@@ -226,8 +233,10 @@ func cmdAudit(args []string) error {
 
 func cmdExport(args []string) error {
 	out := "/tmp/sample.pdf"
+	lang := ""
 	fs := flag.NewFlagSet("export-sample", flag.ContinueOnError)
-	fs.StringVar(&out, "out", out, "destination PDF")
+	fs.StringVar(&out, "out", out, "destination PDF or directory")
+	fs.StringVar(&lang, "lang", "", "de or en when --out is a PDF")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -236,7 +245,7 @@ func cmdExport(args []string) error {
 		typst = "/usr/local/bin/typst"
 	}
 	if strings.HasSuffix(strings.ToLower(out), ".pdf") {
-		if err := export.Sample(typst, out); err != nil {
+		if err := export.SampleLang(typst, lang, out); err != nil {
 			return err
 		}
 		fmt.Println(out)
@@ -280,6 +289,46 @@ func cmdExportCheck(args []string) error {
 	if n == 0 {
 		return errors.New("no abrechnung.json")
 	}
+	return nil
+}
+
+func cmdBackup(args []string) error {
+	out := ""
+	set := flag.NewFlagSet("backup", flag.ContinueOnError)
+	set.StringVar(&out, "out", "", "tar path")
+	if err := set.Parse(args); err != nil {
+		return err
+	}
+	if out == "" {
+		return errors.New("usage: reisekosten backup --out file.tar")
+	}
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	if err := maintain.Backup(context.Background(), cfg.DBPath, cfg.StorageLocalPath, out); err != nil {
+		return err
+	}
+	fmt.Println(out)
+	return nil
+}
+
+func cmdDoctor() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	if err := maintain.QuickCheck(context.Background(), cfg.DBPath); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(cfg.DataDir, ".doctor-*")
+	if err != nil {
+		return err
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	fmt.Println("doctor ok")
 	return nil
 }
 

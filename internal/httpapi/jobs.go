@@ -28,6 +28,27 @@ func (a *App) StartJobs(ctx context.Context) {
 	for i := 0; i < n; i++ {
 		go a.jobLoop(ctx)
 	}
+	if a.cfg.RetentionReport {
+		if err := a.store.EnsureRetentionReport(ctx); err != nil {
+			a.log.Error("retention report", "err", err)
+		}
+	}
+	go a.optimizeDaily(ctx)
+}
+
+func (a *App) optimizeDaily(ctx context.Context) {
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := a.store.Optimize(ctx); err != nil {
+				a.log.Error("pragma optimize", "err", err)
+			}
+		}
+	}
 }
 
 func (a *App) jobLoop(ctx context.Context) {
@@ -69,6 +90,12 @@ func (a *App) ProcessNext(ctx context.Context) (bool, error) {
 			}
 			return true, nil
 		}
+		if job.Art == "aufbewahrung_bericht" {
+			if ferr := a.store.FailPlainJob(ctx, job, err); ferr != nil {
+				return true, ferr
+			}
+			return true, nil
+		}
 		if ferr := a.store.FailBelegJob(ctx, job, err); ferr != nil {
 			return true, ferr
 		}
@@ -77,6 +104,9 @@ func (a *App) ProcessNext(ctx context.Context) (bool, error) {
 }
 
 func (a *App) runJob(ctx context.Context, job sqlitedb.Job) error {
+	if job.Art == "aufbewahrung_bericht" {
+		return a.jobRetention(ctx, job.ID)
+	}
 	if job.Art == "export" {
 		if job.Payload == nil || *job.Payload == "" {
 			return errors.New("job without export")
@@ -104,6 +134,26 @@ func (a *App) runJob(ctx context.Context, job sqlitedb.Job) error {
 	default:
 		return errors.New("unknown job")
 	}
+}
+
+func (a *App) jobRetention(ctx context.Context, jobID string) error {
+	today := store.BerlinDate(time.Now())
+	items, err := a.store.RetentionReport(ctx, today)
+	if err != nil {
+		return err
+	}
+	abgelaufen, offen := 0, 0
+	for _, item := range items {
+		if item.InhaltGeloescht {
+			continue
+		}
+		if item.Abgelaufen {
+			abgelaufen++
+			continue
+		}
+		offen++
+	}
+	return a.store.FinishRetentionReport(ctx, jobID, abgelaufen, offen)
 }
 
 func (a *App) jobFoto(ctx context.Context, jobID, belegID string) error {

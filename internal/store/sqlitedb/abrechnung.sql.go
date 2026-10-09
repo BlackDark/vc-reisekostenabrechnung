@@ -152,18 +152,20 @@ UPDATE export SET
   pdf_sha256 = ?2,
   zip_schluessel = ?3,
   zip_sha256 = ?4,
-  snapshot = ?5
-WHERE id = ?6 AND status = 'in_erstellung'
-RETURNING id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler
+  snapshot = ?5,
+  aufbewahren_bis = ?6
+WHERE id = ?7 AND status = 'in_erstellung'
+RETURNING id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler, aufbewahren_bis, inhalt_geloescht_am, loesch_grund
 `
 
 type FinishExportRowParams struct {
-	PdfSchluessel *string
-	PdfSha256     *string
-	ZipSchluessel *string
-	ZipSha256     *string
-	Snapshot      string
-	ID            string
+	PdfSchluessel  *string
+	PdfSha256      *string
+	ZipSchluessel  *string
+	ZipSha256      *string
+	Snapshot       string
+	AufbewahrenBis *string
+	ID             string
 }
 
 func (q *Queries) FinishExportRow(ctx context.Context, arg FinishExportRowParams) (Export, error) {
@@ -173,6 +175,7 @@ func (q *Queries) FinishExportRow(ctx context.Context, arg FinishExportRowParams
 		arg.ZipSchluessel,
 		arg.ZipSha256,
 		arg.Snapshot,
+		arg.AufbewahrenBis,
 		arg.ID,
 	)
 	var i Export
@@ -191,6 +194,9 @@ func (q *Queries) FinishExportRow(ctx context.Context, arg FinishExportRowParams
 		&i.ErsetztDurchVersion,
 		&i.Status,
 		&i.Fehler,
+		&i.AufbewahrenBis,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -267,7 +273,7 @@ func (q *Queries) GetAbrechnungByID(ctx context.Context, id string) (Abrechnung,
 }
 
 const getExport = `-- name: GetExport :one
-SELECT id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler FROM export
+SELECT id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler, aufbewahren_bis, inhalt_geloescht_am, loesch_grund FROM export
 WHERE id = ?1 AND nutzer_id = ?2
 `
 
@@ -294,12 +300,15 @@ func (q *Queries) GetExport(ctx context.Context, arg GetExportParams) (Export, e
 		&i.ErsetztDurchVersion,
 		&i.Status,
 		&i.Fehler,
+		&i.AufbewahrenBis,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
 
 const getExportByID = `-- name: GetExportByID :one
-SELECT id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler FROM export
+SELECT id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler, aufbewahren_bis, inhalt_geloescht_am, loesch_grund FROM export
 WHERE id = ?1
 `
 
@@ -321,6 +330,9 @@ func (q *Queries) GetExportByID(ctx context.Context, id string) (Export, error) 
 		&i.ErsetztDurchVersion,
 		&i.Status,
 		&i.Fehler,
+		&i.AufbewahrenBis,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -411,7 +423,7 @@ INSERT INTO export (
   ?1, ?2, ?3, ?4,
   ?5, ?6, ?7, 'in_erstellung'
 )
-RETURNING id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler
+RETURNING id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler, aufbewahren_bis, inhalt_geloescht_am, loesch_grund
 `
 
 type InsertExportParams struct {
@@ -450,6 +462,9 @@ func (q *Queries) InsertExport(ctx context.Context, arg InsertExportParams) (Exp
 		&i.ErsetztDurchVersion,
 		&i.Status,
 		&i.Fehler,
+		&i.AufbewahrenBis,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -542,7 +557,7 @@ func (q *Queries) ListAbrechnungen(ctx context.Context, arg ListAbrechnungenPara
 }
 
 const listExporte = `-- name: ListExporte :many
-SELECT id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler FROM export
+SELECT id, abrechnung_id, nutzer_id, version, anlass, erstellt_am, pdf_schluessel, pdf_sha256, zip_schluessel, zip_sha256, snapshot, ersetzt_durch_version, status, fehler, aufbewahren_bis, inhalt_geloescht_am, loesch_grund FROM export
 WHERE abrechnung_id = ?1 AND nutzer_id = ?2
 ORDER BY version
 `
@@ -576,6 +591,9 @@ func (q *Queries) ListExporte(ctx context.Context, arg ListExporteParams) ([]Exp
 			&i.ErsetztDurchVersion,
 			&i.Status,
 			&i.Fehler,
+			&i.AufbewahrenBis,
+			&i.InhaltGeloeschtAm,
+			&i.LoeschGrund,
 		); err != nil {
 			return nil, err
 		}

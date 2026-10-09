@@ -33,6 +33,7 @@
 					<a href={p("/profil")}>{m.profile_title()}</a>
 					{#if session.nutzer.ist_admin}
 						<a href={p("/admin")}>{m.admin_title()}</a>
+						<a href={p("/admin/aufbewahrung")}>{m.nav_aufbewahrung()}</a>
 					{/if}
 				{:else}
 					<a href={p("/login")}>{m.login_title()}</a>

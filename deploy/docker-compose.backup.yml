@@ -7,7 +7,9 @@ services:
     read_only: true
     user: "65532:65532"
     cap_drop: [ALL]
+    tmpfs: ["/tmp:rw,nosuid,size=64m"]
     environment:
+      HOME: /tmp
       LITESTREAM_ACCESS_KEY_ID: ${LITESTREAM_ACCESS_KEY_ID:?fehlt}
       LITESTREAM_SECRET_ACCESS_KEY: ${LITESTREAM_SECRET_ACCESS_KEY:?fehlt}
       LITESTREAM_REPLICA_URL: ${LITESTREAM_REPLICA_URL:?fehlt – s3://bucket/pfad (EU)}

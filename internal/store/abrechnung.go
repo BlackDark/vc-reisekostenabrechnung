@@ -379,9 +379,22 @@ func (s *Store) CompleteExport(ctx context.Context, jobID, exportID, pdfKey, pdf
 		if snapshot == "" {
 			snapshot = exp.Snapshot
 		}
+		deadline := RetentionDeadline(now)
+		if err := q.ExtendBelegFrist(ctx, sqlitedb.ExtendBelegFristParams{
+			AufbewahrenBis: &deadline, GeaendertAm: now, AbrechnungID: exp.AbrechnungID,
+		}); err != nil {
+			return err
+		}
+		maxBis, err := q.MaxBelegFristOfAbrechnung(ctx, exp.AbrechnungID)
+		if err != nil {
+			return err
+		}
+		if maxBis > deadline {
+			deadline = maxBis
+		}
 		done, err := q.FinishExportRow(ctx, sqlitedb.FinishExportRowParams{
 			PdfSchluessel: &pdfKey, PdfSha256: &pdfSHA, ZipSchluessel: &zipKey, ZipSha256: &zipSHA,
-			Snapshot: snapshot, ID: exportID,
+			Snapshot: snapshot, AufbewahrenBis: &deadline, ID: exportID,
 		})
 		if err != nil {
 			return mapUpdateErr(err)

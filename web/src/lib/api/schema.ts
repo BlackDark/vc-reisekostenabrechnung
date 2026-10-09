@@ -440,6 +440,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/aufbewahrung": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retention report */
+        get: operations["getAdminAufbewahrung"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/aufbewahrung/loeschen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete expired receipt and export files */
+        post: operations["postAdminAufbewahrungLoeschen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reisen": {
         parameters: {
             query?: never;
@@ -1488,6 +1522,28 @@ export interface components {
         };
         ProtokollListe: {
             items: components["schemas"]["ProtokollEreignis"][];
+        };
+        AufbewahrungPosten: {
+            /** @enum {string} */
+            art: "beleg" | "export";
+            id: string;
+            nutzer_id: string;
+            bezeichnung: string;
+            aufbewahren_bis: string;
+            abgelaufen: boolean;
+            inhalt_geloescht: boolean;
+            sha256: string;
+        };
+        AufbewahrungBericht: {
+            heute: string;
+            hinweis_code: string;
+            items: components["schemas"]["AufbewahrungPosten"][];
+        };
+        AufbewahrungLoeschen: {
+            beleg_ids?: string[];
+            export_ids?: string[];
+            grund: string;
+            ablaufhemmung_bestaetigt: boolean;
         };
         Ortswechsel: {
             id: string;
@@ -3013,6 +3069,56 @@ export interface operations {
             };
             401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
+        };
+    };
+    getAdminAufbewahrung: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Receipts and exports with their retention date */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AufbewahrungBericht"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+        };
+    };
+    postAdminAufbewahrungLoeschen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AufbewahrungLoeschen"];
+            };
+        };
+        responses: {
+            /** @description Updated retention report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AufbewahrungBericht"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     getReisen: {

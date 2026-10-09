@@ -41,6 +41,24 @@ func (e ArbeitgeberKonstellation) Valid() bool {
 	}
 }
 
+// Defines values for AufbewahrungPostenArt.
+const (
+	AufbewahrungPostenArtBeleg  AufbewahrungPostenArt = "beleg"
+	AufbewahrungPostenArtExport AufbewahrungPostenArt = "export"
+)
+
+// Valid indicates whether the value is a known member of the AufbewahrungPostenArt enum.
+func (e AufbewahrungPostenArt) Valid() bool {
+	switch e {
+	case AufbewahrungPostenArtBeleg:
+		return true
+	case AufbewahrungPostenArtExport:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuthConfigDefaultLocale.
 const (
 	AuthConfigDefaultLocaleDe AuthConfigDefaultLocale = "de"
@@ -250,6 +268,36 @@ type ArbeitgeberWrite struct {
 	Steuernummer             *string `json:"steuernummer,omitempty"`
 	UstId                    *string `json:"ust_id,omitempty"`
 }
+
+// AufbewahrungBericht defines model for AufbewahrungBericht.
+type AufbewahrungBericht struct {
+	Heute       string               `json:"heute"`
+	HinweisCode string               `json:"hinweis_code"`
+	Items       []AufbewahrungPosten `json:"items"`
+}
+
+// AufbewahrungLoeschen defines model for AufbewahrungLoeschen.
+type AufbewahrungLoeschen struct {
+	AblaufhemmungBestaetigt bool      `json:"ablaufhemmung_bestaetigt"`
+	BelegIds                *[]string `json:"beleg_ids,omitempty"`
+	ExportIds               *[]string `json:"export_ids,omitempty"`
+	Grund                   string    `json:"grund"`
+}
+
+// AufbewahrungPosten defines model for AufbewahrungPosten.
+type AufbewahrungPosten struct {
+	Abgelaufen      bool                  `json:"abgelaufen"`
+	Art             AufbewahrungPostenArt `json:"art"`
+	AufbewahrenBis  string                `json:"aufbewahren_bis"`
+	Bezeichnung     string                `json:"bezeichnung"`
+	Id              string                `json:"id"`
+	InhaltGeloescht bool                  `json:"inhalt_geloescht"`
+	NutzerId        string                `json:"nutzer_id"`
+	Sha256          string                `json:"sha256"`
+}
+
+// AufbewahrungPostenArt defines model for AufbewahrungPosten.Art.
+type AufbewahrungPostenArt string
 
 // Ausgabe defines model for Ausgabe.
 type Ausgabe struct {
@@ -1382,6 +1430,9 @@ type PutAbrechnungReisenJSONRequestBody = IdListe
 // PutAbrechnungVorschuesseJSONRequestBody defines body for PutAbrechnungVorschuesse for application/json ContentType.
 type PutAbrechnungVorschuesseJSONRequestBody = IdListe
 
+// PostAdminAufbewahrungLoeschenJSONRequestBody defines body for PostAdminAufbewahrungLoeschen for application/json ContentType.
+type PostAdminAufbewahrungLoeschenJSONRequestBody = AufbewahrungLoeschen
+
 // PostAdminNutzerJSONRequestBody defines body for PostAdminNutzer for application/json ContentType.
 type PostAdminNutzerJSONRequestBody = NutzerCreate
 
@@ -1528,6 +1579,12 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/abrechnungen/{id}/vorschuesse)
 	PutAbrechnungVorschuesse(w http.ResponseWriter, r *http.Request, id Id, params PutAbrechnungVorschuesseParams)
+	// GetAdminAufbewahrung Retention report
+	// (GET /api/v1/admin/aufbewahrung)
+	GetAdminAufbewahrung(w http.ResponseWriter, r *http.Request)
+	// PostAdminAufbewahrungLoeschen Delete expired receipt and export files
+	// (POST /api/v1/admin/aufbewahrung/loeschen)
+	PostAdminAufbewahrungLoeschen(w http.ResponseWriter, r *http.Request)
 	// GetAdminNutzer List Nutzer
 	// (GET /api/v1/admin/nutzer)
 	GetAdminNutzer(w http.ResponseWriter, r *http.Request, params GetAdminNutzerParams)
@@ -2363,6 +2420,34 @@ func (siw *ServerInterfaceWrapper) PutAbrechnungVorschuesse(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutAbrechnungVorschuesse(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminAufbewahrung operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminAufbewahrung(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminAufbewahrung(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAdminAufbewahrungLoeschen operation middleware
+func (siw *ServerInterfaceWrapper) PostAdminAufbewahrungLoeschen(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAdminAufbewahrungLoeschen(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5584,6 +5669,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/nutzer/{id}/identitaeten", wrapper.GetAdminIdentitaeten)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/admin/nutzer/{id}/identitaeten", wrapper.PostAdminIdentitaet)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/protokoll", wrapper.GetAdminProtokoll)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/aufbewahrung", wrapper.GetAdminAufbewahrung)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/admin/aufbewahrung/loeschen", wrapper.PostAdminAufbewahrungLoeschen)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/reisen", wrapper.GetReisen)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/reisen", wrapper.PostReise)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/reisen/{id}", wrapper.DeleteReise)
@@ -6671,6 +6758,137 @@ func (response PutAbrechnungVorschuesse428ApplicationProblemPlusJSONResponse) Vi
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminAufbewahrungRequestObject struct {
+}
+
+type GetAdminAufbewahrungResponseObject interface {
+	VisitGetAdminAufbewahrungResponse(w http.ResponseWriter) error
+}
+
+type GetAdminAufbewahrung200JSONResponse AufbewahrungBericht
+
+func (response GetAdminAufbewahrung200JSONResponse) VisitGetAdminAufbewahrungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminAufbewahrung401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAdminAufbewahrung401ApplicationProblemPlusJSONResponse) VisitGetAdminAufbewahrungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminAufbewahrung403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAdminAufbewahrung403ApplicationProblemPlusJSONResponse) VisitGetAdminAufbewahrungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAdminAufbewahrungLoeschenRequestObject struct {
+	Body *PostAdminAufbewahrungLoeschenJSONRequestBody
+}
+
+type PostAdminAufbewahrungLoeschenResponseObject interface {
+	VisitPostAdminAufbewahrungLoeschenResponse(w http.ResponseWriter) error
+}
+
+type PostAdminAufbewahrungLoeschen200JSONResponse AufbewahrungBericht
+
+func (response PostAdminAufbewahrungLoeschen200JSONResponse) VisitPostAdminAufbewahrungLoeschenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAdminAufbewahrungLoeschen401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostAdminAufbewahrungLoeschen401ApplicationProblemPlusJSONResponse) VisitPostAdminAufbewahrungLoeschenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAdminAufbewahrungLoeschen403ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAdminAufbewahrungLoeschen403ApplicationProblemPlusJSONResponse) VisitPostAdminAufbewahrungLoeschenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAdminAufbewahrungLoeschen409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAdminAufbewahrungLoeschen409ApplicationProblemPlusJSONResponse) VisitPostAdminAufbewahrungLoeschenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAdminAufbewahrungLoeschen422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAdminAufbewahrungLoeschen422ApplicationProblemPlusJSONResponse) VisitPostAdminAufbewahrungLoeschenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -12400,6 +12618,12 @@ type StrictServerInterface interface {
 
 	// (PUT /api/v1/abrechnungen/{id}/vorschuesse)
 	PutAbrechnungVorschuesse(ctx context.Context, request PutAbrechnungVorschuesseRequestObject) (PutAbrechnungVorschuesseResponseObject, error)
+	// GetAdminAufbewahrung Retention report
+	// (GET /api/v1/admin/aufbewahrung)
+	GetAdminAufbewahrung(ctx context.Context, request GetAdminAufbewahrungRequestObject) (GetAdminAufbewahrungResponseObject, error)
+	// PostAdminAufbewahrungLoeschen Delete expired receipt and export files
+	// (POST /api/v1/admin/aufbewahrung/loeschen)
+	PostAdminAufbewahrungLoeschen(ctx context.Context, request PostAdminAufbewahrungLoeschenRequestObject) (PostAdminAufbewahrungLoeschenResponseObject, error)
 	// GetAdminNutzer List Nutzer
 	// (GET /api/v1/admin/nutzer)
 	GetAdminNutzer(ctx context.Context, request GetAdminNutzerRequestObject) (GetAdminNutzerResponseObject, error)
@@ -13152,6 +13376,61 @@ func (sh *strictHandler) PutAbrechnungVorschuesse(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutAbrechnungVorschuesseResponseObject); ok {
 		if err := validResponse.VisitPutAbrechnungVorschuesseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminAufbewahrung operation middleware
+func (sh *strictHandler) GetAdminAufbewahrung(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminAufbewahrungRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminAufbewahrung(ctx, request.(GetAdminAufbewahrungRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminAufbewahrung")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminAufbewahrungResponseObject); ok {
+		if err := validResponse.VisitGetAdminAufbewahrungResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAdminAufbewahrungLoeschen operation middleware
+func (sh *strictHandler) PostAdminAufbewahrungLoeschen(w http.ResponseWriter, r *http.Request) {
+	var request PostAdminAufbewahrungLoeschenRequestObject
+
+	var body PostAdminAufbewahrungLoeschenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAdminAufbewahrungLoeschen(ctx, request.(PostAdminAufbewahrungLoeschenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAdminAufbewahrungLoeschen")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAdminAufbewahrungLoeschenResponseObject); ok {
+		if err := validResponse.VisitPostAdminAufbewahrungLoeschenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

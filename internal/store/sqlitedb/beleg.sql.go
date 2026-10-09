@@ -96,7 +96,7 @@ UPDATE beleg SET
   version = version + 1
 WHERE id = ?7 AND nutzer_id = ?8
   AND status = 'zur_bestaetigung' AND version = ?9
-RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version
+RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund
 `
 
 type ConfirmBelegParams struct {
@@ -144,6 +144,8 @@ func (q *Queries) ConfirmBeleg(ctx context.Context, arg ConfirmBelegParams) (Bel
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -214,7 +216,7 @@ func (q *Queries) FailJobRow(ctx context.Context, arg FailJobRowParams) error {
 }
 
 const findBelegByDateiSHA = `-- name: FindBelegByDateiSHA :one
-SELECT beleg.id, beleg.nutzer_id, beleg.belegnummer, beleg.typ, beleg.status, beleg.seiten, beleg.sha256_original, beleg.pipeline_version, beleg.pipeline_parameter, beleg.bestaetigt_am, beleg.bestaetigt_von, beleg.storno_grund, beleg.storniert_am, beleg.aufbewahren_bis, beleg.erfassung_loeschen_am, beleg.duplikat_von, beleg.erstellt_am, beleg.geaendert_am, beleg.version FROM beleg
+SELECT beleg.id, beleg.nutzer_id, beleg.belegnummer, beleg.typ, beleg.status, beleg.seiten, beleg.sha256_original, beleg.pipeline_version, beleg.pipeline_parameter, beleg.bestaetigt_am, beleg.bestaetigt_von, beleg.storno_grund, beleg.storniert_am, beleg.aufbewahren_bis, beleg.erfassung_loeschen_am, beleg.duplikat_von, beleg.erstellt_am, beleg.geaendert_am, beleg.version, beleg.inhalt_geloescht_am, beleg.loesch_grund FROM beleg
 JOIN belegdatei ON belegdatei.beleg_id = beleg.id
 WHERE beleg.nutzer_id = ?1
   AND belegdatei.sha256 = ?2
@@ -252,12 +254,14 @@ func (q *Queries) FindBelegByDateiSHA(ctx context.Context, arg FindBelegByDateiS
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
 
 const findBelegBySHA = `-- name: FindBelegBySHA :one
-SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version FROM beleg
+SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund FROM beleg
 WHERE nutzer_id = ?1
   AND sha256_original = ?2
   AND status != 'storniert'
@@ -293,6 +297,8 @@ func (q *Queries) FindBelegBySHA(ctx context.Context, arg FindBelegBySHAParams) 
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -316,7 +322,7 @@ func (q *Queries) FinishJob(ctx context.Context, arg FinishJobParams) error {
 }
 
 const getBeleg = `-- name: GetBeleg :one
-SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version FROM beleg
+SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund FROM beleg
 WHERE id = ?1 AND nutzer_id = ?2
 `
 
@@ -348,12 +354,14 @@ func (q *Queries) GetBeleg(ctx context.Context, arg GetBelegParams) (Beleg, erro
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
 
 const getBelegByID = `-- name: GetBelegByID :one
-SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version FROM beleg
+SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund FROM beleg
 WHERE id = ?1
 `
 
@@ -380,6 +388,8 @@ func (q *Queries) GetBelegByID(ctx context.Context, id string) (Beleg, error) {
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -421,7 +431,7 @@ INSERT INTO beleg (
   ?6, ?7, ?8,
   ?9, ?10, ?11, 1
 )
-RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version
+RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund
 `
 
 type InsertBelegParams struct {
@@ -473,6 +483,8 @@ func (q *Queries) InsertBeleg(ctx context.Context, arg InsertBelegParams) (Beleg
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -610,7 +622,7 @@ func (q *Queries) ListBelegdateien(ctx context.Context, belegID string) ([]Beleg
 }
 
 const listBelege = `-- name: ListBelege :many
-SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version FROM beleg
+SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund FROM beleg
 WHERE nutzer_id = ?1
   AND (?2 = '' OR status = ?2)
   AND (
@@ -665,6 +677,8 @@ func (q *Queries) ListBelege(ctx context.Context, arg ListBelegeParams) ([]Beleg
 			&i.ErstelltAm,
 			&i.GeaendertAm,
 			&i.Version,
+			&i.InhaltGeloeschtAm,
+			&i.LoeschGrund,
 		); err != nil {
 			return nil, err
 		}
@@ -680,7 +694,7 @@ func (q *Queries) ListBelege(ctx context.Context, arg ListBelegeParams) ([]Beleg
 }
 
 const listOffeneDuplikate = `-- name: ListOffeneDuplikate :many
-SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version FROM beleg
+SELECT id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund FROM beleg
 WHERE nutzer_id = ?1
   AND duplikat_von IS NOT NULL
   AND status != 'storniert'
@@ -717,6 +731,8 @@ func (q *Queries) ListOffeneDuplikate(ctx context.Context, nutzerID string) ([]B
 			&i.ErstelltAm,
 			&i.GeaendertAm,
 			&i.Version,
+			&i.InhaltGeloeschtAm,
+			&i.LoeschGrund,
 		); err != nil {
 			return nil, err
 		}
@@ -808,7 +824,7 @@ UPDATE beleg SET
   version = version + 1
 WHERE id = ?4 AND nutzer_id = ?5
   AND status = 'bestaetigt' AND version = ?6
-RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version
+RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund
 `
 
 type StornoBelegParams struct {
@@ -850,6 +866,8 @@ func (q *Queries) StornoBeleg(ctx context.Context, arg StornoBelegParams) (Beleg
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -863,7 +881,7 @@ UPDATE beleg SET
 WHERE id = ?3 AND nutzer_id = ?4
   AND version = ?5
   AND status IN ('hochgeladen', 'in_aufbereitung', 'zur_bestaetigung', 'fehlgeschlagen')
-RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version
+RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund
 `
 
 type TouchBelegReprocessParams struct {
@@ -903,6 +921,8 @@ func (q *Queries) TouchBelegReprocess(ctx context.Context, arg TouchBelegReproce
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
@@ -917,7 +937,7 @@ UPDATE beleg SET
   version = version + 1
 WHERE id = ?5
   AND status IN ('hochgeladen', 'in_aufbereitung', 'zur_bestaetigung', 'fehlgeschlagen')
-RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version
+RETURNING id, nutzer_id, belegnummer, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter, bestaetigt_am, bestaetigt_von, storno_grund, storniert_am, aufbewahren_bis, erfassung_loeschen_am, duplikat_von, erstellt_am, geaendert_am, version, inhalt_geloescht_am, loesch_grund
 `
 
 type UpdateBelegReadyParams struct {
@@ -957,6 +977,8 @@ func (q *Queries) UpdateBelegReady(ctx context.Context, arg UpdateBelegReadyPara
 		&i.ErstelltAm,
 		&i.GeaendertAm,
 		&i.Version,
+		&i.InhaltGeloeschtAm,
+		&i.LoeschGrund,
 	)
 	return i, err
 }
