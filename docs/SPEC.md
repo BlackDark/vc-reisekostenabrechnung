@@ -113,7 +113,7 @@ erDiagram
 
 Zusätzlich: `WECHSELKURS` (Cache), `AUDIT_EREIGNIS` (append-only), `JOB` (Hintergrundaufträge), `SESSION`.
 
-**Neue Spec-Begriffe** (nicht im Glossar, Kandidaten für die nächste Glossarrunde, siehe 22): **Ortswechsel** (Ankunft an einem Ort mit Ortszeit, Land und Verkehrsmittel), **Belegnummer**, **Abrechnungsnummer**, **Belegdatei**, **Unterkunft** (Art der Übernachtung in der Nacht nach einem Reisetag), **Warnung**.
+**Glossar (M9):** Ortswechsel, Belegnummer, Abrechnungsnummer, Belegdatei, Unterkunft, Warnung, Blocker, Erstattungsbetrag und Auszahlungsbetrag stehen im Glossar.
 
 **Code-Benennung:** Domänentypen und Tabellen tragen die Glossarbegriffe in ASCII (`reise`, `reisetag`, `ausgabe`, `steueranteil`, `beleg`, `abrechnung`, `vorschuss`, `satztabelle`, `arbeitgeber`, `nutzer`, `vorlage`, `fahrt`, `taetigkeitsstaette`, `ortswechsel`, `eigenbeleg`; Umlaute als ae/oe/ue/ss). Technische Infrastruktur bleibt englisch (`session`, `job`, `storage`, `audit`). IDs sind UUIDv7 (zeitlich sortierbar, als `TEXT` gespeichert).
 
@@ -766,7 +766,7 @@ Existiert kein Nutzer: (a) `INITIAL_ADMIN_USERNAME` + `INITIAL_ADMIN_PASSWORD(_F
 
 ### 10.7 Rate-Limiting
 
-In-Memory-Token-Bucket (`golang.org/x/time/rate` v0.16.0) je Client-IP und je Konto: Login 5/min und 20/h je Konto+IP (danach `429` mit `Retry-After`); API allgemein 300/min je Session; Uploads 30/min; KI 20/min; OIDC-Start 20/min je IP. Werte per ENV. (Einzelinstanz, daher In-Memory ausreichend.)
+In-Memory-Token-Bucket (`golang.org/x/time/rate` v0.16.0) je Client-IP und je Konto: Login `RATE_LIMIT_LOGIN` (5/min je IP) und `RATE_LIMIT_LOGIN_ACCOUNT` (20/h je Konto+IP), danach `429` mit `Retry-After`; API allgemein 300/min je Session; Uploads 30/min; KI 20/min; OIDC-Start 20/min je IP. Werte per ENV. (Einzelinstanz, daher In-Memory ausreichend.)
 
 ### 10.8 Upload-Validierung
 
@@ -865,7 +865,8 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 | `EXPORT_TIMEOUT` | `120s` | |
 | `EXPORT_PDF_STANDARD` | `a-3b` | |
 | **Rate-Limits** | | |
-| `RATE_LIMIT_LOGIN` | `5/m` | |
+| `RATE_LIMIT_LOGIN` | `5/m` | je Client-IP |
+| `RATE_LIMIT_LOGIN_ACCOUNT` | `20/h` | je Konto+IP |
 | `RATE_LIMIT_API` | `300/m` | |
 | `RATE_LIMIT_UPLOAD` | `30/m` | |
 | `RATE_LIMIT_AI` | `20/m` | |
@@ -1171,7 +1172,7 @@ changes ─┬─► go ────────┐
 | `smoke` | image | Container-Smoke-Test (18.5) | 5 |
 | `e2e` | image | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go`/`web` | 10 |
 | `pdfa` | image | Validator-Job (18.6) | 5 |
-| `scan` | image | Trivy-Image-Scan (`severity: CRITICAL,HIGH`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
+| `scan` | image | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
 | `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 2 |
 | `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 2 |
 | `publish-edge` | nur `push` auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert wie Release | 10 |
@@ -1191,7 +1192,7 @@ Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go` (
 - Projekte: `desktop` (Chromium 1280×800) und `mobile` (Chromium, Pixel-7-Emulation 412×915); auf `main`/Release zusätzlich `mobile-webkit` (iPhone-Emulation).
 - **Fachliche Flows**: Passwort-Login, OIDC-Login mit Auto-Provisioning und Admin-Gruppe, Header-Auth (nur von vertrauenswürdiger Quelle), Reise anlegen (Inland, Ausland mit Ortswechseln), Beleg hochladen (Fixture-Foto → Ecken → Bestätigen), KI-Vorschlag gegen einen Mock-Endpunkt, Abrechnung anlegen/prüfen/einreichen, PDF/ZIP herunterladen (Inhalt geprüft), Entsperrung mit Grund, als bezahlt markieren, Sprache umschalten, Satztabellen-Override als Admin.
 - **Screenshot-Durchlauf** (`e2e/tests/seiten.spec.ts`): eine Routenliste mit **jeder Seite** der App (inkl. Leer- und gefüllter Zustände über Seed-Daten). Je Route und Viewport (desktop + mobile): Seite öffnen, auf geladene Hauptüberschrift warten (Assertion „Seite lädt“), **keine** `console.error`- oder `pageerror`-Ereignisse (Test schlägt fehl), auf mobile `document.documentElement.scrollWidth <= window.innerWidth` (**kein horizontales Scrollen**), Full-Page-Screenshot nach `screenshots/<viewport>/<route>.png`. Eine Prüfung stellt sicher, dass jede im Router registrierte Route in der Liste steht.
-- Artefakte: `playwright-report`, `screenshots` (immer hochgeladen, `if: always()`), Export-Beispiele. README-Screenshots werden per `pnpm screenshots:readme` aus dem Artefakt nach `docs/screenshots/` übernommen und per normalem PR committet (kein Bot-Push auf `main`).
+- Artefakte: `playwright-report`, `screenshots` (immer hochgeladen, `if: always()`), Export-Beispiele. README-Screenshots werden per `pnpm screenshots:readme` aus dem Artefakt nach `docs/assets/screenshots/` übernommen und per normalem PR committet (kein Bot-Push auf `main`).
 
 ### 18.5 Container-Smoke-Test
 
@@ -1240,7 +1241,7 @@ Kein „Bump“-Button/Workflow, der auf `main` pusht; kein geteiltes Workflow-R
 
 ### 18.9 README
 
-Kurz und **englisch** (Vorgabe des Owners; deutsche Fachbegriffe bleiben): Banner (`docs/assets/banner.svg`), Badges (CI-Status, Plattformen `linux/amd64 | linux/arm64`, Image-Größe), ein Satz Zweck, Screenshot-Tabelle (desktop/mobile aus `docs/screenshots/`, 18.4), Quickstart (`curl` von `deploy/docker-compose.yml` und `deploy/.env.example`, `.env` ausfüllen, `docker compose up -d`), Konfigurationsverweis auf 11, Links auf SPEC/MILESTONES/ADRs/Glossar, Disclaimer **„keine Steuerberatung“**. Repo und Quickstart sind öffentlich, ohne Token (O6).
+Kurz und **englisch** (Vorgabe des Owners; deutsche Fachbegriffe bleiben): Banner (`docs/assets/banner.svg`), Badges (CI-Status, Plattformen `linux/amd64 | linux/arm64`, Image-Größe), ein Satz Zweck, Screenshot-Tabelle (desktop/mobile aus `docs/assets/screenshots/`, 18.4), Quickstart (`curl` von `deploy/docker-compose.yml` und `deploy/.env.example`, `.env` ausfüllen, `docker compose up -d`), Konfigurationsverweis auf 11, Links auf SPEC/MILESTONES/ADRs/Glossar, Disclaimer **„keine Steuerberatung“**. Längere Seiten liegen unter `docs/` (Installation, Konfiguration, Anmeldung, Betrieb, Entwicklung, Steuerregeln). Repo und Quickstart sind öffentlich, ohne Token (O6).
 
 ## 19. Abhängigkeitspflege (Renovate)
 
@@ -1314,7 +1315,7 @@ Testdaten: Belegfotos aus [K] (frei lizenzierte Commons-Bilder + synthetische) a
 | O6 | **Öffentliches Repo** | Erledigt: Badges rendern, der Quickstart braucht kein Token. Die Image-Größe steht in den Release-Notes; die Badge bleibt statisch, bis das ghcr-Paket öffentlich ist | erledigt |
 | O7 | **ADR 0005 (Farb-AVIF) ist `proposed`**: Praxistest mit 15–20 eigenen Belegen fehlt; AVIF-Encode-Zeit von `gen2brain/avif` (WASM via wazero) im Container ungemessen | Eduard schickt Belegfotos; Messung in M4; Fallback WebP ist konfigurierbar | Eduard + Umsetzung |
 | O8 | **Router** `sv-router` vs. `svelte-spa-router` | Erledigt in M1: `sv-router` 0.19.0 (History-Routing, typisierte Pfade, Lazy-`import()`). `svelte-spa-router` ist hash-basiert und fällt damit weg | erledigt |
-| O9 | **Glossar-Kandidaten**: Ortswechsel, Belegnummer, Abrechnungsnummer, Belegdatei, Unterkunft (Reisetag-Feld), Warnung/Blocker, Auszahlungsbetrag, Erstattungsbetrag | in die nächste Grill-Runde bzw. beim Start von M2 ins Glossar übernehmen | Eduard |
+| O9 | **Glossar-Kandidaten**: Ortswechsel, Belegnummer, Abrechnungsnummer, Belegdatei, Unterkunft (Reisetag-Feld), Warnung/Blocker, Auszahlungsbetrag, Erstattungsbetrag | In M9 ins Glossar übernommen, Definitionen aus Abschnitt 3 und 4.15 | erledigt |
 | O10 | **Dreimonatsfrist-Heuristik** (4.14): Schwelle „Woche mit ≥ 3 Tagen“ und Fristbeginn sind eine Auslegung von Rz. 55 | bei Fehlalarmen nachschärfen; nur Warnung | – |
 | O11 | **Deutsche USt in Fremdwährung** (§ 16 Abs. 6 UStG, BMF-Monatskurse) | v1 Hinweis; bei Bedarf BMF-Datenportal-CSV als zweite Kursquelle | – |
 | O12 | **Satztabelle 2027**: BMF-Schreiben erwartet Nov./Dez. 2026 ([R] 2.1); JStG 2026 (u. a. 24 Monate erste Tätigkeitsstätte Inland ab 2027) noch nicht verabschiedet | Admin-CSV-Import ist in M2 vorhanden; Release mit 2027er Daten, sobald veröffentlicht | – |

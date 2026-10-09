@@ -88,7 +88,14 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	await expect(place).toContainText(satzort || landISO);
 
 	await page.getByRole("link", { name: /Satztabellen|Rate tables/ }).click();
-	await page.getByRole("link", { name: "2026" }).click();
+	const year2026 = page.getByRole("link", { name: "2026", exact: true });
+	try {
+		await expect(year2026).toBeVisible({ timeout: 10_000 });
+	} catch {
+		await page.reload();
+		await expect(year2026).toBeVisible();
+	}
+	await year2026.click();
 	await page.getByLabel(/^Suche|^Search/).fill("Paris");
 	await page.getByRole("button", { name: /^Suche$|^Search$/ }).click();
 	const euros = String(80 + (Date.now() % 15));

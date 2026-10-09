@@ -10,25 +10,37 @@
 
 # Reisekostenabrechnung
 
-Self-hosted web app (PWA) for a German **Reisekostenabrechnung** (travel expense claim): record business trips, capture a **Beleg** (receipt) with the phone camera, calculate the **Verpflegungspauschale** (meal allowance) and **Kilometerpauschale** (mileage allowance), and file a reviewable **Abrechnung** (expense claim) as PDF/A with every receipt. German and English, multiple users, sign-in with a password, OIDC (for example Pocket ID), or reverse-proxy headers.
+Self-hosted web app for a German **Reisekostenabrechnung** (travel expense claim). Record a business trip, capture a **Beleg** (receipt) with the phone camera, apply the **Verpflegungspauschale** (meal allowance) and **Kilometerpauschale** (mileage allowance), and file an **Abrechnung** the employer can review: a PDF/A-3b with every receipt attached.
 
-> **Status:** milestone M8 (retention and backup). See [milestones](docs/MILESTONES.md). An **Abrechnung** (expense claim) exports a PDF/A-3b with entertainment records, substitute receipts, VAT, acknowledged warnings, and the audit protocol. **Aufbewahrung** (retention) keeps receipt and export files until 31 December of year *J* + 8; an admin can delete them only after that date, with the **Ablaufhemmung** warning confirmed and a reason in the audit log. **Litestream** replicates the database as UID 65532. Operations: [docs/betrieb.md](docs/betrieb.md). **KI** (optional receipt reading) still suggests fields only after the user opts in. ADR 0005 stays proposed until real receipt photos are measured.
+German and English. Several people, each seeing only their own trips. Sign in with a password, with OIDC (Pocket ID is the example), or with a header from a reverse proxy you trust.
+
+The interface is light. There is no dark theme.
+
+## What it does
+
+- Trips at home and abroad, with the country for each day taken from the stops (**Ortswechsel**) and the year's **Satztabelle** (rate table).
+- Meal, overnight, and mileage allowances, and a reduction when the employer provided a meal.
+- Receipt photos, PDFs, and e-invoice XML. Photos are deskewed and stored as an archive image after you confirm them. Optional reading of a receipt only suggests fields, and only after you opt in.
+- A claim as PDF/A-3b, plus ZIP, CSV, and JSON. The same snapshot renders the same bytes.
+- **Aufbewahrung** (retention) until 31 December of year *J* + 8. An admin deletes files only after that date, with the **Ablaufhemmung** warning confirmed and a reason kept in the audit log.
+- Backup with `reisekosten backup`, or Litestream as UID 65532.
 
 ## Screenshots
 
+Taken by the Playwright tour (`e2e/tests/seiten.spec.ts`) with a sample employer, a trip to Paris, a hotel receipt, and a September claim. Desktop is 1280×800. Mobile is a Pixel 7.
+
 | | Desktop | Mobile |
 |---|---|---|
-| Trips | _coming with M9_ | _coming with M9_ |
-| Capture a Beleg | _coming with M9_ | _coming with M9_ |
-| Abrechnung | _coming with M9_ | _coming with M9_ |
+| Trips | <img alt="Trips, desktop" src="docs/assets/screenshots/desktop/reisen.png" width="360"> | <img alt="Trips, mobile" src="docs/assets/screenshots/mobile/reisen.png" width="180"> |
+| A trip, with allowances | <img alt="Trip to Paris, desktop" src="docs/assets/screenshots/desktop/reise-detail.png" width="360"> | <img alt="Trip to Paris, mobile" src="docs/assets/screenshots/mobile/reise-detail.png" width="180"> |
+| Capture a Beleg | <img alt="Receipt capture, desktop" src="docs/assets/screenshots/desktop/beleg-neu.png" width="360"> | <img alt="Receipt capture, mobile" src="docs/assets/screenshots/mobile/beleg-neu.png" width="180"> |
+| Abrechnung | <img alt="Expense claim, desktop" src="docs/assets/screenshots/desktop/abrechnung-detail.png" width="360"> | <img alt="Expense claim, mobile" src="docs/assets/screenshots/mobile/abrechnung-detail.png" width="180"> |
 
-<!-- From M9, replace with e.g. ![Trips, desktop](docs/screenshots/reisen-desktop.png) / ![Trips, mobile](docs/screenshots/reisen-mobile.png) -->
-
-Screenshots come from the CI screenshot tour (artifact `screenshots`) and are copied with `pnpm screenshots:readme`, starting with milestone M9.
+The same pass writes every route, desktop and mobile, under [docs/assets/screenshots](docs/assets/screenshots). CI uploads that set as the `screenshots` artifact. Refresh the copies in the repo with `pnpm screenshots:readme`.
 
 ## Quickstart
 
-Requires Docker with Compose v2. The repository is public, so the quickstart does not need a token.
+Docker with Compose v2. The repository is public, so the download does not need a token.
 
 ```sh
 mkdir reisekosten && cd reisekosten
@@ -37,24 +49,21 @@ for f in docker-compose.yml .env.example; do
 done
 cp .env.example .env            # set at least APP_BASE_URL
 docker compose up -d
-docker compose logs app | grep -i setup   # setup token for the first Admin, until a user exists
+docker compose logs app | grep -i setup
 ```
 
-Then open `APP_BASE_URL` in a browser (TLS terminates at your reverse proxy). Missing required values fail Compose with `… fehlt`. For a Litestream backup, also download `docker-compose.backup.yml` and `litestream.yml`, then run `docker compose -f docker-compose.yml -f docker-compose.backup.yml up -d`.
+Open `APP_BASE_URL`. The log line is the setup token for the first admin, until a user exists. Missing required values fail Compose with `fehlt`. More detail, including Litestream: [Installation](docs/installation.md).
 
-Every setting (OIDC, header auth, S3, AI, …) is listed in [SPEC.md, section 11](docs/SPEC.md#11-konfiguration-umgebungsvariablen).
+## Further reading
 
-## Documentation
-
-- [Specification](docs/SPEC.md) – domain model, calculation rules, API, security, operations, CI/CD (German)
-- [Milestones](docs/MILESTONES.md)
-- [Glossary](GLOSSARY.md) and [architecture decisions](docs/adr/)
-- Research: [tax rules](docs/research/steuer-reisekosten.md), [stack](docs/research/stack.md), [receipt compression](docs/research/beleg-kompression.md)
-
-## Development
-
-Go 1.27, Node 24 and pnpm, Svelte 5, SQLite. Lint with golangci-lint and Biome. `make check` runs the local checks. Commits and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/). release-please opens the release pull request.
+- [Installation](docs/installation.md)
+- [Configuration](docs/configuration.md), the environment variables
+- [Authentication](docs/authentication.md), password, OIDC with Pocket ID, trusted header
+- [Operations](docs/operations.md), backup, restore, retention
+- [Development](docs/development.md)
+- [Tax rules, in short](docs/tax-rules.md)
+- [Specification](docs/SPEC.md), [milestones](docs/MILESTONES.md), [glossary](GLOSSARY.md), [architecture decisions](docs/adr/)
 
 ## Disclaimer
 
-**Not tax advice.** The app applies the published allowances and rules as accurately as it can (see the rate tables). It does not replace the employer's review or professional tax advice. The user remains responsible for the correctness of an Abrechnung.
+**Not tax advice.** The app applies the published allowances and rules as accurately as it can. It does not replace the employer's review or a tax adviser. You remain responsible for the correctness of an Abrechnung.
