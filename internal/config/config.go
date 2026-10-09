@@ -43,9 +43,15 @@ type Config struct {
 	StorageLocalPath string
 	S3               S3
 
-	UploadMaxBytes int64
-	TypstPath      string
-	ExportTimeout  time.Duration
+	UploadMaxBytes   int64
+	BelegFormat      string
+	BelegAVIFQuality int
+	BelegAVIFSpeed   int
+	BelegWebPQuality int
+	BelegJPEGQuality int
+	BelegKarenz      time.Duration
+	TypstPath        string
+	ExportTimeout    time.Duration
 
 	RateLogin  Rate
 	RateAPI    Rate
@@ -124,6 +130,12 @@ func Load() (Config, error) {
 		Argon2Threads:       lookupUint8("ARGON2_THREADS", 4, &errs),
 		StorageBackend:      lookupDefault("STORAGE_BACKEND", "local"),
 		UploadMaxBytes:      int64(lookupInt("UPLOAD_MAX_BYTES", 26214400, &errs)),
+		BelegFormat:         lookupDefault("BELEG_FORMAT", "avif"),
+		BelegAVIFQuality:    lookupInt("BELEG_AVIF_QUALITY", 40, &errs),
+		BelegAVIFSpeed:      lookupInt("BELEG_AVIF_SPEED", 6, &errs),
+		BelegWebPQuality:    lookupInt("BELEG_WEBP_QUALITY", 55, &errs),
+		BelegJPEGQuality:    lookupInt("BELEG_JPEG_QUALITY", 70, &errs),
+		BelegKarenz:         lookupDuration("BELEG_ERFASSUNG_KARENZ", 720*time.Hour, &errs),
 		TypstPath:           lookupDefault("TYPST_PATH", "/usr/local/bin/typst"),
 		ExportTimeout:       lookupDuration("EXPORT_TIMEOUT", 120*time.Second, &errs),
 		JobWorkers:          lookupInt("JOB_WORKERS", 2, &errs),
@@ -264,6 +276,20 @@ func validate(cfg Config) []string {
 		}
 	default:
 		errs = append(errs, "STORAGE_BACKEND must be local or s3")
+	}
+	switch cfg.BelegFormat {
+	case "avif", "webp":
+	default:
+		errs = append(errs, "BELEG_FORMAT must be avif or webp")
+	}
+	if cfg.BelegAVIFQuality < 1 || cfg.BelegAVIFQuality > 100 || cfg.BelegWebPQuality < 1 || cfg.BelegWebPQuality > 100 || cfg.BelegJPEGQuality < 1 || cfg.BelegJPEGQuality > 100 {
+		errs = append(errs, "BELEG_AVIF_QUALITY, BELEG_WEBP_QUALITY and BELEG_JPEG_QUALITY must be 1..100")
+	}
+	if cfg.BelegAVIFSpeed < 0 || cfg.BelegAVIFSpeed > 10 {
+		errs = append(errs, "BELEG_AVIF_SPEED must be 0..10")
+	}
+	if cfg.BelegKarenz <= 0 {
+		errs = append(errs, "BELEG_ERFASSUNG_KARENZ must be positive")
 	}
 	if cfg.SessionIdle <= 0 || cfg.SessionLifetime <= 0 {
 		errs = append(errs, "session timeouts must be positive")

@@ -6,18 +6,26 @@ package sqlitedb
 
 import (
 	"context"
+	"time"
 )
 
 type Querier interface {
+	BumpBelegnummer(ctx context.Context, arg BumpBelegnummerParams) (int64, error)
+	ClaimJob(ctx context.Context, arg ClaimJobParams) (Job, error)
 	ClearAndereStandards(ctx context.Context, arg ClearAndereStandardsParams) error
+	ClearErfassung(ctx context.Context, arg ClearErfassungParams) error
+	ConfirmBeleg(ctx context.Context, arg ConfirmBelegParams) (Beleg, error)
 	CountAktiveAdmins(ctx context.Context) (int64, error)
 	CountAktiveArbeitgeber(ctx context.Context, nutzerID string) (int64, error)
 	CountNutzer(ctx context.Context) (int64, error)
 	CreateIdentitaet(ctx context.Context, arg CreateIdentitaetParams) (NutzerIdentitaet, error)
 	CreateNutzer(ctx context.Context, arg CreateNutzerParams) (Nutzer, error)
 	DeleteAuslandssaetze(ctx context.Context, jahr int64) error
+	DeleteBelegOffen(ctx context.Context, arg DeleteBelegOffenParams) (int64, error)
+	DeleteBelegdateiVariante(ctx context.Context, arg DeleteBelegdateiVarianteParams) error
 	DeleteFahrt(ctx context.Context, arg DeleteFahrtParams) (int64, error)
 	DeleteIdentitaet(ctx context.Context, arg DeleteIdentitaetParams) error
+	DeleteJobsForBeleg(ctx context.Context, belegID *string) error
 	DeleteOrtswechsel(ctx context.Context, reiseID string) error
 	DeleteReise(ctx context.Context, arg DeleteReiseParams) (int64, error)
 	DeleteReisetag(ctx context.Context, arg DeleteReisetagParams) error
@@ -27,8 +35,15 @@ type Querier interface {
 	DeleteSessionsForNutzer(ctx context.Context, nutzerID *string) error
 	DeleteTaetigkeitsstaette(ctx context.Context, arg DeleteTaetigkeitsstaetteParams) error
 	DeleteVorlage(ctx context.Context, arg DeleteVorlageParams) (int64, error)
+	FailJobRow(ctx context.Context, arg FailJobRowParams) error
+	FindBelegByDateiSHA(ctx context.Context, arg FindBelegByDateiSHAParams) (Beleg, error)
+	FindBelegBySHA(ctx context.Context, arg FindBelegBySHAParams) (Beleg, error)
+	FinishJob(ctx context.Context, arg FinishJobParams) error
 	FirstOtherAktiverArbeitgeber(ctx context.Context, arg FirstOtherAktiverArbeitgeberParams) (Arbeitgeber, error)
 	GetArbeitgeber(ctx context.Context, arg GetArbeitgeberParams) (Arbeitgeber, error)
+	GetBeleg(ctx context.Context, arg GetBelegParams) (Beleg, error)
+	GetBelegByID(ctx context.Context, id string) (Beleg, error)
+	GetBelegdatei(ctx context.Context, arg GetBelegdateiParams) (Belegdatei, error)
 	GetDatei(ctx context.Context, arg GetDateiParams) (Datei, error)
 	GetFahrt(ctx context.Context, arg GetFahrtParams) (Fahrt, error)
 	GetIdentitaet(ctx context.Context, arg GetIdentitaetParams) (NutzerIdentitaet, error)
@@ -45,8 +60,11 @@ type Querier interface {
 	InsertArbeitgeber(ctx context.Context, arg InsertArbeitgeberParams) (Arbeitgeber, error)
 	InsertAudit(ctx context.Context, arg InsertAuditParams) error
 	InsertAuslandssatz(ctx context.Context, arg InsertAuslandssatzParams) error
+	InsertBeleg(ctx context.Context, arg InsertBelegParams) (Beleg, error)
+	InsertBelegdatei(ctx context.Context, arg InsertBelegdateiParams) (Belegdatei, error)
 	InsertDatei(ctx context.Context, arg InsertDateiParams) (Datei, error)
 	InsertFahrt(ctx context.Context, arg InsertFahrtParams) (Fahrt, error)
+	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
 	InsertOrtswechsel(ctx context.Context, arg InsertOrtswechselParams) (Ortswechsel, error)
 	InsertReise(ctx context.Context, arg InsertReiseParams) (Reise, error)
 	InsertReisetag(ctx context.Context, arg InsertReisetagParams) (Reisetag, error)
@@ -59,11 +77,14 @@ type Querier interface {
 	ListAudit(ctx context.Context) ([]AuditEreigni, error)
 	ListAuditFiltered(ctx context.Context, arg ListAuditFilteredParams) ([]AuditEreigni, error)
 	ListAuslandssaetze(ctx context.Context, jahr int64) ([]Auslandssatz, error)
+	ListBelegdateien(ctx context.Context, belegID string) ([]Belegdatei, error)
+	ListBelege(ctx context.Context, arg ListBelegeParams) ([]Beleg, error)
 	ListFahrten(ctx context.Context, arg ListFahrtenParams) ([]Fahrt, error)
 	ListFahrtenByNutzer(ctx context.Context, nutzerID string) ([]Fahrt, error)
 	ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error)
 	ListLaender(ctx context.Context, jahr int64) ([]ListLaenderRow, error)
 	ListNutzer(ctx context.Context, arg ListNutzerParams) ([]Nutzer, error)
+	ListOffeneDuplikate(ctx context.Context, nutzerID string) ([]Beleg, error)
 	ListOrtswechsel(ctx context.Context, reiseID string) ([]Ortswechsel, error)
 	ListProjekte(ctx context.Context, arg ListProjekteParams) ([]ListProjekteRow, error)
 	ListReisen(ctx context.Context, arg ListReisenParams) ([]Reise, error)
@@ -74,12 +95,19 @@ type Querier interface {
 	ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNutzerParams) ([]Session, error)
 	ListTaetigkeitsstaetten(ctx context.Context, arg ListTaetigkeitsstaettenParams) ([]Taetigkeitsstaette, error)
 	ListVorlagen(ctx context.Context, arg ListVorlagenParams) ([]Vorlage, error)
+	MarkBelegdateienFest(ctx context.Context, belegID string) error
+	RescheduleJob(ctx context.Context, arg RescheduleJobParams) error
+	ResumeJobs(ctx context.Context, jetzt time.Time) error
 	SetAdminUeberGruppe(ctx context.Context, arg SetAdminUeberGruppeParams) error
+	SetBelegFailed(ctx context.Context, arg SetBelegFailedParams) error
+	StornoBeleg(ctx context.Context, arg StornoBelegParams) (Beleg, error)
 	TouchAnmeldung(ctx context.Context, arg TouchAnmeldungParams) error
+	TouchBelegReprocess(ctx context.Context, arg TouchBelegReprocessParams) (Beleg, error)
 	TouchIdentitaet(ctx context.Context, arg TouchIdentitaetParams) error
 	TouchReise(ctx context.Context, arg TouchReiseParams) (Reise, error)
 	TouchSatztabelle(ctx context.Context, arg TouchSatztabelleParams) (Satztabelle, error)
 	UpdateArbeitgeber(ctx context.Context, arg UpdateArbeitgeberParams) (Arbeitgeber, error)
+	UpdateBelegReady(ctx context.Context, arg UpdateBelegReadyParams) (Beleg, error)
 	UpdateFahrt(ctx context.Context, arg UpdateFahrtParams) (Fahrt, error)
 	UpdateNutzerAdmin(ctx context.Context, arg UpdateNutzerAdminParams) (Nutzer, error)
 	UpdateNutzerPasswort(ctx context.Context, arg UpdateNutzerPasswortParams) (Nutzer, error)

@@ -427,6 +427,17 @@ func (a *App) warnings(r *http.Request, nutzerID string) ([]api.Warnung, error) 
 			}
 		}
 	}
+	dups, err := a.store.ListDuplikatBelege(r.Context(), nutzerID)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range dups {
+		if d.DuplikatVon == nil {
+			continue
+		}
+		existing := *d.DuplikatVon
+		items = append(items, api.Warnung{Code: "W04", ReiseId: "", Anlass: d.ID, BelegId: &existing})
+	}
 	if items == nil {
 		items = []api.Warnung{}
 	}
@@ -855,7 +866,7 @@ func writeStoreErr(w http.ResponseWriter, err error) bool {
 	var code *store.CodeError
 	if errors.As(err, &code) {
 		status := http.StatusUnprocessableEntity
-		if code.Code == "reise_gesperrt" {
+		if code.Code == "reise_gesperrt" || code.Code == "beleg_fest" {
 			status = http.StatusConflict
 		}
 		writeProblem(w, status, code.Code, "Check the input", "")

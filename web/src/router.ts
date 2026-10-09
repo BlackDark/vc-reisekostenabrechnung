@@ -20,6 +20,8 @@ export const { p, navigate, route } = createRouter({
 	"/reisen": () => import("./routes/Reisen.svelte"),
 	"/reisen/neu": () => import("./routes/ReiseNeu.svelte"),
 	"/reisen/:id": () => import("./routes/ReiseDetail.svelte"),
-	"/belege/neu": () => import("./routes/Placeholder.svelte"),
+	"/belege": () => import("./routes/Belege.svelte"),
+	"/belege/neu": () => import("./routes/BelegNeu.svelte"),
+	"/belege/:id": () => import("./routes/BelegDetail.svelte"),
 	"/abrechnungen": () => import("./routes/Placeholder.svelte"),
 });

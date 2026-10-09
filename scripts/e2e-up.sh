@@ -6,6 +6,7 @@ docker volume create rk-e2e-data >/dev/null
 docker run -d --name rk-mock --network host \
   -e SERVER_PORT=8089 \
   ghcr.io/navikt/mock-oauth2-server:6.0.5@sha256:5ed2f078c6503147860a5114f06414257bb7eeccc68b0e806bdf0869f2602509
+# Each Playwright test signs in, so the suite needs a wider login bucket than production.
 docker run -d --name rk-e2e --network host \
   --read-only \
   --tmpfs /tmp:rw,noexec,nosuid,size=256m \
@@ -18,6 +19,8 @@ docker run -d --name rk-e2e --network host \
   -e LISTEN_ADDR=:8080 \
   -e INITIAL_ADMIN_USERNAME=smoke \
   -e INITIAL_ADMIN_PASSWORD=smoke-password-1 \
+  -e BELEG_AVIF_SPEED=8 \
+  -e RATE_LIMIT_LOGIN=60/m \
   -e OIDC_ENABLED=true \
   -e OIDC_ISSUER_URL=http://127.0.0.1:8089/default \
   -e OIDC_CLIENT_ID=reisekosten \

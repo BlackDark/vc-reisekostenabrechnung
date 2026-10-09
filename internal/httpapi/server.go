@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -16,7 +17,9 @@ import (
 
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/api"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/auth"
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/belegpipe"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/config"
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/storage"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/webui"
@@ -28,6 +31,7 @@ const sessionNutzerKey = "nutzer_id"
 type App struct {
 	cfg       config.Config
 	store     *store.Store
+	blobs     storage.Store
 	passwords *auth.Passwords
 	sessions  *scs.SessionManager
 	log       *slog.Logger
@@ -58,7 +62,25 @@ func New(cfg config.Config, st *store.Store, pw *auth.Passwords, log *slog.Logge
 	if log == nil {
 		log = slog.Default()
 	}
-	return &App{cfg: cfg, store: st, passwords: pw, sessions: sm, log: log, oidcKey: key}, nil
+	blobs, err := openBlobs(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &App{cfg: cfg, store: st, blobs: blobs, passwords: pw, sessions: sm, log: log, oidcKey: key}, nil
+}
+
+func openBlobs(cfg config.Config) (storage.Store, error) {
+	if cfg.StorageBackend == "s3" {
+		return storage.OpenS3(storage.S3Options{
+			Endpoint: cfg.S3.Endpoint, Region: cfg.S3.Region, Bucket: cfg.S3.Bucket, Prefix: cfg.S3.Prefix,
+			AccessKey: cfg.S3.AccessKey, SecretKey: cfg.S3.SecretKey, UsePathStyle: cfg.S3.UsePathStyle,
+		})
+	}
+	path := cfg.StorageLocalPath
+	if path == "" {
+		path = filepath.Join(cfg.DataDir, "files")
+	}
+	return storage.OpenLocal(path)
 }
 
 // Handler is the root HTTP handler.
@@ -125,6 +147,11 @@ func (a *App) allowAPI(r *http.Request) bool {
 	key := "api:" + ClientIP(r, a.cfg.TrustedProxies)
 	if id := a.currentID(r); id != "" {
 		key = "api:" + id
+	}
+	if r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/api/v1/belege") {
+		if !a.limits.allow("upload:"+key, a.cfg.RateUpload.Count, a.cfg.RateUpload.Per) {
+			return false
+		}
 	}
 	return a.limits.allow(key, a.cfg.RateAPI.Count, a.cfg.RateAPI.Per)
 }
@@ -293,7 +320,9 @@ func (a *App) healthz(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (a *App) version(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"version": a.Version, "commit": a.Commit})
+	writeJSON(w, http.StatusOK, map[string]string{
+		"version": a.Version, "commit": a.Commit, "pipeline_version": belegpipe.Version,
+	})
 }
 
 func (a *App) readyz(w http.ResponseWriter, r *http.Request) {
@@ -318,6 +347,12 @@ func (a *App) readyz(w http.ResponseWriter, r *http.Request) {
 	if err := typstOK(a.cfg.TypstPath); err != nil {
 		writeProblem(w, http.StatusServiceUnavailable, "typst", "typst is not executable", err.Error())
 		return
+	}
+	if a.blobs != nil {
+		if err := a.blobs.Ready(ctx); err != nil {
+			writeProblem(w, http.StatusServiceUnavailable, "storage", "Storage is not ready", err.Error())
+			return
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
 }

@@ -53,6 +53,57 @@ type Auslandssatz struct {
 	Uebernachtung int64
 }
 
+type Beleg struct {
+	ID                  string
+	NutzerID            string
+	Belegnummer         *string
+	Typ                 string
+	Status              string
+	Seiten              int64
+	Sha256Original      string
+	PipelineVersion     string
+	PipelineParameter   string
+	BestaetigtAm        *time.Time
+	BestaetigtVon       *string
+	StornoGrund         *string
+	StorniertAm         *time.Time
+	AufbewahrenBis      *string
+	ErfassungLoeschenAm *time.Time
+	DuplikatVon         *string
+	ErstelltAm          time.Time
+	GeaendertAm         time.Time
+	Version             int64
+}
+
+type BelegNummer struct {
+	NutzerID string
+	Jahr     int64
+	Naechste int64
+}
+
+type Belegdatei struct {
+	ID                 string
+	BelegID            string
+	Variante           string
+	Seite              int64
+	SpeicherSchluessel string
+	Mime               string
+	Bytes              int64
+	Sha256             string
+	Unveraenderbar     bool
+}
+
+type Belegtext struct {
+	ID            string
+	BelegID       string
+	Version       int64
+	Quelle        string
+	Felder        string
+	Volltext      string
+	BestaetigtAm  *time.Time
+	BestaetigtVon *string
+}
+
 type Datei struct {
 	ID                 string
 	NutzerID           string
