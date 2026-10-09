@@ -57,7 +57,24 @@ export default defineConfig({
 					/^\/version/,
 					/^\/auth\//,
 				],
+				globIgnores: ["**/beleg-corners*"],
 				runtimeCaching: [
+					{
+						urlPattern: /\/api\/v1\/belege\/[^/]+\/vorschau$/,
+						handler: "CacheFirst",
+						options: {
+							cacheName: "beleg-vorschau",
+							expiration: { maxEntries: 300, maxAgeSeconds: 30 * 24 * 60 * 60 },
+						},
+					},
+					{
+						urlPattern: /beleg-corners/,
+						handler: "CacheFirst",
+						options: {
+							cacheName: "beleg-corners",
+							expiration: { maxEntries: 4, maxAgeSeconds: 30 * 24 * 60 * 60 },
+						},
+					},
 					{
 						// Navigations such as the OIDC start redirect must be handled by the
 						// browser. NetworkOnly follows the cross-origin 302 inside the worker
@@ -70,6 +87,16 @@ export default defineConfig({
 			},
 		}),
 	],
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks(id) {
+					if (id.includes("/beleg/geometry") || id.includes("/beleg/corners"))
+						return "beleg-corners";
+				},
+			},
+		},
+	},
 	resolve: {
 		alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) },
 	},

@@ -87,6 +87,9 @@ func cmdServe() error {
 			return err
 		}
 	}
+	if cfg.StorageBackend == "s3" && cfg.S3.AllowNonEU {
+		log.Warn("S3_ALLOW_NON_EU is set; object storage may be outside the EU/EEA")
+	}
 	pw, err := auth.NewPasswords(auth.Params{
 		Memory: cfg.Argon2MemoryKiB, Time: cfg.Argon2Time, Threads: cfg.Argon2Threads, KeyLen: 32,
 	})
@@ -108,6 +111,9 @@ func cmdServe() error {
 	}
 	app.Version = version
 	app.Commit = commit
+	jobCtx, stopJobs := context.WithCancel(context.Background())
+	defer stopJobs()
+	app.StartJobs(jobCtx)
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr,
 		Handler:           app.Handler(),
@@ -125,6 +131,7 @@ func cmdServe() error {
 		}
 		return err
 	case <-sig.Done():
+		stopJobs()
 	}
 	shut, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

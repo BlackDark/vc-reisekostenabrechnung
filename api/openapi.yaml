@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Reisekostenabrechnung API
-  version: 0.3.0
-  description: Reisen, Pauschalen, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
+  version: 0.4.0
+  description: Reisen, Pauschalen, Belege, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
 servers:
   - url: /
 paths:
@@ -1213,6 +1213,273 @@ paths:
                 $ref: "#/components/schemas/WarnungListe"
         "401":
           $ref: "#/components/responses/Problem"
+  /api/v1/belege:
+    get:
+      operationId: getBelege
+      tags: [belege]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: eingang
+          in: query
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Belege of the signed-in Nutzer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BelegListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postBelege
+      tags: [belege]
+      summary: Upload one or more receipt files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [datei]
+              properties:
+                datei:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                profil:
+                  type: string
+                ecken:
+                  type: string
+                duplikat_bestaetigt:
+                  type: boolean
+      responses:
+        "202":
+          description: Accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beleg"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/duplikate:
+    get:
+      operationId: getBelegDuplikate
+      tags: [belege]
+      parameters:
+        - name: sha256
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Existing Belege with this checksum
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BelegListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}:
+    get:
+      operationId: getBeleg
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: One Beleg
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beleg"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteBeleg
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/vorschau:
+    get:
+      operationId: getBelegVorschau
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: WebP thumbnail
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/seiten/{n}:
+    get:
+      operationId: getBelegSeite
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - name: n
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Archive page or original document
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/original:
+    get:
+      operationId: getBelegOriginal
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Uploaded original
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/neu-aufbereiten:
+    post:
+      operationId: postBelegNeuAufbereiten
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: false
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                datei:
+                  type: string
+                  format: binary
+                profil:
+                  type: string
+                ecken:
+                  type: string
+      responses:
+        "202":
+          description: Queued again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beleg"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/bestaetigen:
+    post:
+      operationId: postBelegBestaetigen
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beleg"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/stornieren:
+    post:
+      operationId: postBelegStornieren
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BelegStorno"
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beleg"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
 components:
   parameters:
     IfMatch:
@@ -2169,6 +2436,47 @@ components:
           type: array
           items:
             type: string
+    Beleg:
+      type: object
+      required: [id, typ, status, seiten, sha256_original, version, erstellt_am]
+      properties:
+        id:
+          type: string
+        belegnummer:
+          type: string
+        typ:
+          type: string
+        status:
+          type: string
+        seiten:
+          type: integer
+        sha256_original:
+          type: string
+        pipeline_version:
+          type: string
+        duplikat_von:
+          type: string
+        erstellt_am:
+          type: string
+          format: date-time
+        version:
+          type: integer
+    BelegListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Beleg"
+        next_cursor:
+          type: string
+    BelegStorno:
+      type: object
+      required: [grund]
+      properties:
+        grund:
+          type: string
     Warnung:
       type: object
       required: [code, reise_id, anlass]
@@ -2182,6 +2490,8 @@ components:
         datum:
           type: string
         staette:
+          type: string
+        beleg_id:
           type: string
     WarnungListe:
       type: object

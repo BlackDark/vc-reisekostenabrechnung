@@ -4,6 +4,14 @@
 > **Frage:** Welches Speicherformat für fotografierte Belege (Kassenbon, Hotelrechnung, Tankquittung) ist am kleinsten und bleibt dabei für Menschen und OCR voll lesbar und GoBD-konform?
 > **Reproduzierbar:** Skripte unter `docs/research/beleg-kompression/scripts/` (Arbeitsverzeichnis `B=/workspace/beleg-exp` in `exp.py` anpassen; benötigt tesseract, cwebp, avifenc, cjxl, jbig2enc, img2pdf, ocrmypdf, opencv-python, scikit-image), Rohdaten in `docs/research/beleg-kompression/ergebnisse.json`. Testbilder liegen nicht im Repo (Lizenzen/Größe), siehe Quellen unten.
 
+## M4, 09.10.2026
+
+Die Pipeline `2026.1` ist eingebaut (Normalisierung, Farb-AVIF, WebP-Vorschau, JPEG-Export). ADR 0005 bleibt **proposed**: die 15–20 echten Belege des Betreibers (O7) liegen nicht vor, die Ø 50–85 KB aus diesem Experiment sind deshalb nicht neu gemessen. Encoder bleiben per Umgebung einstellbar (`BELEG_AVIF_QUALITY`, `BELEG_AVIF_SPEED`, `BELEG_WEBP_QUALITY`, `BELEG_JPEG_QUALITY`, `BELEG_FORMAT`). Sobald ein Ordner mit Fotos da ist:
+
+```
+go run ./scripts/beleg-benchmark pfad/zu/fotos
+```
+
 ## TL;DR
 
 1. **Der größte Hebel ist nicht der Codec, sondern die Dokument-Aufbereitung:** Entzerren und Zuschneiden, auf 300 dpi-Äquivalent skalieren und den Hintergrund normalisieren (Schatten und Papierfarbe raus). Damit werden Belege ~25–50× kleiner als das Kamerabild, und die OCR wird **besser** (Schlüsselfelder 56 → 75–81 von 97; ein verblasster Thermobon 1/8 → 8/8).

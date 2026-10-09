@@ -4,7 +4,13 @@
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
 
-	type Todo = { code: string; reise_id: string; anlass: string; datum?: string | null };
+	type Todo = {
+		code: string;
+		reise_id?: string;
+		anlass?: string;
+		beleg_id?: string | null;
+		datum?: string | null;
+	};
 
 	let todos = $state<Todo[]>([]);
 
@@ -23,6 +29,7 @@
 		if (code === "W03") return m.warn_W03();
 		if (code === "W12") return m.warn_W12();
 		if (code === "W14") return m.warn_W14();
+		if (code === "W04") return m.warn_W04();
 		return code;
 	}
 </script>
@@ -38,10 +45,15 @@
 			<p class="mt-2 text-sm">{m.home_todo_empty()}</p>
 		{:else}
 			<ul class="mt-2 grid gap-2">
-				{#each todos as item (item.reise_id + item.code + (item.datum ?? ""))}
+				{#each todos as item (`${item.beleg_id ?? ""}-${item.reise_id ?? ""}-${item.code}-${item.anlass ?? ""}-${item.datum ?? ""}`)}
 					<li>
-						<a class="block rounded border px-3 py-2" href={p("/reisen/:id", { params: { id: item.reise_id } })}>
-							{item.anlass}: {label(item.code)}
+						<a
+							class="block rounded border px-3 py-2"
+							href={item.beleg_id
+								? p("/belege/:id", { params: { id: item.beleg_id } })
+								: p("/reisen/:id", { params: { id: item.reise_id ?? "" } })}
+						>
+							{label(item.code)}{#if item.code !== "W04" && item.anlass}: {item.anlass}{/if}
 						</a>
 					</li>
 				{/each}

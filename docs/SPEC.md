@@ -842,7 +842,10 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 | `S3_ALLOW_NON_EU` | `false` | nur mit Bewilligung nach § 146 Abs. 2b AO ([R] 7.1); loggt Warnung |
 | **Uploads/Belege** | | |
 | `UPLOAD_MAX_BYTES` | `26214400` (25 MiB) | |
-| `BELEG_AVIF_QUALITY` | `40` | |
+| `BELEG_AVIF_QUALITY` | `40` | Farb-AVIF, 1–100 |
+| `BELEG_AVIF_SPEED` | `6` | 0 langsam … 10 schnell |
+| `BELEG_WEBP_QUALITY` | `55` | Qualität des WebP-Archivs, wenn `BELEG_FORMAT=webp` |
+| `BELEG_JPEG_QUALITY` | `70` | Export-Kopie für Typst |
 | `BELEG_FORMAT` | `avif` | `avif`\|`webp` (Fallback, [K] 4) |
 | `BELEG_ERFASSUNG_KARENZ` | `720h` | Aufbewahrung der Erfassungs-JPEG nach Bestätigung |
 | **KI** | | |

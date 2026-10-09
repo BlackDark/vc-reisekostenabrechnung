@@ -1,0 +1,31 @@
+# Verfahrensdokumentation (Vorlage)
+
+Vorlage für das ersetzende Scannen nach GoBD. Die konkrete Stelle füllt die Namen aus.
+
+## Wer erfasst
+
+Der angemeldete Nutzer fotografiert oder lädt den Beleg in der installierten PWA. Das Rohbild der Kamera bleibt auf dem Gerät.
+
+## Wann
+
+Vor oder nach der Ausgabe. Die Bestätigung (Sichtkontrolle) vergibt die Belegnummer `JJJJ-NNNN` je Nutzer und Jahr (Europe/Berlin).
+
+## Pipeline
+
+Version `2026.1` (`internal/belegpipe`).
+
+1. Browser: Ecken erkennen, Nutzer korrigiert, entzerren, Profil Bon (945 px) oder A4 (2480 px), JPEG-Qualität 90.
+2. Server: Hintergrund normalisieren (Closing etwa 1/25 der Breite, Weichzeichnen, Division, Streckung 2–98 %).
+3. Archivbeleg: Farbe, AVIF, Qualität und Geschwindigkeit aus `BELEG_AVIF_QUALITY` (40) und `BELEG_AVIF_SPEED` (6). Alternative `BELEG_FORMAT=webp`.
+4. Vorschau WebP, längste Kante 320 px. Export-JPEG Qualität `BELEG_JPEG_QUALITY` (70).
+5. PDF und XML werden unverändert als Empfangsformat gespeichert.
+
+Ecken, Profil, Codec und Qualität stehen in `pipeline_parameter`. SHA-256 am Archivbeleg. Nach der Bestätigung ist die Datei unveränderbar.
+
+## Fehler
+
+Schlägt die Aufbereitung fehl, bleibt der Beleg `fehlgeschlagen` und kann neu aufbereitet oder gelöscht werden. Die Erfassungs-JPEG wird nach der Bestätigung für `BELEG_ERFASSUNG_KARENZ` (720 h) behalten und dann gelöscht. Das Löschen wird protokolliert.
+
+## Aufbewahrung
+
+`aufbewahren_bis` ist der 31. Dezember des achten Jahres nach dem Bestätigungsjahr. Speicherort: lokales Volume oder S3 in der EU/EWR (`S3_DATA_LOCATION`).
