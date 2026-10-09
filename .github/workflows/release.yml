@@ -2,8 +2,18 @@ name: release
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to build and publish, for example v1.0.0. Empty uses the ref that triggered the run.
+        required: false
+        type: string
   push:
     tags: ["v*"]
+
+# A manual run from main can publish an existing tag. The workflow file on that
+# tag is not used; publish checks out inputs.tag (or github.ref_name).
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: read
@@ -11,6 +21,14 @@ permissions:
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
+    # GitHub rejects the run at load time unless every permission a nested job
+    # requests is granted here. scan uploads SARIF; publish-edge can push and sign.
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+      id-token: write
+      attestations: write
     with:
       caller: release
     secrets: inherit
@@ -29,6 +47,19 @@ jobs:
       tags: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Require a version tag
+        run: |
+          case "$RELEASE_TAG" in
+            v[0-9]*) ;;
+            *)
+              echo "RELEASE_TAG must look like v1.0.0, got: ${RELEASE_TAG}" >&2
+              exit 1
+              ;;
+          esac
+      - id: rev
+        run: echo "short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver: docker-container
@@ -42,11 +73,11 @@ jobs:
         with:
           images: ghcr.io/blackdark/vc-reisekostenabrechnung
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }}
+            type=semver,pattern={{major}},value=${{ env.RELEASE_TAG }}
             type=raw,value=latest
-            type=sha,prefix=sha-,format=short
+            type=raw,value=sha-${{ steps.rev.outputs.short }}
       - name: Build archive for size and scan
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -128,7 +159,7 @@ jobs:
           DIGEST: ${{ needs.publish.outputs.digest }}
           TAGS: ${{ needs.publish.outputs.tags }}
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="${RELEASE_TAG}"
           gh release view "$tag" --json body --jq .body > /tmp/notes.md
           python3 - << 'PY'
           import os

@@ -70,13 +70,17 @@ jobs:
       - id: out
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "go=${{ steps.filter.outputs.go }}" >> "$GITHUB_OUTPUT"
-            echo "web=${{ steps.filter.outputs.web }}" >> "$GITHUB_OUTPUT"
-            echo "image=${{ steps.filter.outputs.image }}" >> "$GITHUB_OUTPUT"
+            {
+              echo "go=${{ steps.filter.outputs.go }}"
+              echo "web=${{ steps.filter.outputs.web }}"
+              echo "image=${{ steps.filter.outputs.image }}"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "go=true" >> "$GITHUB_OUTPUT"
-            echo "web=true" >> "$GITHUB_OUTPUT"
-            echo "image=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "go=true"
+              echo "web=true"
+              echo "image=true"
+            } >> "$GITHUB_OUTPUT"
           fi
 
   go:
@@ -107,10 +111,12 @@ jobs:
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
             pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46 server /data
-          for i in $(seq 1 40); do
+          attempt=0
+          while [ "$attempt" -lt 40 ]; do
             if curl -sf http://127.0.0.1:9000/minio/health/live; then
               exit 0
             fi
+            attempt=$((attempt + 1))
             sleep 1
           done
           docker logs rk-minio >&2 || true
@@ -408,8 +414,25 @@ jobs:
         run: |
           printf '%s\n' "$TITLE" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z0-9._/-]+\))?!?: .+'
 
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: actionlint
+        run: |
+          curl -fsSL -o actionlint.tar.gz -L https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c
+          tar -xzf actionlint.tar.gz actionlint
+          ./actionlint -color
+          go test ./scripts/workflowperm
+
   ci-ok:
-    needs: [changes, go, codegen, web, image, smoke, e2e, pdfa, backup, scan, pr-titel]
+    needs: [changes, go, codegen, web, image, smoke, e2e, pdfa, backup, scan, pr-titel, actionlint]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -427,10 +450,11 @@ jobs:
           BACKUP: ${{ needs.backup.result }}
           SCAN: ${{ needs.scan.result }}
           TITLE: ${{ needs.pr-titel.result }}
+          ACTIONLINT: ${{ needs.actionlint.result }}
         run: |
           python3 - << 'PY'
           import os, sys
-          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "SCAN", "TITLE"]
+          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "SCAN", "TITLE", "ACTIONLINT"]
           bad = [name for name in names if os.environ[name] not in ("success", "skipped")]
           print({name: os.environ[name] for name in names})
           sys.exit(1 if bad else 0)
