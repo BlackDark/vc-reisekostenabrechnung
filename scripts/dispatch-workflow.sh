@@ -12,4 +12,8 @@ ref=${2:?git ref}
 repo=${GH_REPO:?GH_REPO}
 
 echo "Dispatching ${workflow} on ${ref} in ${repo}"
-gh workflow run "$workflow" --repo "$repo" --ref "$ref"
+if [ "$workflow" = "release.yml" ]; then
+  gh workflow run "$workflow" --repo "$repo" --ref "$ref" -f "tag=${ref}"
+else
+  gh workflow run "$workflow" --repo "$repo" --ref "$ref"
+fi

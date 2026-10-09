@@ -8,7 +8,7 @@ make check
 
 `make check` runs `go test ./...` and the web checks (Biome, svelte-check, Vitest, and a bundle-size report). `make generate` refreshes sqlc, the OpenAPI server, and the TypeScript client.
 
-Commits and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/). release-please opens the release pull request from those titles. Do not tag a release by hand. Merging the release-please pull request creates the tag; `release.yml` then builds, scans, signs, and publishes the image.
+Commits and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/). release-please opens the release pull request from those titles. Do not tag a release by hand. Merging the release-please pull request creates the tag; `release.yml` then builds, scans, signs, and publishes the image. To publish a tag that already exists, run `gh workflow run release.yml --repo BlackDark/vc-reisekostenabrechnung -f tag=v1.0.0` from a ref whose `release.yml` is the fixed one.
 
 ## End-to-end tests
 
