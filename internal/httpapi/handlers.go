@@ -56,7 +56,7 @@ func (a *App) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
 	ip := ClientIP(r, a.cfg.TrustedProxies)
 	name := auth.NormName(body.Benutzername)
 	if !a.limits.allow("login:"+ip, a.cfg.RateLogin.Count, a.cfg.RateLogin.Per) ||
-		!a.limits.allow("loginacct:"+name+"|"+ip, 20, time.Hour) {
+		!a.limits.allow("loginacct:"+name+"|"+ip, a.cfg.RateLoginAccount.Count, a.cfg.RateLoginAccount.Per) {
 		w.Header().Set("Retry-After", "60")
 		writeProblem(w, http.StatusTooManyRequests, "rate_limit", "Too many login attempts", "")
 		return

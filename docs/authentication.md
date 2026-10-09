@@ -8,7 +8,7 @@ Three ways to sign in can be combined. At least one must be enabled or the proce
 
 The first account is the setup token from the log, or `INITIAL_ADMIN_USERNAME` plus `INITIAL_ADMIN_PASSWORD` / `INITIAL_ADMIN_PASSWORD_FILE`. Further users are created by an admin.
 
-Login attempts are limited by `RATE_LIMIT_LOGIN` (default `5/m`).
+Login attempts are limited by `RATE_LIMIT_LOGIN` (default `5/m`, per client IP) and `RATE_LIMIT_LOGIN_ACCOUNT` (default `20/h`, per account and client IP).
 
 ## OIDC (Pocket ID)
 

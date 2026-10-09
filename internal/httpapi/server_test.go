@@ -39,6 +39,7 @@ func newTestApp(t *testing.T, tweak func(*config.Config)) *App {
 		StorageBackend:      "local",
 		TypstPath:           os.Args[0],
 		RateLogin:           config.Rate{Count: 5, Per: time.Minute},
+		RateLoginAccount:    config.Rate{Count: 20, Per: time.Hour},
 		RateAPI:             config.Rate{Count: 300, Per: time.Minute},
 		Header: config.Header{
 			UserHeader:   "Remote-User",
@@ -141,6 +142,22 @@ func TestPasswordLoginAndCSRF(t *testing.T) {
 func TestLoginRateLimit(t *testing.T) {
 	app := newTestApp(t, func(cfg *config.Config) {
 		cfg.RateLogin = config.Rate{Count: 2, Per: time.Minute}
+	})
+	h := app.Handler()
+	var last int
+	for i := 0; i < 3; i++ {
+		res := doJSON(t, h, http.MethodPost, "/api/v1/auth/login", `{"benutzername":"ada","passwort":"wrong-password"}`, nil)
+		last = res.Code
+	}
+	if last != http.StatusTooManyRequests {
+		t.Fatalf("status %d", last)
+	}
+}
+
+func TestLoginAccountRateLimit(t *testing.T) {
+	app := newTestApp(t, func(cfg *config.Config) {
+		cfg.RateLogin = config.Rate{Count: 100, Per: time.Minute}
+		cfg.RateLoginAccount = config.Rate{Count: 2, Per: time.Hour}
 	})
 	h := app.Handler()
 	var last int

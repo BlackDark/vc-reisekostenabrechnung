@@ -766,7 +766,7 @@ Existiert kein Nutzer: (a) `INITIAL_ADMIN_USERNAME` + `INITIAL_ADMIN_PASSWORD(_F
 
 ### 10.7 Rate-Limiting
 
-In-Memory-Token-Bucket (`golang.org/x/time/rate` v0.16.0) je Client-IP und je Konto: Login 5/min und 20/h je Konto+IP (danach `429` mit `Retry-After`); API allgemein 300/min je Session; Uploads 30/min; KI 20/min; OIDC-Start 20/min je IP. Werte per ENV. (Einzelinstanz, daher In-Memory ausreichend.)
+In-Memory-Token-Bucket (`golang.org/x/time/rate` v0.16.0) je Client-IP und je Konto: Login `RATE_LIMIT_LOGIN` (5/min je IP) und `RATE_LIMIT_LOGIN_ACCOUNT` (20/h je Konto+IP), danach `429` mit `Retry-After`; API allgemein 300/min je Session; Uploads 30/min; KI 20/min; OIDC-Start 20/min je IP. Werte per ENV. (Einzelinstanz, daher In-Memory ausreichend.)
 
 ### 10.8 Upload-Validierung
 
@@ -865,7 +865,8 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 | `EXPORT_TIMEOUT` | `120s` | |
 | `EXPORT_PDF_STANDARD` | `a-3b` | |
 | **Rate-Limits** | | |
-| `RATE_LIMIT_LOGIN` | `5/m` | |
+| `RATE_LIMIT_LOGIN` | `5/m` | je Client-IP |
+| `RATE_LIMIT_LOGIN_ACCOUNT` | `20/h` | je Konto+IP |
 | `RATE_LIMIT_API` | `300/m` | |
 | `RATE_LIMIT_UPLOAD` | `30/m` | |
 | `RATE_LIMIT_AI` | `20/m` | |
@@ -1171,7 +1172,7 @@ changes ─┬─► go ────────┐
 | `smoke` | image | Container-Smoke-Test (18.5) | 5 |
 | `e2e` | image | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go`/`web` | 10 |
 | `pdfa` | image | Validator-Job (18.6) | 5 |
-| `scan` | image | Trivy-Image-Scan (`severity: CRITICAL,HIGH`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
+| `scan` | image | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
 | `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 2 |
 | `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 2 |
 | `publish-edge` | nur `push` auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert wie Release | 10 |

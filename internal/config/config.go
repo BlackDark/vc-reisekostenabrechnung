@@ -53,10 +53,11 @@ type Config struct {
 	TypstPath        string
 	ExportTimeout    time.Duration
 
-	RateLogin  Rate
-	RateAPI    Rate
-	RateUpload Rate
-	RateAI     Rate
+	RateLogin        Rate
+	RateLoginAccount Rate
+	RateAPI          Rate
+	RateUpload       Rate
+	RateAI           Rate
 
 	JobWorkers      int
 	RetentionReport bool
@@ -230,6 +231,7 @@ func Load() (Config, error) {
 	}
 
 	cfg.RateLogin = lookupRate("RATE_LIMIT_LOGIN", Rate{Count: 5, Per: time.Minute}, &errs)
+	cfg.RateLoginAccount = lookupRate("RATE_LIMIT_LOGIN_ACCOUNT", Rate{Count: 20, Per: time.Hour}, &errs)
 	cfg.RateAPI = lookupRate("RATE_LIMIT_API", Rate{Count: 300, Per: time.Minute}, &errs)
 	cfg.RateUpload = lookupRate("RATE_LIMIT_UPLOAD", Rate{Count: 30, Per: time.Minute}, &errs)
 	cfg.RateAI = lookupRate("RATE_LIMIT_AI", Rate{Count: 20, Per: time.Minute}, &errs)

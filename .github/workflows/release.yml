@@ -74,6 +74,7 @@ jobs:
         with:
           image-ref: vc-reisekosten:scan
           format: table
+          scanners: vuln
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "1"

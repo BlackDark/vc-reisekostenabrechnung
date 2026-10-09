@@ -89,7 +89,8 @@ Invalid combinations stop the process with a clear error (every login method off
 | `EXPORT_TIMEOUT` | `120s` | |
 | `EXPORT_PDF_STANDARD` | `a-3b` | Listed for operators. This build always writes PDF/A-3b |
 | **Rate limits** | | |
-| `RATE_LIMIT_LOGIN` | `5/m` | |
+| `RATE_LIMIT_LOGIN` | `5/m` | Per client IP |
+| `RATE_LIMIT_LOGIN_ACCOUNT` | `20/h` | Per account and client IP |
 | `RATE_LIMIT_API` | `300/m` | |
 | `RATE_LIMIT_UPLOAD` | `30/m` | |
 | `RATE_LIMIT_AI` | `20/m` | |

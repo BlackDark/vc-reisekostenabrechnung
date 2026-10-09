@@ -22,6 +22,8 @@ docker run -d --name rk-e2e --network host \
   -e INITIAL_ADMIN_PASSWORD=smoke-password-1 \
   -e BELEG_AVIF_SPEED=8 \
   -e RATE_LIMIT_LOGIN=60/m \
+  -e RATE_LIMIT_LOGIN_ACCOUNT=500/h \
+  -e RATE_LIMIT_API=5000/m \
   -e OIDC_ENABLED=true \
   -e OIDC_ISSUER_URL=http://127.0.0.1:8089/default \
   -e OIDC_CLIENT_ID=reisekosten \
