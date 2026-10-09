@@ -1,11 +1,18 @@
 <script lang="ts">
+	import InfoIcon from "@lucide/svelte/icons/info";
+	import { toast } from "svelte-sonner";
 	import { api } from "$lib/api";
 	import type { components } from "$lib/api/schema";
 	import DateField from "$lib/components/date-field.svelte";
+	import StatCard from "$lib/components/stat-card.svelte";
+	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
-	import { euro } from "$lib/money";
+	import * as Sheet from "$lib/components/ui/sheet";
+	import * as Tabs from "$lib/components/ui/tabs";
+	import * as Tooltip from "$lib/components/ui/tooltip";
+	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p, route } from "../router";
@@ -32,6 +39,10 @@
 	let fahrtReturn = $state(true);
 	let fahrtVehicle = $state("kraftwagen");
 	let fahrtDatum = $state("");
+	let belege = $state<components["schemas"]["Beleg"][]>([]);
+	let tab = $state("days");
+	let fahrtOpen = $state(false);
+	let vorlageOpen = $state(false);
 
 	const id = $derived(route.params.id ?? "");
 	const lastDatum = $derived(trip?.reisetage.at(-1)?.datum ?? "");
@@ -78,7 +89,17 @@
 		fahrten = fahrtRes.data?.items ?? [];
 		ausgaben = ausgabeRes.data?.items ?? [];
 		if (!fahrtDatum && trip.reisetage[0]) fahrtDatum = trip.reisetage[0].datum;
-		await loadLands(Number(trip.beginn.slice(0, 4)) || 2026);
+		await Promise.all([loadLands(Number(trip.beginn.slice(0, 4)) || 2026), loadBelege(ausgaben)]);
+	}
+
+	async function loadBelege(rows: components["schemas"]["Ausgabe"][]) {
+		const ids = new Set(rows.flatMap((row) => row.beleg_ids ?? []));
+		if (ids.size === 0) {
+			belege = [];
+			return;
+		}
+		const list = await api.GET("/api/v1/belege", { params: { query: { limit: 100 } } });
+		belege = (list.data?.items ?? []).filter((item) => ids.has(item.id));
 	}
 
 	async function loadLands(year: number) {
@@ -129,6 +150,7 @@
 		trip = res.data;
 		const calcRes = await api.GET("/api/v1/reisen/{id}/berechnung", { params: { path: { id: trip.id } } });
 		calc = calcRes.data ?? calc;
+		toast.success(m.saved());
 	}
 
 	async function exclude(day: Day) {
@@ -155,6 +177,8 @@
 			error = m.save_failed();
 			return;
 		}
+		fahrtOpen = false;
+		tab = "fahrten";
 		await load(trip.id);
 	}
 
@@ -203,6 +227,7 @@
 			return;
 		}
 		templateSaved = res.data.name;
+		vorlageOpen = false;
 	}
 
 	function offsetMinutes(beginn: string, ankunft: string): number {
@@ -223,192 +248,299 @@
 	}
 
 	function money(cents: number | undefined): string {
-		return euro(cents ?? 0, session.locale);
+		return euroAmount(cents ?? 0, session.locale);
 	}
+
+	const ausgabenCent = $derived((calc?.reisenebenkosten_cent ?? 0) + (calc?.bewirtung_cent ?? 0));
 </script>
 
 <p><a class="text-sm underline" href={p("/reisen")}>{m.back()}</a></p>
 {#if trip}
-	<h1 class="mt-2 text-2xl font-semibold tracking-tight">{trip.anlass}</h1>
-	<p class="mt-1 text-sm">{trip.beginn.slice(0, 16)} – {trip.ende.slice(0, 16)} ({trip.beginn_zone})</p>
+	{#snippet actions(current: Reise)}
+		<Button variant="outline" size="sm" href={`/reisen/${current.id}/ausgaben/neu`}>{m.ausgabe_new()}</Button>
+		<Button variant="outline" size="sm" type="button" onclick={() => (fahrtOpen = true)}>{m.reise_add_fahrt()}</Button>
+		<Button variant="outline" size="sm" type="button" onclick={() => (vorlageOpen = true)}>{m.reise_open_template()}</Button>
+		<Button variant="ghost" size="sm" type="button" onclick={() => void removeTrip()}>{m.reise_delete()}</Button>
+	{/snippet}
+
+	<div class="flex flex-wrap items-start justify-between gap-3">
+		<div class="min-w-0">
+			<h1 class="truncate text-2xl font-semibold tracking-tight">{trip.anlass}</h1>
+			<p class="text-muted-foreground mt-1 text-sm">
+				{trip.beginn.slice(0, 16)} – {trip.ende.slice(0, 16)} ({trip.beginn_zone})
+			</p>
+		</div>
+		<div class="flex flex-wrap items-center gap-2">
+			<StatusBadge status={trip.status} />
+			<div
+				class="flex max-w-full flex-wrap gap-2 max-md:fixed max-md:inset-x-0 max-md:bottom-16 max-md:z-30 max-md:border-t max-md:bg-background/95 max-md:px-3 max-md:py-2"
+			>
+				{@render actions(trip)}
+			</div>
+		</div>
+	</div>
+
 	{#if calc?.blocker && calc.blocker.length > 0}
 		<p class="mt-3 text-sm" role="alert">{m.reise_blocker()}: {calc.blocker.join(", ")}</p>
 	{/if}
-	<p class="mt-3">
-		<a class="underline" href={`/reisen/${trip.id}/ausgaben/neu`}>{m.ausgabe_new()}</a>
-	</p>
-	{#if ausgaben.length > 0}
-		<ul class="mt-2 grid gap-2">
-			{#each ausgaben as row (row.id)}
-				<li>
-					<a class="block bg-card rounded-xl border px-3 py-3 text-sm" href={p("/ausgaben/:id", { params: { id: row.id } })}>
-						{row.kostenart} · {money(row.betrag_eur_cent)} {row.waehrung === "EUR" ? "" : row.waehrung}
-					</a>
-				</li>
-			{/each}
-		</ul>
-	{/if}
-	{#if calc?.warnungen}
-		<ul class="mt-2 grid gap-1 text-sm">
-			{#each calc.warnungen as code (code)}
-				<li role="status">{code}</li>
-			{/each}
-		</ul>
-	{/if}
-	{#if calc}
-		<p class="mt-3 text-sm">
-			{m.reise_sum()}: {money(calc.summe_cent)} · {m.reise_pauschale()}: {money(calc.verpflegung_cent)} · {m.reise_overnight()}:
-			{money(calc.uebernachtung_cent)} · {m.reise_fahrt()}: {money(calc.fahrtkosten_cent)}
-		</p>
-	{/if}
-	<div class="mt-4 grid gap-4">
-		{#each trip.reisetage as day (day.id)}
-			{@const tag = tagOf(day.datum)}
-			<article class="bg-card rounded-xl border p-3" data-datum={day.datum}>
-				<h2 class="font-medium">{m.reise_day()} {day.datum}</h2>
-				<dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-					<dt>{m.reise_tagesart()}</dt>
-					<dd>{tag?.tagesart ?? ""}</dd>
-					<dt>{m.reise_land()}</dt>
-					<dd>{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</dd>
-					<dt>{m.reise_pauschale()}</dt>
-					<dd data-field="pauschale">{money(tag?.pauschale_cent)}</dd>
-					<dt>{m.reise_kuerzung()}</dt>
-					<dd data-field="kuerzung">{money(tag?.kuerzung_cent)}</dd>
-					<dt>{m.reise_result()}</dt>
-					<dd>{money(tag?.ergebnis_cent)}</dd>
-					<dt>{m.reise_overnight()}</dt>
-					<dd>{money(tag?.uebernachtung_cent)}</dd>
-					<dt>{m.reise_regeln()}</dt>
-					<dd>{tag?.regel_ids?.join(" ") ?? ""} {tag?.land_regel ?? ""}</dd>
-				</dl>
-				{#if tag?.warnungen?.includes("W03")}
-					<p class="mt-2 text-sm" role="status">{m.warn_W03()}</p>
-				{/if}
-				<div class="mt-3 grid gap-2 text-sm">
-					<label class="flex items-center gap-2">
-						<input type="checkbox" bind:checked={day.fruehstueck_gestellt} />
-						{m.reise_breakfast()}
-					</label>
-					<label class="flex items-center gap-2">
-						<input type="checkbox" bind:checked={day.mittag_gestellt} />
-						{m.reise_lunch()}
-					</label>
-					<label class="flex items-center gap-2">
-						<input type="checkbox" bind:checked={day.abend_gestellt} />
-						{m.reise_dinner()}
-					</label>
-					<label class="grid gap-1" for="f-reisedetail-1">
-						{m.reise_copay()}
-						<Input id="f-reisedetail-1" type="number" min="0" step="1" bind:value={day.zuzahlung_mittag}  />
-					</label>
-					<label class="grid gap-1" for="f-reisedetail-2">
-						{m.reise_lodging()}
-						<NativeSelect id="f-reisedetail-2" class="w-full" bind:value={day.unterkunft} disabled={day.datum === lastDatum}>
-							<option value="keine">{m.lodging_keine()}</option>
-							<option value="beleg">{m.lodging_beleg()}</option>
-							<option value="pauschale">{m.lodging_pauschale()}</option>
-							<option value="gestellt">{m.lodging_gestellt()}</option>
-							<option value="verkehrsmittel">{m.lodging_verkehrsmittel()}</option>
-						</NativeSelect>
-					</label>
-					<label class="grid gap-1" for="f-reisedetail-3">
-						{m.reise_override()}
-						<NativeSelect id="f-reisedetail-3" class="w-full"
-							bind:value={day.land_manuell}
-							onchange={() => void placesFor(day.land_manuell ?? "")}
-						>
-							<option value=""> </option>
-							{#each lands as item (item.land_iso)}
-								<option value={item.land_iso}>{item.land_name_de}</option>
-							{/each}
-						</NativeSelect>
-					</label>
-					{#if day.land_manuell && places[day.land_manuell]}
-						<label class="grid gap-1" for="f-reisedetail-4">
-							{m.reise_place()}
-							<NativeSelect id="f-reisedetail-4" class="w-full" bind:value={day.satzort_manuell}>
-								<option value="">im Übrigen</option>
-								{#each places[day.land_manuell] as place (place.satzort)}
-									{#if place.satzort}
-										<option value={place.satzort}>{place.ort_name || place.satzort}</option>
-									{/if}
-								{/each}
-							</NativeSelect>
-						</label>
-					{/if}
-					<label class="grid gap-1" for="f-reisedetail-5">
-						{m.reise_reason()}
-						<Input id="f-reisedetail-5" bind:value={day.begruendung}  />
-					</label>
-					{#if tag?.warnungen?.includes("W03") && !day.verpflegung_ausgeschlossen}
-						<label class="grid gap-1" for="f-reisedetail-6">
-							{m.reise_exclude()}
-							<Input id="f-reisedetail-6" bind:value={day.ausschluss_grund}  />
-						</label>
-						<Button variant="outline" type="button" onclick={() => void exclude(day)}>{m.reise_exclude()}</Button>
-					{/if}
-					<Button type="button" onclick={() => void saveDay(day)}>
-						{m.save()}
-					</Button>
-				</div>
-			</article>
-		{/each}
+	{#if templateSaved}<p class="mt-2 text-sm" role="status">{templateSaved}</p>{/if}
+	{#if error}<p class="mt-3 text-sm text-destructive" role="alert">{error}</p>{/if}
+
+	<div class="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+		<StatCard label={m.reise_allowances()} value={money(calc?.verpflegung_cent)} />
+		<StatCard label={m.reise_overnight()} value={money(calc?.uebernachtung_cent)} />
+		<StatCard label={m.reise_tab_mileage()} value={money(calc?.fahrtkosten_cent)} />
+		<StatCard label={m.reise_expenses()} value={money(ausgabenCent)} />
+		<StatCard label={m.reise_sum()} value={money(calc?.summe_cent)} />
+		<StatCard label={m.abrechnung_erstattung()} value={money(calc?.summe_cent)} />
 	</div>
 
-	<section class="mt-6" aria-label={m.reise_fahrt()}>
-		<h2 class="text-lg font-medium">{m.reise_fahrt()}</h2>
-		{#if fahrten.length > 0}
-			<ul class="mt-2 grid gap-2">
-				{#each fahrten as fahrt (fahrt.id)}
-					<li class="flex items-center justify-between gap-2 bg-card rounded-xl border px-3 py-2 text-sm">
-						<span>{fahrt.start} – {fahrt.ziel} · {fahrt.km} km · {money(fahrt.betrag_cent)}</span>
-						<Button variant="link" size="sm" type="button" onclick={() => void removeFahrt(fahrt)}>{m.reise_delete()}</Button>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-		<form id="fahrt-form" class="mt-3 grid gap-2" onsubmit={addFahrt}>
-			<label class="grid gap-1 text-sm" for="fahrt-datum">
-				{m.reise_day()}
-				<DateField id="fahrt-datum" type="date" bind:value={fahrtDatum} required  />
-			</label>
-			<label class="grid gap-1 text-sm" for="fahrt-start">
-				{m.reise_start()}
-				<Input id="fahrt-start" bind:value={fahrtStart} required  />
-			</label>
-			<label class="grid gap-1 text-sm" for="fahrt-ziel">
-				{m.reise_ziel()}
-				<Input id="fahrt-ziel" bind:value={fahrtZiel} required  />
-			</label>
-			<label class="grid gap-1 text-sm" for="fahrt-km">
-				{m.reise_km()}
-				<Input id="fahrt-km" type="number" min="1" max="100000" bind:value={fahrtKm} required  />
-			</label>
-			<label class="flex items-center gap-2 text-sm" for="fahrt-return">
-				<input id="fahrt-return" type="checkbox" bind:checked={fahrtReturn} />
-				{m.reise_return()}
-			</label>
-			<label class="grid gap-1 text-sm" for="fahrt-vehicle">
-				{m.reise_vehicle()}
-				<NativeSelect class="w-full" id="fahrt-vehicle" bind:value={fahrtVehicle}>
-					<option value="kraftwagen">{m.vehicle_car()}</option>
-					<option value="anderes_motorfahrzeug">{m.vehicle_other()}</option>
-				</NativeSelect>
-			</label>
-			<Button variant="outline" type="submit">{m.create()}</Button>
-		</form>
-	</section>
+	<Tabs.Root bind:value={tab} class="mt-4">
+		<div class="max-w-full overflow-x-auto">
+			<Tabs.List>
+				<Tabs.Trigger value="days">{m.reise_tab_days()}</Tabs.Trigger>
+				<Tabs.Trigger value="expenses">{m.reise_tab_expenses()}</Tabs.Trigger>
+				<Tabs.Trigger value="fahrten">{m.reise_tab_mileage()}</Tabs.Trigger>
+				<Tabs.Trigger value="receipts">{m.reise_tab_receipts()}</Tabs.Trigger>
+				<Tabs.Trigger value="history">{m.reise_tab_history()}</Tabs.Trigger>
+			</Tabs.List>
+		</div>
 
-	<section class="mt-6" aria-label={m.reise_template()}>
-		<h2 class="text-lg font-medium">{m.reise_template()}</h2>
-		<label class="mt-2 grid gap-1 text-sm" for="vorlage-name">
-			{m.reise_template_name()}
-			<Input id="vorlage-name" bind:value={templateName}  />
-		</label>
-		<Button variant="outline" class="mt-2" type="button" onclick={() => void saveTemplate()}>{m.reise_save_template()}</Button>
-		{#if templateSaved}<p class="mt-2 text-sm" role="status">{templateSaved}</p>{/if}
-	</section>
-	{#if error}<p class="mt-3 text-sm" role="alert">{error}</p>{/if}
-	<Button variant="link" size="sm" class="mt-6" type="button" onclick={() => void removeTrip()}>{m.reise_delete()}</Button>
+		<Tabs.Content value="days" class="mt-3">
+			<div class="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 px-3 text-xs">
+				<span>{m.reise_day()}</span>
+				<span>{m.reise_tagesart()}</span>
+				<span>{m.reise_land()}</span>
+				<span>{m.reise_pauschale()}</span>
+				<span>{m.reise_kuerzung()}</span>
+				<span>{m.reise_result()}</span>
+			</div>
+			<Tooltip.Provider delayDuration={200}>
+				<div class="mt-2 grid gap-2">
+					{#each trip.reisetage as day, index (day.id)}
+						{@const tag = tagOf(day.datum)}
+						<article class="bg-card rounded-xl border" data-datum={day.datum}>
+							<details open={index === 0}>
+								<summary class="cursor-pointer list-none px-3 py-2 marker:content-none [&::-webkit-details-marker]:hidden">
+									<span class="grid gap-1 md:grid-cols-[7.5rem_6.5rem_minmax(0,1.4fr)_repeat(3,minmax(4.5rem,1fr))] md:items-center">
+										<span class="font-medium">{day.datum}</span>
+										<span>{tag?.tagesart ?? ""}</span>
+										<span class="min-w-0">{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</span>
+										<span class="text-right tabular-nums" data-field="pauschale">{money(tag?.pauschale_cent)}</span>
+										<span class="text-right tabular-nums" data-field="kuerzung">{money(tag?.kuerzung_cent)}</span>
+										<span class="text-right font-medium tabular-nums">{money(tag?.ergebnis_cent)}</span>
+									</span>
+								</summary>
+								<div class="grid gap-3 border-t px-3 py-3">
+									<fieldset class="flex flex-wrap gap-1.5">
+										<legend class="sr-only">{m.reise_breakfast()}</legend>
+										<label class="border-border has-checked:bg-primary has-checked:text-primary-foreground relative inline-flex items-center rounded-md border px-2.5 py-1 text-xs">
+											<input class="absolute inset-0 cursor-pointer opacity-0" type="checkbox" bind:checked={day.fruehstueck_gestellt} />
+											{m.reise_breakfast()}
+										</label>
+										<label class="border-border has-checked:bg-primary has-checked:text-primary-foreground relative inline-flex items-center rounded-md border px-2.5 py-1 text-xs">
+											<input class="absolute inset-0 cursor-pointer opacity-0" type="checkbox" bind:checked={day.mittag_gestellt} />
+											{m.reise_lunch()}
+										</label>
+										<label class="border-border has-checked:bg-primary has-checked:text-primary-foreground relative inline-flex items-center rounded-md border px-2.5 py-1 text-xs">
+											<input class="absolute inset-0 cursor-pointer opacity-0" type="checkbox" bind:checked={day.abend_gestellt} />
+											{m.reise_dinner()}
+										</label>
+									</fieldset>
+									{#if tag?.regel_ids?.length || tag?.land_regel}
+										<Tooltip.Root>
+											<Tooltip.Trigger class="text-muted-foreground w-fit" aria-label={m.reise_regeln()}>
+												<InfoIcon class="size-3.5" />
+											</Tooltip.Trigger>
+											<Tooltip.Content>
+												{tag?.regel_ids?.join(" ") ?? ""} {tag?.land_regel ?? ""}
+											</Tooltip.Content>
+										</Tooltip.Root>
+									{/if}
+									{#if tag?.warnungen?.includes("W03")}
+										<p class="text-sm" role="status">{m.warn_W03()}</p>
+									{/if}
+									<div class="grid gap-3 sm:grid-cols-2">
+										<label class="grid gap-1 text-sm" for={`copay-${day.datum}`}>
+											{m.reise_copay()}
+											<Input id={`copay-${day.datum}`} type="number" min="0" step="1" bind:value={day.zuzahlung_mittag} />
+										</label>
+										<label class="grid gap-1 text-sm" for={`lodging-${day.datum}`}>
+											{m.reise_lodging()}
+											<NativeSelect id={`lodging-${day.datum}`} class="w-full" bind:value={day.unterkunft} disabled={day.datum === lastDatum}>
+												<option value="keine">{m.lodging_keine()}</option>
+												<option value="beleg">{m.lodging_beleg()}</option>
+												<option value="pauschale">{m.lodging_pauschale()}</option>
+												<option value="gestellt">{m.lodging_gestellt()}</option>
+												<option value="verkehrsmittel">{m.lodging_verkehrsmittel()}</option>
+											</NativeSelect>
+										</label>
+										<label class="grid gap-1 text-sm" for={`land-${day.datum}`}>
+											{m.reise_override()}
+											<NativeSelect
+												id={`land-${day.datum}`}
+												class="w-full"
+												bind:value={day.land_manuell}
+												onchange={() => void placesFor(day.land_manuell ?? "")}
+											>
+												<option value=""> </option>
+												{#each lands as item (item.land_iso)}
+													<option value={item.land_iso}>{item.land_name_de}</option>
+												{/each}
+											</NativeSelect>
+										</label>
+										{#if day.land_manuell && places[day.land_manuell]}
+											<label class="grid gap-1 text-sm" for={`place-${day.datum}`}>
+												{m.reise_place()}
+												<NativeSelect id={`place-${day.datum}`} class="w-full" bind:value={day.satzort_manuell}>
+													<option value="">im Übrigen</option>
+													{#each places[day.land_manuell] as place (place.satzort)}
+														{#if place.satzort}
+															<option value={place.satzort}>{place.ort_name || place.satzort}</option>
+														{/if}
+													{/each}
+												</NativeSelect>
+											</label>
+										{/if}
+										<label class="grid gap-1 text-sm sm:col-span-2" for={`reason-${day.datum}`}>
+											{m.reise_reason()}
+											<Input id={`reason-${day.datum}`} bind:value={day.begruendung} />
+										</label>
+									</div>
+									<p class="text-muted-foreground text-right text-xs tabular-nums">
+										{m.reise_overnight()}: {money(tag?.uebernachtung_cent)}
+									</p>
+									{#if tag?.warnungen?.includes("W03") && !day.verpflegung_ausgeschlossen}
+										<label class="grid gap-1 text-sm" for={`exclude-${day.datum}`}>
+											{m.reise_exclude()}
+											<Input id={`exclude-${day.datum}`} bind:value={day.ausschluss_grund} />
+										</label>
+										<Button variant="outline" size="sm" class="w-fit" type="button" onclick={() => void exclude(day)}>{m.reise_exclude()}</Button>
+									{/if}
+									<Button variant="outline" size="sm" class="w-fit" type="button" onclick={() => void saveDay(day)}>{m.save()}</Button>
+								</div>
+							</details>
+						</article>
+					{/each}
+				</div>
+			</Tooltip.Provider>
+		</Tabs.Content>
+
+		<Tabs.Content value="expenses" class="mt-3">
+			{#if ausgaben.length === 0}
+				<p class="text-muted-foreground text-sm">{m.reise_no_expenses()}</p>
+			{:else}
+				<ul class="grid gap-2">
+					{#each ausgaben as row (row.id)}
+						<li>
+							<a class="bg-card hover:bg-muted flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm" href={p("/ausgaben/:id", { params: { id: row.id } })}>
+								<span class="min-w-0 truncate">{row.kostenart}{row.waehrung === "EUR" ? "" : ` · ${row.waehrung}`}</span>
+								<span class="shrink-0 tabular-nums">{money(row.betrag_eur_cent)}</span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</Tabs.Content>
+
+		<Tabs.Content value="fahrten" class="mt-3">
+			{#if fahrten.length === 0}
+				<p class="text-muted-foreground text-sm">{m.reise_no_mileage()}</p>
+			{:else}
+				<ul class="grid gap-2">
+					{#each fahrten as fahrt (fahrt.id)}
+						<li class="bg-card flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm">
+							<span class="min-w-0">{fahrt.start} – {fahrt.ziel} · {fahrt.km} km · <span class="tabular-nums">{money(fahrt.betrag_cent)}</span></span>
+							<Button variant="link" size="sm" type="button" onclick={() => void removeFahrt(fahrt)}>{m.reise_delete()}</Button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</Tabs.Content>
+
+		<Tabs.Content value="receipts" class="mt-3">
+			{#if belege.length === 0}
+				<p class="text-muted-foreground text-sm">{m.reise_no_receipts()}</p>
+			{:else}
+				<ul class="grid gap-2">
+					{#each belege as beleg (beleg.id)}
+						<li>
+							<a class="bg-card hover:bg-muted block rounded-xl border px-3 py-2 text-sm" href={p("/belege/:id", { params: { id: beleg.id } })}>
+								{beleg.belegnummer || beleg.id} · {beleg.erstellt_am.slice(0, 10)}
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</Tabs.Content>
+
+		<Tabs.Content value="history" class="mt-3">
+			<ul class="grid gap-2 text-sm">
+				<li class="bg-card rounded-xl border px-3 py-2">{m.reise_version()} {trip.version}</li>
+				{#each calc?.blocker ?? [] as code (code)}
+					<li class="bg-card rounded-xl border px-3 py-2">{code}</li>
+				{/each}
+				{#each calc?.warnungen ?? [] as code (code)}
+					<li class="bg-card rounded-xl border px-3 py-2">{code}</li>
+				{/each}
+				{#if (calc?.blocker?.length ?? 0) === 0 && (calc?.warnungen?.length ?? 0) === 0}
+					<li class="text-muted-foreground">{m.reise_no_history()}</li>
+				{/if}
+			</ul>
+		</Tabs.Content>
+	</Tabs.Root>
+	<div class="h-28 md:hidden"></div>
+
+	<Sheet.Root bind:open={fahrtOpen}>
+		<Sheet.Content class="overflow-y-auto">
+			<Sheet.Header>
+				<Sheet.Title>{m.reise_fahrt()}</Sheet.Title>
+			</Sheet.Header>
+			<form id="fahrt-form" class="grid gap-2 px-4 pb-4" onsubmit={addFahrt}>
+				<label class="grid gap-1 text-sm" for="fahrt-datum">
+					{m.reise_day()}
+					<DateField id="fahrt-datum" type="date" bind:value={fahrtDatum} required />
+				</label>
+				<label class="grid gap-1 text-sm" for="fahrt-start">
+					{m.reise_start()}
+					<Input id="fahrt-start" bind:value={fahrtStart} required />
+				</label>
+				<label class="grid gap-1 text-sm" for="fahrt-ziel">
+					{m.reise_ziel()}
+					<Input id="fahrt-ziel" bind:value={fahrtZiel} required />
+				</label>
+				<label class="grid gap-1 text-sm" for="fahrt-km">
+					{m.reise_km()}
+					<Input id="fahrt-km" type="number" min="1" max="100000" bind:value={fahrtKm} required />
+				</label>
+				<label class="flex items-center gap-2 text-sm" for="fahrt-return">
+					<input id="fahrt-return" type="checkbox" bind:checked={fahrtReturn} />
+					{m.reise_return()}
+				</label>
+				<label class="grid gap-1 text-sm" for="fahrt-vehicle">
+					{m.reise_vehicle()}
+					<NativeSelect class="w-full" id="fahrt-vehicle" bind:value={fahrtVehicle}>
+						<option value="kraftwagen">{m.vehicle_car()}</option>
+						<option value="anderes_motorfahrzeug">{m.vehicle_other()}</option>
+					</NativeSelect>
+				</label>
+				<Button variant="outline" type="submit">{m.create()}</Button>
+			</form>
+		</Sheet.Content>
+	</Sheet.Root>
+
+	<Sheet.Root bind:open={vorlageOpen}>
+		<Sheet.Content>
+			<Sheet.Header>
+				<Sheet.Title>{m.reise_template()}</Sheet.Title>
+			</Sheet.Header>
+			<div class="grid gap-2 px-4 pb-4">
+				<label class="grid gap-1 text-sm" for="vorlage-name">
+					{m.reise_template_name()}
+					<Input id="vorlage-name" bind:value={templateName} />
+				</label>
+				<Button variant="outline" type="button" onclick={() => void saveTemplate()}>{m.reise_save_template()}</Button>
+			</div>
+		</Sheet.Content>
+	</Sheet.Root>
 {/if}

@@ -75,10 +75,13 @@ test("multi-day foreign trip", async ({ page }) => {
 	await expect(page.getByRole("article")).toHaveCount(4);
 	await expect(page.getByRole("article").nth(1)).toContainText(iso);
 	await expect(page.locator("[data-field=pauschale]").nth(1)).not.toHaveText(
-		/^0[,.]00$/,
+		/^\D*0[,.]00\D*$/,
 	);
 	const here = page.url();
 
+	await page
+		.getByRole("button", { name: /Fahrt erfassen|Add mileage/ })
+		.click();
 	await page.locator("#fahrt-start").fill("Hotel");
 	await page.locator("#fahrt-ziel").fill("Kunde");
 	await page.locator("#fahrt-km").fill("12");
@@ -89,6 +92,10 @@ test("multi-day foreign trip", async ({ page }) => {
 		.click();
 	await expect(page.getByText("Hotel – Kunde")).toBeVisible();
 
+	await page.getByRole("tab", { name: /Reisetage|Days/ }).click();
+	await page
+		.getByRole("button", { name: /Vorlage anlegen|New template/ })
+		.click();
 	await page.locator("#vorlage-name").fill(`Vorlage ${stamp}`);
 	await page
 		.getByRole("button", { name: /Als Vorlage speichern|Save as template/ })
@@ -138,11 +145,11 @@ test("inland day shows the meal allowance", async ({ page }) => {
 	await expect(day).toContainText("eintaegig");
 	await expect(day).toContainText("DE");
 	await expect(day.locator("[data-field=pauschale]")).not.toHaveText(
-		/^0[,.]00$/,
+		/^\D*0[,.]00\D*$/,
 	);
 	await day.getByLabel(/Mittag gestellt|Lunch provided/).check();
 	await day.getByRole("button", { name: /Speichern|Save/ }).click();
 	await expect(day.locator("[data-field=kuerzung]")).not.toHaveText(
-		/^0[,.]00$/,
+		/^\D*0[,.]00\D*$/,
 	);
 });
