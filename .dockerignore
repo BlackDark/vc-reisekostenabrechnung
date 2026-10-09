@@ -5,6 +5,7 @@ node_modules
 # stay in the context or the Satztabelle package does not compile.
 docs/research/*
 !docs/research/data/
+!docs/research/data/**
 e2e/*
 !e2e/package.json
 coverage

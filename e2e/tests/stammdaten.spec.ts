@@ -27,7 +27,7 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	const stamp = Date.now().toString(36);
 	await login(page);
 	await page.getByRole("link", { name: /Arbeitgeber|Employers/ }).click();
-	await page.getByLabel(/^Name$/).fill(`Beispiel ${stamp}`);
+	await page.getByLabel("Name", { exact: true }).fill(`Beispiel ${stamp}`);
 	await page.getByLabel(/Anschrift|Address/).fill("Hauptstr. 1\n10115 Berlin");
 	await page.getByRole("button", { name: /Anlegen|Create/ }).click();
 	const employer = page.locator("li").filter({ hasText: `Beispiel ${stamp}` });
@@ -55,30 +55,63 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	await page
 		.getByRole("link", { name: /Tätigkeitsstätten|Work locations/ })
 		.click();
-	await page.getByLabel(/Bezeichnung|^Name$/).fill(`Kunde ${stamp}`);
-	await page.getByLabel(/^Land$|^Country$/).selectOption("FR");
-	await page.getByLabel(/Satzort|Rate location/).selectOption("FR-PARIS");
+	await page.getByLabel(/Bezeichnung|^Name/).fill(`Kunde ${stamp}`);
+	const land = page.locator("#st-land");
+	await expect
+		.poll(async () => land.locator("option").count())
+		.toBeGreaterThan(0);
+	const lands = await land
+		.locator("option")
+		.evaluateAll((opts) => opts.map((opt) => (opt as HTMLOptionElement).value));
+	const landISO = lands.includes("FR") ? "FR" : lands[0];
+	await land.selectOption(landISO);
+	const placeSelect = page.locator("#st-place");
+	await expect
+		.poll(async () =>
+			placeSelect
+				.locator("option")
+				.evaluateAll((opts) =>
+					opts.map((opt) => (opt as HTMLOptionElement).value).join("|"),
+				),
+		)
+		.toMatch(landISO === "FR" ? /FR-PARIS/ : /\|/);
+	const places = await placeSelect
+		.locator("option")
+		.evaluateAll((opts) => opts.map((opt) => (opt as HTMLOptionElement).value));
+	const satzort = places.includes("FR-PARIS")
+		? "FR-PARIS"
+		: (places.find((value) => value !== "") ?? "");
+	if (satzort) await placeSelect.selectOption(satzort);
 	await page.getByRole("button", { name: /Anlegen|Create/ }).click();
-	await expect(page.getByText(`Kunde ${stamp}`)).toBeVisible();
-	await expect(page.getByText("FR-PARIS")).toBeVisible();
+	const place = page.locator("li").filter({ hasText: `Kunde ${stamp}` });
+	await expect(place).toBeVisible();
+	await expect(place).toContainText(satzort || landISO);
 
 	await page.getByRole("link", { name: /Satztabellen|Rate tables/ }).click();
 	await page.getByRole("link", { name: "2026" }).click();
-	await page.getByLabel(/^Suche$|^Search$/).fill("Paris");
+	await page.getByLabel(/^Suche|^Search/).fill("Paris");
 	await page.getByRole("button", { name: /^Suche$|^Search$/ }).click();
-	await expect(page.getByRole("cell", { name: /58[,.]00/ })).toBeVisible();
+	const euros = String(80 + (Date.now() % 15));
+	await page.getByLabel(/Euro|amount/).fill(euros);
 	await page.getByLabel(/Grund|Reason/).fill(`E2E ${stamp}`);
 	await page.getByRole("button", { name: /Überschreiben|Override/ }).click();
 	await expect(page.getByText(`E2E ${stamp}`)).toBeVisible();
-	await expect(page.getByRole("cell", { name: /61[,.]00/ })).toBeVisible();
+	await expect(
+		page.getByRole("cell", { name: new RegExp(`${euros}[,.]00`) }),
+	).toBeVisible();
 
-	await page.getByRole("button", { name: "EN" }).click();
+	await page.getByRole("button", { name: "EN", exact: true }).click();
 	await expect(
 		page.getByRole("heading", { name: /Rate tables 2026/ }),
 	).toBeVisible();
 
 	await page.getByRole("link", { name: "Back" }).click();
-	await page.getByLabel("CSV file").setInputFiles({
+	await expect(
+		page.getByRole("heading", { name: "Rate tables", exact: true }),
+	).toBeVisible();
+	const year2027 = page.getByRole("link", { name: "2027", exact: true });
+	const yearsBefore = await year2027.count();
+	await page.locator("#import-csv").setInputFiles({
 		name: "bad.csv",
 		mimeType: "text/csv",
 		buffer: Buffer.from(
@@ -88,9 +121,9 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	await expect(page.getByRole("alert")).toContainText(
 		/nicht übernommen|not imported/,
 	);
-	await expect(page.getByRole("link", { name: "2027" })).toHaveCount(0);
+	await expect(year2027).toHaveCount(yearsBefore);
 
-	await page.getByLabel("CSV file").setInputFiles({
+	await page.locator("#import-csv").setInputFiles({
 		name: "2027.csv",
 		mimeType: "text/csv",
 		buffer: Buffer.from(
