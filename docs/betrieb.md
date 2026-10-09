@@ -21,7 +21,7 @@ Bei S3 liegen die Dateien im Bucket. Das Tar enthält dann nur die Datenbank und
 
 ## Litestream
 
-`deploy/docker-compose.backup.yml` startet Litestream 0.5.17 (`litestream/litestream:0.5.17-scratch`) als UID **65532**, wie die App. Root-Dateisystem nur lesend, `cap_drop: ALL`, `tmpfs` auf `/tmp`, `HOME=/tmp`. Ohne `HOME` hat das scratch-Image kein Home-Verzeichnis; `/tmp` ist der beschreibbare Arbeitsort. Die Datenbankdatei und die Replik muss UID 65532 schreiben können, weil die App dieselbe UID benutzt.
+`deploy/docker-compose.backup.yml` startet Litestream 0.5.17 (`litestream/litestream:0.5.17-scratch`) als UID **65532**, wie die App. Root-Dateisystem nur lesend, `cap_drop: ALL`, `tmpfs` auf `/tmp`, `HOME=/tmp`. Ohne `HOME` hat das scratch-Image kein Home-Verzeichnis; `/tmp` ist der beschreibbare Arbeitsort. Litestream schreibt die Replik in den Replica-Pfad und legt neben der Datenbank `.reisekosten.db-litestream` an. Beides gehört UID 65532, deshalb muss `/data` für diese UID beschreibbar sein.
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.backup.yml up -d

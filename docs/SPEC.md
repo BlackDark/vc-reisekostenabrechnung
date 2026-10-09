@@ -1321,7 +1321,7 @@ Testdaten: Belegfotos aus [K] (frei lizenzierte Commons-Bilder + synthetische) a
 | O13 | **Frühstück herausrechnen** statt Kürzung (4.8) weicht nur in Randfällen ab | v1 Kürzung; Variante auf Später-Liste | – |
 | O14 | Erste Tätigkeitsstätte/Wohnung werden nicht modelliert; der Nutzer entscheidet, ob eine Reise vorliegt (UI-Hinweis Entfernungspauschale ≠ Reisekosten) | so lassen | – |
 | O15 | Renovate als gehostete GitHub-App (Mend) installieren | Eduard installiert die App für `BlackDark/vc-reisekostenabrechnung` | Eduard |
-| O16 | **Litestream als UID 65532** im scratch-Image | Erprobt in M8: `user: 65532:65532`, read-only, `cap_drop: ALL`, `tmpfs /tmp`, `HOME=/tmp` (scratch hat kein Home). Der CI-Job `backup` repliziert und stellt eine Datei-Replik wieder her (`scripts/litestream-smoke.sh`). Litestream 0.5 legt die Replikdaten im Replica-Pfad ab; ein festes Verzeichnis `/data/.reisekosten.db-litestream` gibt es in 0.5 nicht mehr. | erledigt |
+| O16 | **Litestream als UID 65532** im scratch-Image | Erprobt in M8: `user: 65532:65532`, read-only, `cap_drop: ALL`, `tmpfs /tmp`, `HOME=/tmp` (scratch hat kein Home). Der CI-Job `backup` repliziert und stellt eine Datei-Replik wieder her (`scripts/litestream-smoke.sh`). Litestream 0.5 schreibt die Replik in den Replica-Pfad und legt zusätzlich neben der Datenbank `.reisekosten.db-litestream` an. Beides gehört UID 65532, deshalb muss `/data` für diese UID beschreibbar sein. | erledigt |
 
 ### Gefundene Widersprüche (und wie sie aufgelöst wurden)
 

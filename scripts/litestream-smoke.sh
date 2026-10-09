@@ -7,7 +7,11 @@ root=$(mktemp -d)
 name=rk-ls-smoke-$$
 cleanup() {
   docker rm -f "$name" >/dev/null 2>&1 || true
-  rm -rf "$root"
+  # Litestream writes replica files and .reisekosten.db-litestream as UID 65532.
+  # The runner cannot unlink those; root can. A cleanup failure must not fail the job.
+  if [ -n "${root:-}" ] && [ -d "$root" ]; then
+    sudo -n rm -rf "$root" || rm -rf "$root" || true
+  fi
 }
 trap cleanup EXIT
 mkdir -p "$root/data" "$root/replica"
