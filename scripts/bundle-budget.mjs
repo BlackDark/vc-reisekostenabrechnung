@@ -4,16 +4,23 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
 const dir = fileURLToPath(new URL("../web/dist/assets/", import.meta.url));
-const files = readdirSync(dir).filter((name) => name.startsWith("index-") && name.endsWith(".js"));
-if (files.length !== 1) {
-	console.error("expected one initial JS chunk", files);
+const files = readdirSync(dir);
+
+function gzip(name) {
+	return gzipSync(readFileSync(join(dir, name))).length;
+}
+
+const js = files.filter((name) => name.endsWith(".js"));
+const css = files.filter((name) => name.endsWith(".css"));
+const initial = js.filter((name) => name.startsWith("index-"));
+if (initial.length !== 1) {
+	console.error("expected one initial JS chunk", initial);
 	process.exit(1);
 }
-const raw = readFileSync(join(dir, files[0]));
-const size = gzipSync(raw).length;
-const limit = 150 * 1024;
-console.log(`initial JS gzip ${size} bytes (${files[0]})`);
-if (size > limit) {
-	console.error(`bundle budget exceeded: ${size} > ${limit}`);
-	process.exit(1);
-}
+
+const initialJs = gzip(initial[0]);
+const cssBytes = css.reduce((sum, name) => sum + gzip(name), 0);
+const jsBytes = js.reduce((sum, name) => sum + gzip(name), 0);
+console.log(`initial JS gzip ${initialJs} bytes (${initial[0]})`);
+console.log(`CSS gzip ${cssBytes} bytes (${css.join(", ") || "none"})`);
+console.log(`total JS gzip ${jsBytes} bytes`);

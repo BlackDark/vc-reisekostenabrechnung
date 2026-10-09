@@ -51,6 +51,22 @@ function routerPatterns(): string[] {
 	);
 }
 
+test("default theme is dark", async ({ page }) => {
+	await page.goto("/login");
+	await expect(
+		page.getByRole("heading", { name: /Anmelden|Sign in/ }),
+	).toBeVisible();
+	await expect
+		.poll(() =>
+			page.evaluate(() => document.documentElement.classList.contains("dark")),
+		)
+		.toBe(true);
+	const scheme = await page.evaluate(
+		() => getComputedStyle(document.documentElement).colorScheme,
+	);
+	expect(scheme).toContain("dark");
+});
+
 test("covers every router path", () => {
 	expect([...patterns].sort()).toEqual(routerPatterns().sort());
 });
@@ -279,7 +295,12 @@ async function ensureClaim(page: Page): Promise<string> {
 }
 
 async function ensureReceipt(page: Page): Promise<string> {
+	const listed = page.waitForResponse(
+		(res) =>
+			res.url().includes("/api/v1/belege") && res.request().method() === "GET",
+	);
 	await page.goto("/belege");
+	await listed;
 	const link = page
 		.locator('a[href^="/belege/"]')
 		.filter({ hasNotText: /erfassen|Capture|neu/i });
@@ -444,6 +465,20 @@ test("every page loads", async ({ page }, info) => {
 		"/abrechnungen",
 	]);
 	expect([...covered].sort()).toEqual([...patterns].sort());
+	await page.getByRole("button", { name: /Hell|Light/ }).click();
+	await expect
+		.poll(() =>
+			page.evaluate(() => document.documentElement.classList.contains("dark")),
+		)
+		.toBe(false);
+	await openAndShot(page, project, "reisen-light", "/reisen", /Reisen|Trips/);
+	await page.goto("/profil");
+	await page.getByRole("button", { name: /Abmelden|Sign out/ }).click();
+	await expect(
+		page.getByRole("heading", { name: /Anmelden|Sign in/ }),
+	).toBeVisible();
+	await shot(page, project, "login-light", /Anmelden|Sign in/);
+
 	console.log(
 		`screenshot tour ${project} seed_and_pages_ms ${Date.now() - started}`,
 	);

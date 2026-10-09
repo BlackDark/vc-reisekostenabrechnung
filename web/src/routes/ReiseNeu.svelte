@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { api } from "$lib/api";
+	import DateField from "$lib/components/date-field.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -169,27 +173,27 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.reise_new()}</h1>
+<h1 class="text-2xl font-semibold tracking-tight">{m.reise_new()}</h1>
 <p class="mt-2 text-sm">{m.reise_zone_hint()}</p>
 {#if templates.length > 0}
-	<label class="mt-4 grid gap-1 text-sm">
+	<label class="mt-4 grid gap-1 text-sm" for="vorlage-apply">
 		{m.reise_apply()}
-		<select id="vorlage-apply" class="rounded border px-3 py-2" onchange={applyTemplate}>
+		<NativeSelect class="w-full" id="vorlage-apply" onchange={applyTemplate}>
 			<option value=""> </option>
 			{#each templates as item (item.id)}
 				<option value={item.id}>{item.name}</option>
 			{/each}
-		</select>
+		</NativeSelect>
 	</label>
 {/if}
 <form class="mt-4 grid gap-3" onsubmit={create}>
 	<label class="grid gap-1 text-sm" for="reise-anlass">
 		{m.reise_anlass()}
-		<input id="reise-anlass" class="rounded border px-3 py-2" bind:value={anlass} required />
+		<Input id="reise-anlass" bind:value={anlass} required  />
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-projekt">
 		{m.reise_projekt()}
-		<input id="reise-projekt" class="rounded border px-3 py-2" list="projekte" bind:value={projekt} />
+		<Input id="reise-projekt" list="projekte" bind:value={projekt}  />
 		<datalist id="projekte">
 			{#each projects as name (name)}
 				<option value={name}></option>
@@ -198,23 +202,23 @@
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-ag">
 		{m.reise_employer()}
-		<select id="reise-ag" class="rounded border px-3 py-2" bind:value={employer} required>
+		<NativeSelect class="w-full" id="reise-ag" bind:value={employer} required>
 			{#each employers as item (item.id)}
 				<option value={item.id}>{item.name}</option>
 			{/each}
-		</select>
+		</NativeSelect>
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-beginn">
 		{m.reise_beginn()}
-		<input id="reise-beginn" class="rounded border px-3 py-2" type="datetime-local" bind:value={beginn} onchange={() => void loadLands()} required />
+		<DateField id="reise-beginn" type="datetime-local" bind:value={beginn} onchange={() => void loadLands()} required  />
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-ende">
 		{m.reise_ende()}
-		<input id="reise-ende" class="rounded border px-3 py-2" type="datetime-local" bind:value={ende} required />
+		<DateField id="reise-ende" type="datetime-local" bind:value={ende} required  />
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-zone">
 		{m.reise_zone()}
-		<input id="reise-zone" class="rounded border px-3 py-2" list="zonen" bind:value={zone} required />
+		<Input id="reise-zone" list="zonen" bind:value={zone} required  />
 		<datalist id="zonen">
 			<option value="Europe/Berlin"></option>
 			<option value="Europe/Paris"></option>
@@ -224,91 +228,90 @@
 	</label>
 	<label class="grid gap-1 text-sm" for="land-search">
 		{m.reise_search()}
-		<input id="land-search" class="rounded border px-3 py-2" bind:value={landQuery} />
+		<Input id="land-search" bind:value={landQuery}  />
 	</label>
 	<label class="grid gap-1 text-sm" for="leg-land">
 		{m.reise_country()}
-		<select
+		<NativeSelect class="w-full"
 			id="leg-land"
-			class="rounded border px-3 py-2"
 			bind:value={land}
 			onchange={() => void loadPlaces()}
 		>
 			{#each visibleLands(land) as item (item.land_iso)}
 				<option value={item.land_iso}>{item.land_name_de}</option>
 			{/each}
-		</select>
+		</NativeSelect>
 	</label>
 	<label class="grid gap-1 text-sm" for="leg-place">
 		{m.reise_place()}
-		<select id="leg-place" class="rounded border px-3 py-2" bind:value={satzort}>
+		<NativeSelect class="w-full" id="leg-place" bind:value={satzort}>
 			<option value="">im Übrigen</option>
 			{#each places as place (place.satzort + (place.ort_name ?? ""))}
 				{#if place.satzort}
 					<option value={place.satzort}>{place.ort_name || place.satzort}</option>
 				{/if}
 			{/each}
-		</select>
+		</NativeSelect>
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-ort">
 		{m.reise_city()}
-		<input id="reise-ort" class="rounded border px-3 py-2" bind:value={ort} />
+		<Input id="reise-ort" bind:value={ort}  />
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-means">
 		{m.reise_means()}
-		<select id="reise-means" class="rounded border px-3 py-2" bind:value={means}>
+		<NativeSelect class="w-full" id="reise-means" bind:value={means}>
 			<option value="bahn">Bahn</option>
 			<option value="flug">Flug</option>
 			<option value="pkw">Pkw</option>
 			<option value="schiff">Schiff</option>
 			<option value="bus">Bus</option>
 			<option value="sonstiges">Sonstiges</option>
-		</select>
+		</NativeSelect>
 	</label>
 	<label class="grid gap-1 text-sm" for="reise-unterkunft">
 		{m.reise_lodging()}
-		<select id="reise-unterkunft" class="rounded border px-3 py-2" bind:value={unterkunft}>
+		<NativeSelect class="w-full" id="reise-unterkunft" bind:value={unterkunft}>
 			<option value="gestellt">{m.lodging_gestellt()}</option>
 			<option value="pauschale">{m.lodging_pauschale()}</option>
 			<option value="beleg">{m.lodging_beleg()}</option>
 			<option value="verkehrsmittel">{m.lodging_verkehrsmittel()}</option>
 			<option value="keine">{m.lodging_keine()}</option>
-		</select>
+		</NativeSelect>
 	</label>
 	{#each extras as leg, index (index)}
-		<fieldset class="grid gap-2 rounded border p-3">
+		<fieldset class="grid gap-2 bg-card rounded-xl border p-3">
 			<legend class="text-sm">{m.reise_add_leg()}</legend>
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="f-reiseneu-1">
 				{m.reise_beginn()}
-				<input class="rounded border px-3 py-2" type="datetime-local" bind:value={leg.ankunft} required />
+				<DateField id="f-reiseneu-1" type="datetime-local" bind:value={leg.ankunft} required  />
 			</label>
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="f-reiseneu-2">
 				{m.reise_country()}
-				<select class="rounded border px-3 py-2" bind:value={leg.land} onchange={() => void loadExtraPlaces(index)}>
+				<NativeSelect id="f-reiseneu-2" class="w-full" bind:value={leg.land} onchange={() => void loadExtraPlaces(index)}>
 					{#each visibleLands(leg.land) as item (item.land_iso)}
 						<option value={item.land_iso}>{item.land_name_de}</option>
 					{/each}
-				</select>
+				</NativeSelect>
 			</label>
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="f-reiseneu-3">
 				{m.reise_place()}
-				<select class="rounded border px-3 py-2" bind:value={leg.satzort}>
+				<NativeSelect id="f-reiseneu-3" class="w-full" bind:value={leg.satzort}>
 					<option value="">im Übrigen</option>
 					{#each leg.places as place (place.satzort + (place.ort_name ?? ""))}
 						{#if place.satzort}
 							<option value={place.satzort}>{place.ort_name || place.satzort}</option>
 						{/if}
 					{/each}
-				</select>
+				</NativeSelect>
 			</label>
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="f-reiseneu-4">
 				{m.reise_city()}
-				<input class="rounded border px-3 py-2" bind:value={leg.ort} />
+				<Input id="f-reiseneu-4" bind:value={leg.ort}  />
 			</label>
 		</fieldset>
 	{/each}
-	<button class="rounded border px-3 py-2" type="button" onclick={() => void addLeg()}>{m.reise_add_leg()}</button>
+	<Button variant="outline" type="button" onclick={() => void addLeg()}>{m.reise_add_leg()}</Button>
 	{#if error}<p class="text-sm" role="alert">{error}</p>{/if}
-	<button class="rounded bg-neutral-900 px-3 py-3 text-white" type="submit">{m.create()}</button>
+	<Button type="submit">{m.create()}</Button>
 </form>
 <p class="mt-4 text-sm"><a href={p("/reisen")}>{m.back()}</a></p>

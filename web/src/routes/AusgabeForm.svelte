@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import type { components } from "$lib/api/schema";
+	import DateField from "$lib/components/date-field.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { euro } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -214,7 +218,7 @@
 </script>
 
 <p><a class="text-sm underline" href={p("/reisen")}>{m.back()}</a></p>
-<h1 class="mt-2 text-2xl font-semibold">{m.ausgabe_title()}</h1>
+<h1 class="mt-2 text-2xl font-semibold tracking-tight">{m.ausgabe_title()}</h1>
 {#if kiMark}
 	<p class="mt-2 text-sm" data-testid="ki-marke">{m.ki_mark()}: {m.ki_suggestion()}</p>
 {/if}
@@ -245,45 +249,45 @@
 		</ul>
 	{/if}
 	{#if loaded.kostenart === "bewirtung" && !loaded.bewirtung?.bestaetigt_am}
-		<button class="mt-3 rounded border px-3 py-3" type="button" onclick={() => void confirmBewirtung()}>{m.ausgabe_confirm()}</button>
+		<Button variant="outline" class="mt-3" type="button" onclick={() => void confirmBewirtung()}>{m.ausgabe_confirm()}</Button>
 	{/if}
 {/if}
 
 <form class="mt-4 grid gap-3" onsubmit={(event) => { event.preventDefault(); void save(); }}>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="ausgabe-kostenart">
 		{m.ausgabe_kostenart()}
-		<select id="ausgabe-kostenart" class="rounded border px-3 py-3" bind:value={kostenart}>
+		<NativeSelect class="w-full" id="ausgabe-kostenart" bind:value={kostenart}>
 			<option value="fahrtkosten">{m.kostenart_fahrtkosten()}</option>
 			<option value="verpflegung">{m.kostenart_verpflegung()}</option>
 			<option value="uebernachtung">{m.kostenart_uebernachtung()}</option>
 			<option value="reisenebenkosten">{m.kostenart_reisenebenkosten()}</option>
 			<option value="bewirtung">{m.kostenart_bewirtung()}</option>
-		</select>
+		</NativeSelect>
 	</label>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="ausgabe-datum">
 		{m.ausgabe_datum()}
-		<input id="ausgabe-datum" class="rounded border px-3 py-3" type="date" bind:value={datum} required />
+		<DateField id="ausgabe-datum" type="date" bind:value={datum} required  />
 	</label>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="ausgabe-leistender">
 		{m.ausgabe_leistender()}
-		<input id="ausgabe-leistender" class="rounded border px-3 py-3" bind:value={leistender} />
+		<Input id="ausgabe-leistender" bind:value={leistender}  />
 	</label>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="ausgabe-empfaenger">
 		{m.ausgabe_empfaenger()}
-		<input id="ausgabe-empfaenger" class="rounded border px-3 py-3" bind:value={empfaenger} />
+		<Input id="ausgabe-empfaenger" bind:value={empfaenger}  />
 	</label>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="ausgabe-betrag">
 		{m.ausgabe_betrag()}
-		<input id="ausgabe-betrag" class="rounded border px-3 py-3" inputmode="decimal" bind:value={betrag} required />
+		<Input id="ausgabe-betrag" inputmode="decimal" bind:value={betrag} required  />
 	</label>
-	<label class="grid gap-1 text-sm">
+	<label class="grid gap-1 text-sm" for="ausgabe-waehrung">
 		{m.ausgabe_waehrung()}
-		<select id="ausgabe-waehrung" class="rounded border px-3 py-3" bind:value={waehrung}>
+		<NativeSelect class="w-full" id="ausgabe-waehrung" bind:value={waehrung}>
 			<option>EUR</option>
 			<option>USD</option>
 			<option>GBP</option>
 			<option>CHF</option>
-		</select>
+		</NativeSelect>
 	</label>
 	<label class="flex items-center gap-2 text-sm">
 		<input type="checkbox" bind:checked={aufArbeitgeber} />
@@ -294,26 +298,26 @@
 	{/if}
 	{#if kostenart === "bewirtung"}
 		<p class="text-sm">{m.ausgabe_privat_hint()}</p>
-		<label class="grid gap-1 text-sm">
+		<label class="grid gap-1 text-sm" for="f-ausgabeform-1">
 			{m.ausgabe_bewirtung_anlass()}
-			<input class="rounded border px-3 py-3" bind:value={anlass} />
+			<Input id="f-ausgabeform-1" bind:value={anlass}  />
 		</label>
-		<label class="grid gap-1 text-sm">
+		<label class="grid gap-1 text-sm" for="f-ausgabeform-2">
 			{m.ausgabe_bewirtung_ort()}
-			<input class="rounded border px-3 py-3" bind:value={ort} />
+			<Input id="f-ausgabeform-2" bind:value={ort}  />
 		</label>
-		<label class="grid gap-1 text-sm">
+		<label class="grid gap-1 text-sm" for="f-ausgabeform-3">
 			{m.ausgabe_bewirtung_wer()}
-			<input class="rounded border px-3 py-3" bind:value={bewirtender} />
+			<Input id="f-ausgabeform-3" bind:value={bewirtender}  />
 		</label>
 		<p class="text-sm font-medium">{m.ausgabe_teilnehmer()}</p>
 		{#each teilnehmer as person, i (i)}
 			<div class="grid gap-2 sm:grid-cols-2">
-				<input class="rounded border px-3 py-3" placeholder={m.ausgabe_teilnehmer_name()} bind:value={person.name} />
-				<input class="rounded border px-3 py-3" placeholder={m.ausgabe_teilnehmer_firma()} bind:value={person.firma} />
+				<Input placeholder={m.ausgabe_teilnehmer_name()} bind:value={person.name}  />
+				<Input placeholder={m.ausgabe_teilnehmer_firma()} bind:value={person.firma}  />
 			</div>
 		{/each}
-		<button class="rounded border px-3 py-3 text-sm" type="button" onclick={() => { teilnehmer = [...teilnehmer, { name: "", firma: "" }]; }}>{m.ausgabe_teilnehmer_add()}</button>
+		<Button variant="outline" type="button" onclick={() => { teilnehmer = [...teilnehmer, { name: "", firma: "" }]; }}>{m.ausgabe_teilnehmer_add()}</Button>
 		<label class="flex items-center gap-2 text-sm">
 			<input type="checkbox" bind:checked={tse} />
 			{m.ausgabe_tse()}
@@ -323,24 +327,24 @@
 		<legend class="text-sm font-medium">{m.ausgabe_vat()}</legend>
 		{#each anteile as share, i (i)}
 			<div class="grid gap-2 sm:grid-cols-3">
-				<label class="grid gap-1 text-sm">
+				<label class="grid gap-1 text-sm" for="f-ausgabeform-4">
 					{m.ausgabe_satz()}
-					<input class="rounded border px-3 py-3" type="number" bind:value={share.satz} />
+					<Input id="f-ausgabeform-4" type="number" bind:value={share.satz}  />
 				</label>
-				<label class="grid gap-1 text-sm">
+				<label class="grid gap-1 text-sm" for="f-ausgabeform-5">
 					{m.ausgabe_betrag()}
-					<input class="rounded border px-3 py-3" inputmode="decimal" bind:value={share.brutto} />
+					<Input id="f-ausgabeform-5" inputmode="decimal" bind:value={share.brutto}  />
 				</label>
-				<label class="grid gap-1 text-sm">
+				<label class="grid gap-1 text-sm" for="f-ausgabeform-6">
 					Land
-					<input class="rounded border px-3 py-3" bind:value={share.steuerland} />
+					<Input id="f-ausgabeform-6" bind:value={share.steuerland}  />
 				</label>
 			</div>
 		{/each}
 		<div class="flex flex-wrap gap-2">
-			<button class="rounded border px-3 py-3 text-sm" type="button" onclick={() => { anteile = [...anteile, { satz: 700, steuerland: "DE", brutto: "" }]; }}>{m.ausgabe_add_vat()}</button>
-			<button class="rounded border px-3 py-3 text-sm" type="button" onclick={() => void applyHelper("gastronomie")}>{m.ausgabe_gastro()}</button>
-			<button class="rounded border px-3 py-3 text-sm" type="button" onclick={() => void applyHelper("hotel")}>{m.ausgabe_hotel()}</button>
+			<Button variant="outline" type="button" onclick={() => { anteile = [...anteile, { satz: 700, steuerland: "DE", brutto: "" }]; }}>{m.ausgabe_add_vat()}</Button>
+			<Button variant="outline" type="button" onclick={() => void applyHelper("gastronomie")}>{m.ausgabe_gastro()}</Button>
+			<Button variant="outline" type="button" onclick={() => void applyHelper("hotel")}>{m.ausgabe_hotel()}</Button>
 		</div>
 	</fieldset>
 	<label class="flex items-center gap-2 text-sm">
@@ -348,21 +352,21 @@
 		{m.ausgabe_eigenbeleg()}
 	</label>
 	{#if eigen}
-		<label class="grid gap-1 text-sm">
+		<label class="grid gap-1 text-sm" for="f-ausgabeform-7">
 			{m.ausgabe_eigen_grund()}
-			<input class="rounded border px-3 py-3" bind:value={eigenGrund} />
+			<Input id="f-ausgabeform-7" bind:value={eigenGrund}  />
 		</label>
-		<label class="grid gap-1 text-sm">
+		<label class="grid gap-1 text-sm" for="f-ausgabeform-8">
 			{m.ausgabe_eigen_wer()}
-			<input class="rounded border px-3 py-3" bind:value={eigenWer} />
+			<Input id="f-ausgabeform-8" bind:value={eigenWer}  />
 		</label>
-		<label class="grid gap-1 text-sm">
+		<label class="grid gap-1 text-sm" for="f-ausgabeform-9">
 			{m.ausgabe_eigen_art()}
-			<input class="rounded border px-3 py-3" bind:value={eigenArt} />
+			<Input id="f-ausgabeform-9" bind:value={eigenArt}  />
 		</label>
 	{/if}
 	{#if error}
 		<p class="text-sm" role="alert">{error}</p>
 	{/if}
-	<button id="ausgabe-save" class="rounded bg-blue-800 px-3 py-3 text-white" type="submit" disabled={saving}>{m.create()}</button>
+	<Button id="ausgabe-save" type="submit" disabled={saving}>{m.create()}</Button>
 </form>

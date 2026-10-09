@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import { Button } from "$lib/components/ui/button";
+	import * as Card from "$lib/components/ui/card";
+	import * as Field from "$lib/components/ui/field";
+	import { Input } from "$lib/components/ui/input";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
@@ -26,28 +29,34 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.setup_title()}</h1>
-<form class="mt-4 grid max-w-sm gap-3" onsubmit={submit}>
-	<fieldset class="grid gap-3" disabled={!session.online}>
-		<label class="grid gap-1 text-sm" for="token">
-			{m.setup_token()}
-			<input id="token" class="rounded border px-2 py-1" bind:value={token} />
-		</label>
-		<label class="grid gap-1 text-sm" for="setup-user">
-			{m.login_username()}
-			<input id="setup-user" class="rounded border px-2 py-1" bind:value={benutzername} />
-		</label>
-		<label class="grid gap-1 text-sm" for="setup-name">
-			{m.setup_name()}
-			<input id="setup-name" class="rounded border px-2 py-1" bind:value={anzeigename} />
-		</label>
-		<label class="grid gap-1 text-sm" for="setup-pass">
-			{m.login_password()}
-			<input id="setup-pass" class="rounded border px-2 py-1" type="password" bind:value={passwort} />
-		</label>
-		{#if failed}
-			<p class="text-sm text-red-700" role="alert">{m.login_failed()}</p>
-		{/if}
-		<Button type="submit">{m.setup_submit()}</Button>
-	</fieldset>
-</form>
+<Card.Root>
+	<Card.Header>
+		<h1 class="text-2xl font-semibold tracking-tight">{m.setup_title()}</h1>
+	</Card.Header>
+	<Card.Content>
+		<form class="grid gap-4" onsubmit={submit}>
+			<fieldset class="grid gap-4" disabled={!session.online}>
+				<Field.Field>
+					<Field.Label for="token">{m.setup_token()}</Field.Label>
+					<Input id="token" bind:value={token} />
+				</Field.Field>
+				<Field.Field>
+					<Field.Label for="setup-user">{m.login_username()}</Field.Label>
+					<Input id="setup-user" bind:value={benutzername} />
+				</Field.Field>
+				<Field.Field>
+					<Field.Label for="setup-name">{m.setup_name()}</Field.Label>
+					<Input id="setup-name" bind:value={anzeigename} />
+				</Field.Field>
+				<Field.Field>
+					<Field.Label for="setup-pass">{m.login_password()}</Field.Label>
+					<Input id="setup-pass" type="password" bind:value={passwort} />
+				</Field.Field>
+				{#if failed}
+					<p class="text-destructive text-sm" role="alert">{m.login_failed()}</p>
+				{/if}
+				<Button type="submit">{m.setup_submit()}</Button>
+			</fieldset>
+		</form>
+	</Card.Content>
+</Card.Root>

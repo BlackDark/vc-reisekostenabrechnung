@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import { Button } from "$lib/components/ui/button";
+	import { Textarea } from "$lib/components/ui/textarea";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
@@ -58,14 +59,14 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.aufbewahrung_title()}</h1>
+<h1 class="text-2xl font-semibold tracking-tight">{m.aufbewahrung_title()}</h1>
 <p class="mt-3 text-sm" data-testid="aufbewahrung-hinweis">{m.aufbewahrung_hint()}</p>
 {#if items.length === 0}
-	<p class="mt-6 text-sm">{m.aufbewahrung_empty()}</p>
+	<p class="mt-6 text-sm text-muted-foreground">{m.aufbewahrung_empty()}</p>
 {:else}
 	<ul class="mt-6 grid gap-3 text-sm">
 		{#each items as item (item.art + item.id)}
-			<li class="rounded border p-3">
+			<li class="bg-card rounded-xl border p-3">
 				<p>
 					{item.art === "beleg" ? m.aufbewahrung_art_beleg() : m.aufbewahrung_art_export()}
 					· {item.bezeichnung} · {item.aufbewahren_bis}
@@ -76,7 +77,7 @@
 						· {m.aufbewahrung_deleted()}
 					{/if}
 				</p>
-				<p class="mt-1 break-all text-xs text-neutral-600">{item.sha256}</p>
+				<p class="mt-1 break-all text-xs text-muted-foreground">{item.sha256}</p>
 				{#if item.abgelaufen && !item.inhalt_geloescht}
 					<label class="mt-2 flex items-center gap-2">
 						<input
@@ -97,9 +98,9 @@
 		</label>
 		<label class="grid gap-1 text-sm" for="aufbewahrung-grund">
 			{m.abrechnung_reason()}
-			<textarea id="aufbewahrung-grund" class="rounded border px-2 py-1" bind:value={grund} required></textarea>
+			<Textarea id="aufbewahrung-grund" bind:value={grund} required></Textarea>
 		</label>
 		<Button type="submit" data-testid="aufbewahrung-purge">{m.aufbewahrung_delete()}</Button>
 	</form>
 {/if}
-{#if error}<p class="mt-3 text-sm text-red-700" role="alert">{error}</p>{/if}
+{#if error}<p class="mt-3 text-sm text-destructive" role="alert">{error}</p>{/if}

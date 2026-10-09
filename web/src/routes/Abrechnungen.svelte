@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import type { components } from "$lib/api/schema";
+	import StatusBadge from "$lib/components/status-badge.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import * as Empty from "$lib/components/ui/empty";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -22,28 +25,32 @@
 		const res = await api.GET("/api/v1/abrechnungen");
 		rows = res.data?.items ?? [];
 	}
-
-	function statusLabel(status: string): string {
-		if (status === "eingereicht") return m.abrechnung_status_eingereicht();
-		if (status === "bezahlt") return m.abrechnung_status_bezahlt();
-		return m.abrechnung_status_entwurf();
-	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.abrechnung_title()}</h1>
-<p class="mt-3">
-	<a class="rounded bg-blue-800 px-3 py-3 text-white" href={p("/abrechnungen/neu")}>{m.abrechnung_new()}</a>
-</p>
+<div class="flex flex-wrap items-end justify-between gap-3">
+	<h1 class="text-2xl font-semibold tracking-tight">{m.abrechnung_title()}</h1>
+	<Button href={p("/abrechnungen/neu")}>{m.abrechnung_new()}</Button>
+</div>
 {#if rows.length === 0}
-	<p class="mt-4 text-sm">{m.abrechnung_empty()}</p>
+	<Empty.Root class="mt-4 border">
+		<Empty.Header>
+			<Empty.Title>{m.abrechnung_empty()}</Empty.Title>
+		</Empty.Header>
+	</Empty.Root>
 {:else}
 	<ul class="mt-4 grid gap-2">
 		{#each rows as row (row.id)}
 			<li>
-				<a class="block rounded border px-3 py-3 text-sm" href={p("/abrechnungen/:id", { params: { id: row.id } })}>
-					<span class="font-medium">{row.titel}</span>
-					<span class="mt-1 block">
-						{row.von} – {row.bis} · {statusLabel(row.status)}
+				<a
+					class="bg-card hover:bg-muted block rounded-xl border px-4 py-3 text-sm"
+					href={p("/abrechnungen/:id", { params: { id: row.id } })}
+				>
+					<span class="flex items-center justify-between gap-3">
+						<span class="font-medium">{row.titel}</span>
+						<StatusBadge status={row.status} />
+					</span>
+					<span class="text-muted-foreground mt-1 block">
+						{row.von} – {row.bis}
 						{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
 					</span>
 				</a>

@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import type { components } from "$lib/api/schema";
+	import DateField from "$lib/components/date-field.svelte";
+	import StatusBadge from "$lib/components/status-badge.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
 	import { euro } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -44,11 +48,6 @@
 		return `${point.code}\t${point.objekt_id}`;
 	}
 
-	function statusLabel(status: string): string {
-		if (status === "eingereicht") return m.abrechnung_status_eingereicht();
-		if (status === "bezahlt") return m.abrechnung_status_bezahlt();
-		return m.abrechnung_status_entwurf();
-	}
 
 	function warnLabel(code: string): string {
 		const labels: Record<string, () => string> = {
@@ -233,11 +232,14 @@
 </script>
 
 {#if row}
-	<h1 class="text-2xl font-semibold">{row.titel}</h1>
-	<p class="mt-2 text-sm" data-status={row.status}>
-		{row.von} – {row.bis} · {statusLabel(row.status)}
-		{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
-		{#if row.aktuelle_export_version > 0} · v{row.aktuelle_export_version}{/if}
+	<h1 class="text-2xl font-semibold tracking-tight">{row.titel}</h1>
+	<p class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+		<StatusBadge status={row.status} />
+		<span>
+			{row.von} – {row.bis}
+			{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
+			{#if row.aktuelle_export_version > 0} · v{row.aktuelle_export_version}{/if}
+		</span>
 	</p>
 	<p class="mt-3 text-sm">
 		{m.abrechnung_erstattung()}: {euro(erstattung, session.locale)} EUR ·
@@ -275,9 +277,9 @@
 					{item.datum} · {euro(item.betrag_cent, session.locale)} EUR
 				</label>
 			{/each}
-			<button class="w-fit rounded border px-3 py-3 text-sm" type="button" onclick={saveSelection}>
+			<Button variant="outline" class="w-fit" type="button" onclick={saveSelection}>
 				{m.save()}
-			</button>
+			</Button>
 		</section>
 	{/if}
 
@@ -316,15 +318,14 @@
 		<p class="mt-3 text-sm" role="status">{m.abrechnung_submitting()}</p>
 	{/if}
 	{#if row.status === "entwurf" && !row.einreichung_laeuft}
-		<button
-			class="mt-4 rounded bg-blue-800 px-3 py-3 text-white"
+		<Button class="mt-4"
 			type="button"
 			data-testid="abrechnung-submit"
 			disabled={busy || blocker.length > 0}
 			onclick={submit}
 		>
 			{m.abrechnung_submit()}
-		</button>
+		</Button>
 	{/if}
 
 	{#if ready.length > 0}
@@ -333,21 +334,19 @@
 				<li data-export-version={item.version}>
 					{m.abrechnung_version()} {item.version}
 					{#if item.ersetzt_durch_version} · {m.abrechnung_replaced()}{/if}
-					<button
-						class="ml-2 underline"
+					<Button variant="link" size="sm" class="ml-2"
 						type="button"
 						data-testid="abrechnung-pdf"
 						onclick={() => download(`/api/v1/exporte/${item.id}/pdf`, `abrechnung-v${item.version}.pdf`)}
 					>
 						PDF
-					</button>
-					<button
-						class="ml-2 underline"
+					</Button>
+					<Button variant="link" size="sm" class="ml-2"
 						type="button"
 						onclick={() => download(`/api/v1/exporte/${item.id}/zip`, `abrechnung-v${item.version}.zip`)}
 					>
 						ZIP
-					</button>
+					</Button>
 				</li>
 			{/each}
 		</ul>
@@ -355,33 +354,33 @@
 
 	{#if row.status === "eingereicht"}
 		<form class="mt-4 grid gap-2" onsubmit={markPaid}>
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="bezahlt-am">
 				{m.abrechnung_paid_date()}
-				<input id="bezahlt-am" class="rounded border px-3 py-3" type="date" bind:value={paidDate} required />
+				<DateField id="bezahlt-am" type="date" bind:value={paidDate} required  />
 			</label>
-			<button class="w-fit rounded bg-blue-800 px-3 py-3 text-white" type="submit" data-testid="abrechnung-paid">
+			<Button class="w-fit" type="submit" data-testid="abrechnung-paid">
 				{m.abrechnung_mark_paid()}
-			</button>
+			</Button>
 		</form>
 		<form class="mt-4 grid gap-2" onsubmit={unlock}>
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="entsperr-grund">
 				{m.abrechnung_reason()}
-				<input id="entsperr-grund" class="rounded border px-3 py-3" bind:value={reason} minlength={10} required />
+				<Input id="entsperr-grund" bind:value={reason} minlength={10} required  />
 			</label>
-			<button class="w-fit rounded border px-3 py-3" type="submit" data-testid="abrechnung-unlock">
+			<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-unlock">
 				{m.abrechnung_unlock()}
-			</button>
+			</Button>
 		</form>
 	{/if}
 	{#if row.status === "bezahlt"}
 		<form class="mt-4 grid gap-2" onsubmit={withdraw}>
-			<label class="grid gap-1 text-sm">
+			<label class="grid gap-1 text-sm" for="zurueck-grund">
 				{m.abrechnung_reason()}
-				<input id="zurueck-grund" class="rounded border px-3 py-3" bind:value={reason} required />
+				<Input id="zurueck-grund" bind:value={reason} required  />
 			</label>
-			<button class="w-fit rounded border px-3 py-3" type="submit" data-testid="abrechnung-withdraw">
+			<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-withdraw">
 				{m.abrechnung_withdraw()}
-			</button>
+			</Button>
 		</form>
 	{/if}
 {/if}

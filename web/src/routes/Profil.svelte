@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from "$lib/api";
 	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
@@ -59,17 +60,17 @@
 	}
 </script>
 
-<h1 class="text-2xl font-semibold">{m.profile_title()}</h1>
+<h1 class="text-2xl font-semibold tracking-tight">{m.profile_title()}</h1>
 {#if session.nutzer}
 	<form class="mt-4 grid max-w-sm gap-3" onsubmit={save}>
 		<fieldset class="grid gap-3" disabled={!session.online}>
 			<label class="grid gap-1 text-sm" for="anzeigename">
 				{m.setup_name()}
-				<input id="anzeigename" class="rounded border px-2 py-1" bind:value={anzeigename} />
+				<Input id="anzeigename" bind:value={anzeigename}  />
 			</label>
 			<label class="grid gap-1 text-sm" for="personalnummer">
 				{m.personalnummer()}
-				<input id="personalnummer" class="rounded border px-2 py-1" bind:value={personalnummer} />
+				<Input id="personalnummer" bind:value={personalnummer}  />
 			</label>
 			<p class="text-sm">{m.language()}: {session.locale}</p>
 			{#if session.aiAktiv}
@@ -83,7 +84,7 @@
 		</fieldset>
 	</form>
 	{#if letterhead}
-		<section class="mt-8 max-w-sm rounded border p-4" aria-label={m.letterhead()}>
+		<section class="mt-8 max-w-sm bg-card rounded-xl border p-4" aria-label={m.letterhead()}>
 			<h2 class="text-lg font-medium">{m.letterhead()}</h2>
 			{#if letterhead.logo_datei_id}
 				<img class="mt-2 h-12 w-auto" alt={letterhead.name} src={`/api/v1/arbeitgeber/${letterhead.id}/logo`} />
@@ -97,7 +98,7 @@
 		{#each sessions as row (row.id)}
 			<li class="flex items-center justify-between gap-2">
 				<span>{row.user_agent || row.id}{row.aktuell ? ` (${m.current_session()})` : ""}</span>
-				<button type="button" class="underline" onclick={() => endSession(row.id)}>{m.end_session()}</button>
+				<Button variant="link" size="sm" type="button" onclick={() => endSession(row.id)}>{m.end_session()}</Button>
 			</li>
 		{/each}
 	</ul>

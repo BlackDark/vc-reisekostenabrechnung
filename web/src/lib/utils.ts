@@ -1,8 +1,8 @@
 export { cn } from "cn";
 
-// biome-ignore lint/suspicious/noExplicitAny: shadcn component helper
+// biome-ignore lint/suspicious/noExplicitAny: shadcn helper matches an optional snippet prop
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, "child"> : T;
-// biome-ignore lint/suspicious/noExplicitAny: shadcn component helper
+// biome-ignore lint/suspicious/noExplicitAny: shadcn helper matches an optional snippet prop
 export type WithoutChildren<T> = T extends { children?: any }
 	? Omit<T, "children">
 	: T;

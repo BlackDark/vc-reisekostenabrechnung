@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Profil, Pt } from "$lib/beleg/geometry";
+	import { Button } from "$lib/components/ui/button";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -143,7 +144,7 @@
 
 <svelte:window onpaste={onPaste} />
 
-<h1 class="text-2xl font-semibold">{m.beleg_new()}</h1>
+<h1 class="text-2xl font-semibold tracking-tight">{m.beleg_new()}</h1>
 <p class="mt-2 text-sm">{m.beleg_drop()}</p>
 <section
 	class="mt-4 grid gap-3"
@@ -152,18 +153,18 @@
 	ondrop={onDrop}
 >
 	<div class="grid grid-cols-2 gap-2">
-		<label class="rounded border px-3 py-3 text-center">
+		<label class="bg-card rounded-xl border px-3 py-3 text-center">
 			{m.beleg_camera()}
 			<input class="sr-only" type="file" accept="image/*" capture="environment" onchange={onInput} />
 		</label>
-		<label class="rounded border px-3 py-3 text-center">
+		<label class="bg-card rounded-xl border px-3 py-3 text-center">
 			{m.beleg_file()}
 			<input data-testid="beleg-file" class="sr-only" type="file" accept="image/*,application/pdf,text/xml,application/xml,.xml,.pdf" multiple onchange={onInput} />
 		</label>
 	</div>
 	<div class="flex gap-2">
-		<button class="rounded border px-3 py-2" type="button" aria-pressed={profil === "bon"} onclick={() => (profil = "bon")}>{m.beleg_profil_bon()}</button>
-		<button class="rounded border px-3 py-2" type="button" aria-pressed={profil === "a4"} onclick={() => (profil = "a4")}>{m.beleg_profil_a4()}</button>
+		<Button variant="outline" type="button" aria-pressed={profil === "bon"} onclick={() => (profil = "bon")}>{m.beleg_profil_bon()}</Button>
+		<Button variant="outline" type="button" aria-pressed={profil === "a4"} onclick={() => (profil = "a4")}>{m.beleg_profil_a4()}</Button>
 	</div>
 	{#if error}
 		<p class="text-sm" role="alert">{error}</p>
@@ -171,7 +172,7 @@
 	{#if dupId}
 		<p class="text-sm">
 			<a class="underline" href={p("/belege/:id", { params: { id: dupId } })}>{m.beleg_duplikat()}</a>
-			<button class="ml-2 underline" type="button" onclick={() => void upload(true)}>{m.beleg_duplikat_ok()}</button>
+			<Button variant="link" size="sm" class="ml-2" type="button" onclick={() => void upload(true)}>{m.beleg_duplikat_ok()}</Button>
 		</p>
 	{/if}
 	{#each pages as page, pageIndex (page.id)}
@@ -200,7 +201,7 @@
 			{/if}
 		</div>
 	{/each}
-	<button class="rounded bg-blue-800 px-3 py-3 text-white disabled:opacity-50" type="button" disabled={busy || pages.length === 0} onclick={() => void upload(false)}>
+	<Button type="button" disabled={busy || pages.length === 0} onclick={() => void upload(false)}>
 		{m.beleg_upload()}
-	</button>
+	</Button>
 </section>
