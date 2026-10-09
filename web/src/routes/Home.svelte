@@ -6,7 +6,8 @@
 	import { Button } from "$lib/components/ui/button";
 	import * as Empty from "$lib/components/ui/empty";
 	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { formatWhen } from "$lib/dates";
+	import { formatRange, formatWhen } from "$lib/dates";
+	import { warningLabel } from "$lib/labels";
 	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -64,33 +65,6 @@
 		periodCents = checks.reduce((sum, res) => sum + (res.data?.erstattung_cent ?? 0), 0);
 	}
 
-	function label(code: string): string {
-		const labels: Record<string, () => string> = {
-			B01: m.warn_B01,
-			B02: m.warn_B02,
-			B03: m.warn_B03,
-			B04: m.warn_B04,
-			B05: m.warn_B05,
-			B06: m.warn_B06,
-			W01: m.warn_W01,
-			W02: m.warn_W02,
-			W03: m.warn_W03,
-			W04: m.warn_W04,
-			W05: m.warn_W05,
-			W06: m.warn_W06,
-			W07: m.warn_W07,
-			W08: m.warn_W08,
-			W09: m.warn_W09,
-			W10: m.warn_W10,
-			W11: m.warn_W11,
-			W12: m.warn_W12,
-			W13: m.warn_W13,
-			W14: m.warn_W14,
-			"H-UST-KURS": m.warn_H_UST_KURS,
-		};
-		return labels[code]?.() ?? code;
-	}
-
 	function href(item: Todo): string {
 		if (item.ausgabe_id) return p("/ausgaben/:id", { params: { id: item.ausgabe_id } });
 		if (item.beleg_id) return p("/belege/:id", { params: { id: item.beleg_id } });
@@ -133,7 +107,7 @@
 									<span class="min-w-0 truncate text-sm font-medium">{trip.anlass}</span>
 									<StatusBadge status={trip.status} />
 								</span>
-								<span class="text-muted-foreground mt-1 block text-xs">{formatWhen(trip.beginn, session.locale, "date")} – {formatWhen(trip.ende, session.locale, "date")}</span>
+								<span class="text-muted-foreground mt-1 block text-xs">{formatRange(trip.beginn, trip.ende, session.locale)}</span>
 							</a>
 						</li>
 					{/each}
@@ -187,7 +161,7 @@
 				{#each todos as item (`${item.beleg_id ?? ""}-${item.ausgabe_id ?? ""}-${item.reise_id ?? ""}-${item.code}-${item.anlass ?? ""}-${item.datum ?? ""}`)}
 					<li>
 						<a class="bg-card hover:bg-muted block rounded-xl border px-3 py-2 text-sm transition-colors" href={href(item)}>
-							{label(item.code)}{#if item.code !== "W04" && item.anlass}: {item.anlass}{/if}
+							{warningLabel(item.code)}{#if item.code !== "W04" && item.anlass}: {item.anlass}{/if}
 						</a>
 					</li>
 				{/each}

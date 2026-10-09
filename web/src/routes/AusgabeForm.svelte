@@ -6,7 +6,7 @@
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { formatWhen } from "$lib/dates";
-	import { euro } from "$lib/money";
+	import { euro, parseEuroToCents } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p, route } from "../router";
@@ -101,12 +101,6 @@
 		});
 	});
 
-	function cents(raw: string): number {
-		const n = Number(raw.trim().replace(/\s/g, "").replace(",", "."));
-		if (!Number.isFinite(n)) return 0;
-		return Math.round(n * 100);
-	}
-
 	function yearOf(value: string): number {
 		const y = Number(value.slice(0, 4));
 		return Number.isFinite(y) && y > 0 ? y : new Date().getFullYear();
@@ -114,7 +108,7 @@
 
 	async function applyHelper(art: "gastronomie" | "hotel") {
 		const res = await api.POST("/api/v1/mwst-helfer", {
-			body: { art, betrag_cent: cents(betrag), jahr: yearOf(datum) },
+			body: { art, betrag_cent: parseEuroToCents(betrag), jahr: yearOf(datum) },
 		});
 		const rows = res.data?.anteile ?? [];
 		if (rows.length === 0) {
@@ -140,13 +134,13 @@
 						leistender,
 						datum,
 						waehrung,
-						betrag_brutto_cent: cents(betrag),
+						betrag_brutto_cent: parseEuroToCents(betrag),
 						kostenart,
 						empfaenger_name: empfaenger,
 						volltext: kiText,
 						steueranteile: anteile.map((row) => ({
 							satz: Number(row.satz),
-							brutto_cent: cents(row.brutto || betrag),
+							brutto_cent: parseEuroToCents(row.brutto || betrag),
 						})),
 					},
 				},
@@ -161,7 +155,7 @@
 			kostenart,
 			datum,
 			waehrung,
-			betrag_cent: cents(betrag),
+			betrag_cent: parseEuroToCents(betrag),
 			leistender,
 			empfaenger,
 			rechnung_auf_arbeitgeber: aufArbeitgeber,
@@ -170,7 +164,7 @@
 			anteile: anteile.map((row) => ({
 				satz: Number(row.satz),
 				steuerland: row.steuerland || "DE",
-				brutto_cent: cents(row.brutto || betrag),
+				brutto_cent: parseEuroToCents(row.brutto || betrag),
 			})),
 			beleg_ids: belegFromQuery ? [belegFromQuery] : loaded?.beleg_ids ?? [],
 			bewirtung:

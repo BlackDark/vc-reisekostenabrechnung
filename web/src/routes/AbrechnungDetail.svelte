@@ -6,7 +6,8 @@
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
-	import { formatWhen } from "$lib/dates";
+	import { formatRange, formatWhen } from "$lib/dates";
+	import { warningLabel } from "$lib/labels";
 	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -50,30 +51,6 @@
 		return `${point.code}\t${point.objekt_id}`;
 	}
 
-
-	function warnLabel(code: string): string {
-		const labels: Record<string, () => string> = {
-			B01: m.warn_B01,
-			B02: m.warn_B02,
-			B03: m.warn_B03,
-			B04: m.warn_B04,
-			B05: m.warn_B05,
-			B06: m.warn_B06,
-			W01: m.warn_W01,
-			W02: m.warn_W02,
-			W05: m.warn_W05,
-			W06: m.warn_W06,
-			W07: m.warn_W07,
-			W08: m.warn_W08,
-			W09: m.warn_W09,
-			W10: m.warn_W10,
-			W11: m.warn_W11,
-			W13: m.warn_W13,
-			W14: m.warn_W14,
-		};
-		const fn = labels[code];
-		return fn ? fn() : code;
-	}
 
 	async function load() {
 		const [claim, trips, vors, check, files] = await Promise.all([
@@ -238,7 +215,7 @@
 		<div class="min-w-0">
 			<h1 class="truncate text-2xl font-semibold tracking-tight">{row.titel}</h1>
 			<p class="text-muted-foreground mt-1 text-sm">
-				{formatWhen(row.von, session.locale, "date")} – {formatWhen(row.bis, session.locale, "date")}
+				{formatRange(row.von, row.bis, session.locale)}
 				{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
 				{#if row.aktuelle_export_version > 0} · v{row.aktuelle_export_version}{/if}
 			</p>
@@ -294,7 +271,7 @@
 			{#if blocker.length > 0}
 				<ul class="grid gap-1 text-sm" data-testid="abrechnung-blocker">
 					{#each blocker as point (`${point.code}-${point.objekt_id}`)}
-						<li class="bg-card rounded-lg border px-3 py-2">{point.code}: {warnLabel(point.code)}</li>
+						<li class="bg-card rounded-lg border px-3 py-2">{point.code}: {warningLabel(point.code)}</li>
 					{/each}
 				</ul>
 			{/if}
@@ -312,7 +289,7 @@
 										checked = { ...checked, [keyOf(point)]: on };
 									}}
 								/>
-								<span>{point.code}: {warnLabel(point.code)}</span>
+								<span>{point.code}: {warningLabel(point.code)}</span>
 							</label>
 						</li>
 					{/each}

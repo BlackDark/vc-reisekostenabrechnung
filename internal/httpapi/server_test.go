@@ -276,6 +276,25 @@ func TestClientIP(t *testing.T) {
 	}
 }
 
+func TestMatchVersion(t *testing.T) {
+	app := &App{}
+	missing := httptest.NewRecorder()
+	if _, ok := app.matchVersion(missing, nil); ok || missing.Code != http.StatusPreconditionRequired {
+		t.Fatalf("missing %d", missing.Code)
+	}
+	bad := "bogus"
+	invalid := httptest.NewRecorder()
+	if _, ok := app.matchVersion(invalid, &bad); ok || invalid.Code != http.StatusPreconditionFailed {
+		t.Fatalf("invalid %d", invalid.Code)
+	}
+	good := "4"
+	rec := httptest.NewRecorder()
+	version, ok := app.matchVersion(rec, &good)
+	if !ok || version != 4 || rec.Code != http.StatusOK {
+		t.Fatalf("valid version=%d code=%d ok=%v", version, rec.Code, ok)
+	}
+}
+
 func TestMissingIfMatch(t *testing.T) {
 	app := newTestApp(t, nil)
 	seedUser(t, app, "ada", "correct-horse-1", false)

@@ -76,13 +76,8 @@ func (a *App) PatchArbeitgeber(w http.ResponseWriter, r *http.Request, id api.Id
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	prev, err := a.store.GetArbeitgeber(r.Context(), n.ID, id)
@@ -180,13 +175,8 @@ func (a *App) PostArbeitgeberLogo(w http.ResponseWriter, r *http.Request, id api
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	body, ok := readUpload(w, r, 2<<20)
@@ -287,13 +277,8 @@ func (a *App) PatchTaetigkeitsstaette(w http.ResponseWriter, r *http.Request, id
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	var body api.TaetigkeitsstaetteWrite
@@ -377,13 +362,8 @@ func (a *App) PatchSatztabelle(w http.ResponseWriter, r *http.Request, jahr api.
 	if !ok {
 		return
 	}
-	version, present, valid := ifMatchVersion(params.IfMatch)
-	if !present {
-		writeProblem(w, http.StatusPreconditionRequired, "if_match", "If-Match is required", "")
-		return
-	}
-	if !valid {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	version, ok := a.matchVersion(w, params.IfMatch)
+	if !ok {
 		return
 	}
 	var body api.SatzOverrideRequest

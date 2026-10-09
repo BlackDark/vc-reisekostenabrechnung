@@ -6,7 +6,7 @@
 	import * as Empty from "$lib/components/ui/empty";
 	import * as Field from "$lib/components/ui/field";
 	import { Input } from "$lib/components/ui/input";
-	import { formatWhen } from "$lib/dates";
+	import { formatRange } from "$lib/dates";
 	import { statusLabel } from "$lib/labels";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -83,7 +83,7 @@
 					href={p("/reisen/:id", { params: { id: item.id } })}
 				>
 					<span class="font-medium">{item.anlass}</span>
-					<span class="text-muted-foreground mt-1 block text-sm">{formatWhen(item.beginn, session.locale, "date")} – {formatWhen(item.ende, session.locale, "date")}</span>
+					<span class="text-muted-foreground mt-1 block text-sm">{formatRange(item.beginn, item.ende, session.locale)}</span>
 				</a>
 			</li>
 		{/each}

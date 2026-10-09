@@ -1,3 +1,10 @@
+/** Parse a euro amount typed with either comma or dot. Invalid input is 0 cents. */
+export function parseEuroToCents(raw: string): number {
+	const n = Number(raw.trim().replace(/\s/g, "").replace(",", "."));
+	if (!Number.isFinite(n)) return 0;
+	return Math.round(n * 100);
+}
+
 export function euro(cents: number, locale: string): string {
 	const abs = Math.abs(Math.trunc(cents));
 	const whole = Math.floor(abs / 100);

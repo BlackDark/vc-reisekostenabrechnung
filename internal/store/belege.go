@@ -163,18 +163,14 @@ func (s *Store) ConfirmBeleg(ctx context.Context, nutzerID, belegID string, vers
 		if cur.Status != "zur_bestaetigung" {
 			return &CodeError{Code: "beleg_status"}
 		}
-		loc, err := time.LoadLocation("Europe/Berlin")
-		if err != nil {
-			return err
-		}
 		now := time.Now().UTC()
-		year := int64(now.In(loc).Year())
+		year := int64(now.In(berlin()).Year())
 		n, err := q.BumpBelegnummer(ctx, sqlitedb.BumpBelegnummerParams{NutzerID: nutzerID, Jahr: year})
 		if err != nil {
 			return err
 		}
 		nummer := fmt.Sprintf("%d-%04d", year, n)
-		keep := fmt.Sprintf("%d-12-31", year+8)
+		keep := RetentionDeadline(now)
 		loeschen := now.Add(karenz)
 		von := actorID(actor)
 		out, err = q.ConfirmBeleg(ctx, sqlitedb.ConfirmBelegParams{

@@ -251,7 +251,7 @@ func (a *App) pdfJPEGs(ctx context.Context, row sqlitedb.Beleg, files []sqlitedb
 	}
 	var out [][]byte
 	for page := 1; page <= pages; page++ {
-		png, err := belegpipe.RenderPDFPage(bin, pdf, page)
+		png, err := belegpipe.RenderPDFPage(ctx, bin, pdf, page)
 		if err != nil {
 			return nil, err
 		}

@@ -10,24 +10,13 @@
 
 # Reisekostenabrechnung
 
-Self-hosted web app for a German **Reisekostenabrechnung** (travel expense claim). Record a business trip, capture a **Beleg** (receipt) with the phone camera, apply the **Verpflegungspauschale** (meal allowance) and **Kilometerpauschale** (mileage allowance), and file an **Abrechnung** the employer can review: a PDF/A-3b with every receipt attached.
+Self-hosted web app for a German **Reisekostenabrechnung** (travel expense claim). Record a business trip, capture a **Beleg** (receipt), apply the meal and mileage allowances, and file an **Abrechnung** the employer can review: a PDF/A-3b with every receipt attached.
 
-German and English. Several people, each seeing only their own trips. Sign in with a password, with OIDC (Pocket ID is the example), or with a header from a reverse proxy you trust.
-
-The interface uses shadcn-svelte. Dark is the default. Light and the system setting are in the header, and the choice is remembered.
-
-## What it does
-
-- Trips at home and abroad, with the country for each day taken from the stops (**Ortswechsel**) and the year's **Satztabelle** (rate table).
-- Meal, overnight, and mileage allowances, and a reduction when the employer provided a meal.
-- Receipt photos, PDFs, and e-invoice XML. Photos are deskewed and stored as an archive image after you confirm them. Optional reading of a receipt only suggests fields, and only after you opt in.
-- A claim as PDF/A-3b, plus ZIP, CSV, and JSON. The same snapshot renders the same bytes.
-- **Aufbewahrung** (retention) until 31 December of year *J* + 8. An admin deletes files only after that date, with the **Ablaufhemmung** warning confirmed and a reason kept in the audit log.
-- Backup with `reisekosten backup`, or Litestream as UID 65532.
+German and English. Each person sees only their own trips. [Features](docs/features.md) lists what the app covers.
 
 ## Screenshots
 
-Taken by the Playwright tour (`e2e/tests/00-seiten.spec.ts`) with a sample employer, a trip to Paris, a hotel receipt, and a September claim. Desktop is 1280×800. Mobile is a Pixel 7. The tour uses the dark theme. Two extra frames show the light theme.
+Desktop frames are 1440×900. Mobile frames are 390×844. How to refresh them is in [Development](docs/development.md).
 
 | | Desktop | Mobile |
 |---|---|---|
@@ -37,8 +26,6 @@ Taken by the Playwright tour (`e2e/tests/00-seiten.spec.ts`) with a sample emplo
 | Abrechnung | <img alt="Expense claim, desktop, dark" src="docs/assets/screenshots/desktop/abrechnung-detail.png" width="360"> | <img alt="Expense claim, mobile, dark" src="docs/assets/screenshots/mobile/abrechnung-detail.png" width="180"> |
 | Trips, light theme | <img alt="Trips, desktop, light" src="docs/assets/screenshots/desktop/reisen-light.png" width="360"> | <img alt="Trips, mobile, light" src="docs/assets/screenshots/mobile/reisen-light.png" width="180"> |
 | Sign-in, light theme | <img alt="Sign-in, desktop, light" src="docs/assets/screenshots/desktop/login-light.png" width="360"> | <img alt="Sign-in, mobile, light" src="docs/assets/screenshots/mobile/login-light.png" width="180"> |
-
-The same pass writes every route, desktop and mobile, under [docs/assets/screenshots](docs/assets/screenshots). CI uploads that set as the `screenshots` artifact. Refresh the copies in the repo with `pnpm screenshots:readme`.
 
 ## Quickstart
 
@@ -54,10 +41,11 @@ docker compose up -d
 docker compose logs app | grep -i setup
 ```
 
-Open `APP_BASE_URL`. The log line is the setup token for the first admin, until a user exists. Missing required values fail Compose with `fehlt`. More detail, including Litestream: [Installation](docs/installation.md).
+Open `APP_BASE_URL`. The log line is the setup token for the first admin, until a user exists. [Installation](docs/installation.md) covers Litestream and the rest.
 
 ## Further reading
 
+- [Features](docs/features.md)
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md), the environment variables
 - [Authentication](docs/authentication.md), password, OIDC with Pocket ID, trusted header
@@ -68,4 +56,4 @@ Open `APP_BASE_URL`. The log line is the setup token for the first admin, until 
 
 ## Disclaimer
 
-**Not tax advice.** The app applies the published allowances and rules as accurately as it can. It does not replace the employer's review or a tax adviser. You remain responsible for the correctness of an Abrechnung.
+**Not tax advice.** The app applies the published allowances. It does not replace the employer's review or a tax adviser. You remain responsible for the correctness of an Abrechnung. [Tax rules, in short](docs/tax-rules.md).
