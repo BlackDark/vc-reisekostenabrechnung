@@ -76,12 +76,13 @@ type FahrtInput struct {
 	VorlageID     string
 }
 
-// ReiseBundle is a Reise with its legs, days and Fahrten.
+// ReiseBundle is a Reise with its legs, days, Fahrten and Ausgaben.
 type ReiseBundle struct {
-	Reise   sqlitedb.Reise
-	Legs    []sqlitedb.Ortswechsel
-	Tage    []sqlitedb.Reisetag
-	Fahrten []sqlitedb.Fahrt
+	Reise    sqlitedb.Reise
+	Legs     []sqlitedb.Ortswechsel
+	Tage     []sqlitedb.Reisetag
+	Fahrten  []sqlitedb.Fahrt
+	Ausgaben []AusgabeBundle
 }
 
 // ReiseFilter selects a page of Reisen.
@@ -584,7 +585,11 @@ func loadParts(ctx context.Context, q *sqlitedb.Queries, nutzerID string, row sq
 	if err != nil {
 		return ReiseBundle{}, err
 	}
-	return ReiseBundle{Reise: row, Legs: legs, Tage: days, Fahrten: fahrten}, nil
+	ausgaben, err := loadAusgabeBundles(ctx, q, nutzerID, row.ID)
+	if err != nil {
+		return ReiseBundle{}, err
+	}
+	return ReiseBundle{Reise: row, Legs: legs, Tage: days, Fahrten: fahrten, Ausgaben: ausgaben}, nil
 }
 
 func insertLegs(ctx context.Context, q *sqlitedb.Queries, reiseID string, legs []OrtswechselInput) ([]sqlitedb.Ortswechsel, error) {
@@ -630,7 +635,7 @@ func reconcileDays(ctx context.Context, q *sqlitedb.Queries, reiseID string, dat
 	if len(dates) > 0 {
 		last = dates[len(dates)-1]
 	}
-	if !unterkunftOK(fallback) {
+	if fallback == "" || !unterkunftOK(fallback) {
 		fallback = "keine"
 	}
 	for _, datum := range dates {

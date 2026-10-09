@@ -20,6 +20,8 @@ type Querier interface {
 	CountNutzer(ctx context.Context) (int64, error)
 	CreateIdentitaet(ctx context.Context, arg CreateIdentitaetParams) (NutzerIdentitaet, error)
 	CreateNutzer(ctx context.Context, arg CreateNutzerParams) (Nutzer, error)
+	DeleteAusgabe(ctx context.Context, arg DeleteAusgabeParams) (int64, error)
+	DeleteAusgabeBelege(ctx context.Context, ausgabeID string) error
 	DeleteAuslandssaetze(ctx context.Context, jahr int64) error
 	DeleteBelegOffen(ctx context.Context, arg DeleteBelegOffenParams) (int64, error)
 	DeleteBelegdateiVariante(ctx context.Context, arg DeleteBelegdateiVarianteParams) error
@@ -33,18 +35,22 @@ type Querier interface {
 	DeleteSession(ctx context.Context, token string) error
 	DeleteSessionByPublicID(ctx context.Context, arg DeleteSessionByPublicIDParams) error
 	DeleteSessionsForNutzer(ctx context.Context, nutzerID *string) error
+	DeleteSteueranteile(ctx context.Context, ausgabeID string) error
 	DeleteTaetigkeitsstaette(ctx context.Context, arg DeleteTaetigkeitsstaetteParams) error
 	DeleteVorlage(ctx context.Context, arg DeleteVorlageParams) (int64, error)
+	DeleteVorschussOffen(ctx context.Context, arg DeleteVorschussOffenParams) (int64, error)
 	FailJobRow(ctx context.Context, arg FailJobRowParams) error
 	FindBelegByDateiSHA(ctx context.Context, arg FindBelegByDateiSHAParams) (Beleg, error)
 	FindBelegBySHA(ctx context.Context, arg FindBelegBySHAParams) (Beleg, error)
 	FinishJob(ctx context.Context, arg FinishJobParams) error
 	FirstOtherAktiverArbeitgeber(ctx context.Context, arg FirstOtherAktiverArbeitgeberParams) (Arbeitgeber, error)
 	GetArbeitgeber(ctx context.Context, arg GetArbeitgeberParams) (Arbeitgeber, error)
+	GetAusgabe(ctx context.Context, arg GetAusgabeParams) (Ausgabe, error)
 	GetBeleg(ctx context.Context, arg GetBelegParams) (Beleg, error)
 	GetBelegByID(ctx context.Context, id string) (Beleg, error)
 	GetBelegdatei(ctx context.Context, arg GetBelegdateiParams) (Belegdatei, error)
 	GetDatei(ctx context.Context, arg GetDateiParams) (Datei, error)
+	GetEigenbeleg(ctx context.Context, ausgabeID string) (Eigenbeleg, error)
 	GetFahrt(ctx context.Context, arg GetFahrtParams) (Fahrt, error)
 	GetIdentitaet(ctx context.Context, arg GetIdentitaetParams) (NutzerIdentitaet, error)
 	GetIdentitaetByID(ctx context.Context, arg GetIdentitaetByIDParams) (NutzerIdentitaet, error)
@@ -56,9 +62,13 @@ type Querier interface {
 	GetSatztabelle(ctx context.Context, jahr int64) (Satztabelle, error)
 	GetSession(ctx context.Context, token string) (Session, error)
 	GetTaetigkeitsstaette(ctx context.Context, arg GetTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
+	GetUstMonatskurs(ctx context.Context, arg GetUstMonatskursParams) (UstMonatskur, error)
 	GetVorlage(ctx context.Context, arg GetVorlageParams) (Vorlage, error)
+	GetVorschuss(ctx context.Context, arg GetVorschussParams) (Vorschuss, error)
 	InsertArbeitgeber(ctx context.Context, arg InsertArbeitgeberParams) (Arbeitgeber, error)
 	InsertAudit(ctx context.Context, arg InsertAuditParams) error
+	InsertAusgabe(ctx context.Context, arg InsertAusgabeParams) (Ausgabe, error)
+	InsertAusgabeBeleg(ctx context.Context, arg InsertAusgabeBelegParams) error
 	InsertAuslandssatz(ctx context.Context, arg InsertAuslandssatzParams) error
 	InsertBeleg(ctx context.Context, arg InsertBelegParams) (Beleg, error)
 	InsertBelegdatei(ctx context.Context, arg InsertBelegdateiParams) (Belegdatei, error)
@@ -70,15 +80,20 @@ type Querier interface {
 	InsertReisetag(ctx context.Context, arg InsertReisetagParams) (Reisetag, error)
 	InsertSatzOverride(ctx context.Context, arg InsertSatzOverrideParams) (SatzOverride, error)
 	InsertSatztabelle(ctx context.Context, arg InsertSatztabelleParams) (Satztabelle, error)
+	InsertSteueranteil(ctx context.Context, arg InsertSteueranteilParams) (Steueranteil, error)
 	InsertTaetigkeitsstaette(ctx context.Context, arg InsertTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
 	InsertVorlage(ctx context.Context, arg InsertVorlageParams) (Vorlage, error)
+	InsertVorschuss(ctx context.Context, arg InsertVorschussParams) (Vorschuss, error)
 	LastAuditHash(ctx context.Context) (string, error)
 	ListArbeitgeber(ctx context.Context, arg ListArbeitgeberParams) ([]Arbeitgeber, error)
 	ListAudit(ctx context.Context) ([]AuditEreigni, error)
 	ListAuditFiltered(ctx context.Context, arg ListAuditFilteredParams) ([]AuditEreigni, error)
+	ListAusgabenByNutzer(ctx context.Context, nutzerID string) ([]Ausgabe, error)
+	ListAusgabenByReise(ctx context.Context, arg ListAusgabenByReiseParams) ([]Ausgabe, error)
 	ListAuslandssaetze(ctx context.Context, jahr int64) ([]Auslandssatz, error)
 	ListBelegdateien(ctx context.Context, belegID string) ([]Belegdatei, error)
 	ListBelege(ctx context.Context, arg ListBelegeParams) ([]Beleg, error)
+	ListBelegeForAusgabe(ctx context.Context, arg ListBelegeForAusgabeParams) ([]ListBelegeForAusgabeRow, error)
 	ListFahrten(ctx context.Context, arg ListFahrtenParams) ([]Fahrt, error)
 	ListFahrtenByNutzer(ctx context.Context, nutzerID string) ([]Fahrt, error)
 	ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error)
@@ -93,13 +108,19 @@ type Querier interface {
 	ListSatzOverrides(ctx context.Context, jahr int64) ([]SatzOverride, error)
 	ListSatztabellen(ctx context.Context) ([]Satztabelle, error)
 	ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNutzerParams) ([]Session, error)
+	ListSteueranteile(ctx context.Context, ausgabeID string) ([]Steueranteil, error)
 	ListTaetigkeitsstaetten(ctx context.Context, arg ListTaetigkeitsstaettenParams) ([]Taetigkeitsstaette, error)
 	ListVorlagen(ctx context.Context, arg ListVorlagenParams) ([]Vorlage, error)
+	ListVorschuesse(ctx context.Context, nutzerID string) ([]Vorschuss, error)
+	ListWechselkurse(ctx context.Context, waehrung string) ([]Wechselkur, error)
+	ListWechselkurseAll(ctx context.Context) ([]Wechselkur, error)
 	MarkBelegdateienFest(ctx context.Context, belegID string) error
 	RescheduleJob(ctx context.Context, arg RescheduleJobParams) error
 	ResumeJobs(ctx context.Context, jetzt time.Time) error
 	SetAdminUeberGruppe(ctx context.Context, arg SetAdminUeberGruppeParams) error
 	SetBelegFailed(ctx context.Context, arg SetBelegFailedParams) error
+	SetBewirtung(ctx context.Context, arg SetBewirtungParams) (Ausgabe, error)
+	SetRechnungsart(ctx context.Context, arg SetRechnungsartParams) (Ausgabe, error)
 	StornoBeleg(ctx context.Context, arg StornoBelegParams) (Beleg, error)
 	TouchAnmeldung(ctx context.Context, arg TouchAnmeldungParams) error
 	TouchBelegReprocess(ctx context.Context, arg TouchBelegReprocessParams) (Beleg, error)
@@ -107,6 +128,7 @@ type Querier interface {
 	TouchReise(ctx context.Context, arg TouchReiseParams) (Reise, error)
 	TouchSatztabelle(ctx context.Context, arg TouchSatztabelleParams) (Satztabelle, error)
 	UpdateArbeitgeber(ctx context.Context, arg UpdateArbeitgeberParams) (Arbeitgeber, error)
+	UpdateAusgabe(ctx context.Context, arg UpdateAusgabeParams) (Ausgabe, error)
 	UpdateBelegReady(ctx context.Context, arg UpdateBelegReadyParams) (Beleg, error)
 	UpdateFahrt(ctx context.Context, arg UpdateFahrtParams) (Fahrt, error)
 	UpdateNutzerAdmin(ctx context.Context, arg UpdateNutzerAdminParams) (Nutzer, error)
@@ -114,9 +136,14 @@ type Querier interface {
 	UpdateNutzerProfil(ctx context.Context, arg UpdateNutzerProfilParams) (Nutzer, error)
 	UpdateReise(ctx context.Context, arg UpdateReiseParams) (Reise, error)
 	UpdateReisetag(ctx context.Context, arg UpdateReisetagParams) (Reisetag, error)
+	UpdateReisetagMeals(ctx context.Context, arg UpdateReisetagMealsParams) (Reisetag, error)
 	UpdateTaetigkeitsstaette(ctx context.Context, arg UpdateTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
 	UpdateVorlage(ctx context.Context, arg UpdateVorlageParams) (Vorlage, error)
+	UpdateVorschuss(ctx context.Context, arg UpdateVorschussParams) (Vorschuss, error)
+	UpsertEigenbeleg(ctx context.Context, arg UpsertEigenbelegParams) (Eigenbeleg, error)
 	UpsertSession(ctx context.Context, arg UpsertSessionParams) error
+	UpsertUstMonatskurs(ctx context.Context, arg UpsertUstMonatskursParams) error
+	UpsertWechselkurs(ctx context.Context, arg UpsertWechselkursParams) error
 }
 
 var _ Querier = (*Queries)(nil)

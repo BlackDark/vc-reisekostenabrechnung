@@ -122,6 +122,15 @@ UPDATE reisetag SET
 WHERE reise_id = sqlc.arg(reise_id) AND datum = sqlc.arg(datum)
 RETURNING *;
 
+-- name: UpdateReisetagMeals :one
+UPDATE reisetag SET
+  fruehstueck_gestellt = sqlc.arg(fruehstueck_gestellt),
+  mittag_gestellt = sqlc.arg(mittag_gestellt),
+  abend_gestellt = sqlc.arg(abend_gestellt),
+  mahlzeit_quelle = sqlc.arg(mahlzeit_quelle)
+WHERE reise_id = sqlc.arg(reise_id) AND datum = sqlc.arg(datum)
+RETURNING *;
+
 -- name: DeleteReisetag :exec
 DELETE FROM reisetag
 WHERE reise_id = sqlc.arg(reise_id) AND datum = sqlc.arg(datum);

@@ -762,6 +762,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reisen/{id}/ausgaben": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAusgaben"];
+        put?: never;
+        post: operations["postAusgabe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ausgaben/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAusgabe"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteAusgabe"];
+        options?: never;
+        head?: never;
+        patch: operations["patchAusgabe"];
+        trace?: never;
+    };
+    "/api/v1/ausgaben/{id}/belege": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["putAusgabeBelege"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ausgaben/{id}/eigenbeleg": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["putEigenbeleg"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ausgaben/{id}/bewirtung/bestaetigen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postBewirtungBestaetigen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wechselkurse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getWechselkurs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ust-kurse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUstKurs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vorschuesse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getVorschuesse"];
+        put?: never;
+        post: operations["postVorschuss"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vorschuesse/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteVorschuss"];
+        options?: never;
+        head?: never;
+        patch: operations["patchVorschuss"];
+        trace?: never;
+    };
+    "/api/v1/mwst-helfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postMwstHelfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1165,6 +1325,12 @@ export interface components {
             bewirtung_cent: number;
             /** Format: int64 */
             summe_cent: number;
+            /** Format: int64 */
+            vorsteuer_cent?: number;
+            /** Format: int64 */
+            bewirtung_abziehbar_cent?: number;
+            /** Format: int64 */
+            bewirtung_nicht_abziehbar_cent?: number;
             blocker?: string[];
             warnungen?: string[];
         };
@@ -1253,6 +1419,166 @@ export interface components {
         BelegStorno: {
             grund: string;
         };
+        Steueranteil: {
+            /** Format: int64 */
+            satz: number;
+            steuerland: string;
+            /** Format: int64 */
+            brutto_cent: number;
+            /** Format: int64 */
+            netto_cent: number;
+            /** Format: int64 */
+            steuer_cent: number;
+            /** Format: int64 */
+            brutto_eur_cent: number;
+            /** Format: int64 */
+            netto_eur_cent: number;
+            /** Format: int64 */
+            steuer_eur_cent: number;
+            vorsteuer?: boolean;
+        };
+        SteueranteilWrite: {
+            /** Format: int64 */
+            satz: number;
+            steuerland: string;
+            /** Format: int64 */
+            brutto_cent: number;
+            /** Format: int64 */
+            netto_cent?: number;
+            /** Format: int64 */
+            steuer_cent?: number;
+        };
+        Teilnehmer: {
+            name: string;
+            firma?: string;
+        };
+        Bewirtung: {
+            anlass?: string;
+            ort?: string;
+            bewirtender?: string;
+            /** Format: int64 */
+            trinkgeld_cent?: number;
+            teilnehmer?: components["schemas"]["Teilnehmer"][];
+            bestaetigt_am?: string;
+        };
+        Eigenbeleg: {
+            grund: string;
+            zahlungsempfaenger: string;
+            art: string;
+            bestaetigt_am?: string;
+        };
+        EigenbelegWrite: {
+            grund: string;
+            zahlungsempfaenger: string;
+            art: string;
+        };
+        Ausgabe: {
+            id: string;
+            reise_id: string;
+            kostenart: string;
+            datum: string;
+            leistender?: string;
+            beschreibung?: string;
+            waehrung: string;
+            /** Format: int64 */
+            betrag_cent: number;
+            /** Format: int64 */
+            betrag_eur_cent: number;
+            kurs?: string;
+            kurs_quelle?: string;
+            kurs_datum?: string;
+            kurs_grund?: string;
+            ust_kurs?: string;
+            rechnungsart: string;
+            rechnung_auf_arbeitgeber: boolean;
+            empfaenger?: string;
+            verkehrsmittel?: string;
+            uebernachtung_naechte?: string[];
+            fruehstueck_enthalten?: boolean;
+            mahlzeit?: string;
+            tse_beleg?: boolean;
+            bewirtung?: components["schemas"]["Bewirtung"];
+            eigenbeleg?: components["schemas"]["Eigenbeleg"];
+            anteile: components["schemas"]["Steueranteil"][];
+            beleg_ids: string[];
+            warnungen?: string[];
+            /** Format: int64 */
+            version: number;
+        };
+        AusgabeWrite: {
+            kostenart: string;
+            datum: string;
+            leistender?: string;
+            beschreibung?: string;
+            waehrung: string;
+            /** Format: int64 */
+            betrag_cent: number;
+            /** Format: int64 */
+            betrag_eur_cent?: number;
+            kurs?: string;
+            kurs_quelle?: string;
+            kurs_grund?: string;
+            rechnungsart?: string;
+            rechnung_auf_arbeitgeber?: boolean;
+            empfaenger?: string;
+            verkehrsmittel?: string;
+            uebernachtung_naechte?: string[];
+            fruehstueck_enthalten?: boolean;
+            mahlzeit?: string;
+            tse_beleg?: boolean;
+            bewirtung?: components["schemas"]["Bewirtung"];
+            anteile?: components["schemas"]["SteueranteilWrite"][];
+            beleg_ids?: string[];
+        };
+        AusgabeListe: {
+            items: components["schemas"]["Ausgabe"][];
+        };
+        BelegZuordnung: {
+            beleg_ids: string[];
+        };
+        Wechselkurs: {
+            waehrung: string;
+            datum: string;
+            kurs: string;
+            kurs_datum: string;
+            quelle: string;
+        };
+        UstKurs: {
+            waehrung: string;
+            jahr: number;
+            monat: number;
+            kurs: string;
+        };
+        Vorschuss: {
+            id: string;
+            arbeitgeber_id: string;
+            datum: string;
+            /** Format: int64 */
+            betrag_cent: number;
+            notiz?: string;
+            verrechnet?: boolean;
+            /** Format: int64 */
+            version: number;
+        };
+        VorschussWrite: {
+            arbeitgeber_id: string;
+            datum: string;
+            /** Format: int64 */
+            betrag_cent: number;
+            notiz?: string;
+        };
+        VorschussListe: {
+            items: components["schemas"]["Vorschuss"][];
+        };
+        MwstHelfer: {
+            art: string;
+            /** Format: int64 */
+            betrag_cent: number;
+            jahr?: number;
+        };
+        MwstHelferAntwort: {
+            anteile: components["schemas"]["SteueranteilWrite"][];
+        };
         Warnung: {
             code: string;
             reise_id: string;
@@ -1260,6 +1586,7 @@ export interface components {
             datum?: string;
             staette?: string;
             beleg_id?: string;
+            ausgabe_id?: string;
         };
         WarnungListe: {
             items: components["schemas"]["Warnung"][];
@@ -3058,6 +3385,426 @@ export interface operations {
             412: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
             428: components["responses"]["Problem"];
+        };
+    };
+    getAusgaben: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ausgaben of the Reise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AusgabeListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    postAusgabe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AusgabeWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ausgabe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    getAusgabe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ausgabe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ausgabe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    deleteAusgabe: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    patchAusgabe: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AusgabeWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ausgabe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    putAusgabeBelege: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BelegZuordnung"];
+            };
+        };
+        responses: {
+            /** @description Links replaced */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ausgabe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    putEigenbeleg: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EigenbelegWrite"];
+            };
+        };
+        responses: {
+            /** @description Eigenbeleg stored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ausgabe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    postBewirtungBestaetigen: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bewirtung confirmed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ausgabe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getWechselkurs: {
+        parameters: {
+            query: {
+                waehrung: string;
+                datum: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ECB rate with weekend fallback */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wechselkurs"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getUstKurs: {
+        parameters: {
+            query: {
+                waehrung: string;
+                jahr: number;
+                monat: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description BMF monthly VAT rate */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UstKurs"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getVorschuesse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Advances */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VorschussListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    postVorschuss: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VorschussWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vorschuss"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    deleteVorschuss: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    patchVorschuss: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VorschussWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vorschuss"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    postMwstHelfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MwstHelfer"];
+            };
+        };
+        responses: {
+            /** @description Prefill only */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MwstHelferAntwort"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
 }

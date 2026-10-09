@@ -41,6 +41,40 @@ type AuditEreigni struct {
 	Hash           string
 }
 
+type Ausgabe struct {
+	ID                     string
+	NutzerID               string
+	ReiseID                string
+	Kostenart              string
+	Datum                  string
+	Leistender             string
+	Beschreibung           *string
+	Waehrung               string
+	Betrag                 int64
+	Kurs                   *string
+	KursQuelle             *string
+	KursDatum              *string
+	KursGrund              *string
+	BetragEur              int64
+	Rechnungsart           string
+	RechnungAufArbeitgeber bool
+	Empfaenger             *string
+	Verkehrsmittel         *string
+	UebernachtungNaechte   string
+	FruehstueckEnthalten   bool
+	Mahlzeit               *string
+	Bewirtung              *string
+	TseBeleg               bool
+	ErstelltAm             time.Time
+	GeaendertAm            time.Time
+	Version                int64
+}
+
+type AusgabeBeleg struct {
+	AusgabeID string
+	BelegID   string
+}
+
 type Auslandssatz struct {
 	ID            string
 	Jahr          int64
@@ -112,6 +146,16 @@ type Datei struct {
 	Sha256             string
 	SpeicherSchluessel string
 	ErstelltAm         time.Time
+}
+
+type Eigenbeleg struct {
+	AusgabeID          string
+	Grund              string
+	Zahlungsempfaenger string
+	Art                string
+	ErstelltAm         time.Time
+	BestaetigtAm       *time.Time
+	BestaetigtVon      *string
 }
 
 type Fahrt struct {
@@ -276,6 +320,20 @@ type Session struct {
 	LetzteNutzung time.Time
 }
 
+type Steueranteil struct {
+	ID         string
+	AusgabeID  string
+	Position   int64
+	Satz       int64
+	Steuerland string
+	Netto      int64
+	Steuer     int64
+	Brutto     int64
+	NettoEur   int64
+	SteuerEur  int64
+	BruttoEur  int64
+}
+
 type Taetigkeitsstaette struct {
 	ID          string
 	NutzerID    string
@@ -289,6 +347,14 @@ type Taetigkeitsstaette struct {
 	Version     int64
 }
 
+type UstMonatskur struct {
+	Jahr        int64
+	Monat       int64
+	Waehrung    string
+	Kurs        string
+	AbgerufenAm time.Time
+}
+
 type Vorlage struct {
 	ID          string
 	NutzerID    string
@@ -298,4 +364,25 @@ type Vorlage struct {
 	ErstelltAm  time.Time
 	GeaendertAm time.Time
 	Version     int64
+}
+
+type Vorschuss struct {
+	ID            string
+	NutzerID      string
+	ArbeitgeberID string
+	Datum         string
+	Betrag        int64
+	Notiz         *string
+	AbrechnungID  *string
+	ErstelltAm    time.Time
+	GeaendertAm   time.Time
+	Version       int64
+}
+
+type Wechselkur struct {
+	Datum       string
+	Waehrung    string
+	Kurs        string
+	Quelle      string
+	AbgerufenAm time.Time
 }

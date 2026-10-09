@@ -19,9 +19,19 @@
 	let beleg = $state<Beleg | null>(null);
 	let error = $state("");
 	let grund = $state("");
+	let reisen = $state<{ id: string; anlass: string }[]>([]);
+	let reiseId = $state("");
 
 	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
+	});
+
+	$effect(() => {
+		if (!session.nutzer) return;
+		void api.GET("/api/v1/reisen").then((res) => {
+			reisen = (res.data?.items ?? []).map((row) => ({ id: row.id, anlass: row.anlass }));
+			if (!reiseId && reisen[0]) reiseId = reisen[0].id;
+		});
 	});
 
 	$effect(() => {
@@ -115,6 +125,19 @@
 	</p>
 	{#if error}
 		<p class="mt-2 text-sm" role="alert">{error}</p>
+	{/if}
+	{#if reisen.length > 0}
+		<div class="mt-4 grid gap-2">
+			<label class="grid gap-1 text-sm">
+				{m.ausgabe_pick_reise()}
+				<select id="ausgabe-reise" class="rounded border px-3 py-3" bind:value={reiseId}>
+					{#each reisen as trip (trip.id)}
+						<option value={trip.id}>{trip.anlass}</option>
+					{/each}
+				</select>
+			</label>
+			<a class="underline" data-testid="ausgabe-anlegen" href={`/reisen/${reiseId}/ausgaben/neu?beleg=${beleg.id}`}>{m.ausgabe_new()}</a>
+		</div>
 	{/if}
 	<div class="mt-4 grid gap-2">
 		{#if beleg.status === "zur_bestaetigung"}

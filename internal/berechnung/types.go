@@ -45,11 +45,21 @@ type SteuerInput struct {
 	Steuer     *int64
 }
 
-// Ausgabe is a receipt line the calculator understands. Persistence of Ausgaben is M5.
+// Bewirtung is the entertainment record (SPEC 4.12). Nil skips B03 and W06.
+type Bewirtung struct {
+	Anlass      string
+	Teilnehmer  int
+	Ort         string
+	Bewirtender string
+	Bestaetigt  bool
+}
+
+// Ausgabe is a receipt line the calculator understands.
 type Ausgabe struct {
 	ID                     string
 	Kostenart              string
 	Datum                  string
+	Leistender             string
 	Waehrung               string
 	Betrag                 int64
 	Kurs                   string
@@ -58,11 +68,19 @@ type Ausgabe struct {
 	BetragEUR              int64
 	Rechnungsart           string
 	RechnungAufArbeitgeber bool
+	Empfaenger             string
 	Naechte                []string
 	FruehstueckEnthalten   bool
 	Mahlzeit               string
 	Verkehrsmittel         string
 	Anteile                []SteuerInput
+	Bewirtung              *Bewirtung
+	TSE                    bool
+	BelegAnzahl            int
+	BelegOffen             bool
+	Eigenbeleg             bool
+	PruefeBeleg            bool
+	Monatskurs             string
 }
 
 // Fahrt is a private-vehicle mileage line.
@@ -76,18 +94,19 @@ type Fahrt struct {
 
 // Reise is one trip of a single Nutzer. Status empty means offen.
 type Reise struct {
-	ID            string
-	Anlass        string
-	ArbeitgeberID string
-	Konstellation string
-	Beginn        Zeitpunkt
-	Ende          Zeitpunkt
-	Status        string
-	Ortswechsel   []Ortswechsel
-	Tage          map[string]TagEingabe
-	Ausgaben      []Ausgabe
-	Fahrten       []Fahrt
-	Snapshot      map[string]int64
+	ID              string
+	Anlass          string
+	ArbeitgeberID   string
+	ArbeitgeberName string
+	Konstellation   string
+	Beginn          Zeitpunkt
+	Ende            Zeitpunkt
+	Status          string
+	Ortswechsel     []Ortswechsel
+	Tage            map[string]TagEingabe
+	Ausgaben        []Ausgabe
+	Fahrten         []Fahrt
+	Snapshot        map[string]int64
 }
 
 // Kurs is one FX rate: foreign-currency units per 1 EUR.
@@ -154,13 +173,14 @@ type SteuerErgebnis struct {
 
 // AusgabeErgebnis is one Ausgabe after currency and tax.
 type AusgabeErgebnis struct {
-	ID        string
-	Kostenart string
-	BetragEUR int64
-	Kurs      string
-	KursDatum string
-	Anteile   []SteuerErgebnis
-	Warnungen []string
+	ID         string
+	Kostenart  string
+	BetragEUR  int64
+	Kurs       string
+	KursDatum  string
+	Monatskurs string
+	Anteile    []SteuerErgebnis
+	Warnungen  []string
 }
 
 // ReiseErgebnis is the per-trip rollup.

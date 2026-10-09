@@ -1190,6 +1190,56 @@ func (q *Queries) UpdateReisetag(ctx context.Context, arg UpdateReisetagParams) 
 	return i, err
 }
 
+const updateReisetagMeals = `-- name: UpdateReisetagMeals :one
+UPDATE reisetag SET
+  fruehstueck_gestellt = ?1,
+  mittag_gestellt = ?2,
+  abend_gestellt = ?3,
+  mahlzeit_quelle = ?4
+WHERE reise_id = ?5 AND datum = ?6
+RETURNING id, reise_id, datum, land_manuell, satzort_manuell, land_begruendung, fruehstueck_gestellt, mittag_gestellt, abend_gestellt, zuzahlung_fruehstueck, zuzahlung_mittag, zuzahlung_abend, mahlzeit_quelle, unterkunft, verpflegung_ausgeschlossen, ausschluss_grund
+`
+
+type UpdateReisetagMealsParams struct {
+	FruehstueckGestellt bool
+	MittagGestellt      bool
+	AbendGestellt       bool
+	MahlzeitQuelle      string
+	ReiseID             string
+	Datum               string
+}
+
+func (q *Queries) UpdateReisetagMeals(ctx context.Context, arg UpdateReisetagMealsParams) (Reisetag, error) {
+	row := q.db.QueryRowContext(ctx, updateReisetagMeals,
+		arg.FruehstueckGestellt,
+		arg.MittagGestellt,
+		arg.AbendGestellt,
+		arg.MahlzeitQuelle,
+		arg.ReiseID,
+		arg.Datum,
+	)
+	var i Reisetag
+	err := row.Scan(
+		&i.ID,
+		&i.ReiseID,
+		&i.Datum,
+		&i.LandManuell,
+		&i.SatzortManuell,
+		&i.LandBegruendung,
+		&i.FruehstueckGestellt,
+		&i.MittagGestellt,
+		&i.AbendGestellt,
+		&i.ZuzahlungFruehstueck,
+		&i.ZuzahlungMittag,
+		&i.ZuzahlungAbend,
+		&i.MahlzeitQuelle,
+		&i.Unterkunft,
+		&i.VerpflegungAusgeschlossen,
+		&i.AusschlussGrund,
+	)
+	return i, err
+}
+
 const updateVorlage = `-- name: UpdateVorlage :one
 UPDATE vorlage SET
   name = ?1,

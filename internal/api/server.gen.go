@@ -194,6 +194,68 @@ type ArbeitgeberWrite struct {
 	UstId                    *string `json:"ust_id,omitempty"`
 }
 
+// Ausgabe defines model for Ausgabe.
+type Ausgabe struct {
+	Anteile                []Steueranteil `json:"anteile"`
+	BelegIds               []string       `json:"beleg_ids"`
+	Beschreibung           *string        `json:"beschreibung,omitempty"`
+	BetragCent             int64          `json:"betrag_cent"`
+	BetragEurCent          int64          `json:"betrag_eur_cent"`
+	Bewirtung              *Bewirtung     `json:"bewirtung,omitempty"`
+	Datum                  string         `json:"datum"`
+	Eigenbeleg             *Eigenbeleg    `json:"eigenbeleg,omitempty"`
+	Empfaenger             *string        `json:"empfaenger,omitempty"`
+	FruehstueckEnthalten   *bool          `json:"fruehstueck_enthalten,omitempty"`
+	Id                     string         `json:"id"`
+	Kostenart              string         `json:"kostenart"`
+	Kurs                   *string        `json:"kurs,omitempty"`
+	KursDatum              *string        `json:"kurs_datum,omitempty"`
+	KursGrund              *string        `json:"kurs_grund,omitempty"`
+	KursQuelle             *string        `json:"kurs_quelle,omitempty"`
+	Leistender             *string        `json:"leistender,omitempty"`
+	Mahlzeit               *string        `json:"mahlzeit,omitempty"`
+	RechnungAufArbeitgeber bool           `json:"rechnung_auf_arbeitgeber"`
+	Rechnungsart           string         `json:"rechnungsart"`
+	ReiseId                string         `json:"reise_id"`
+	TseBeleg               *bool          `json:"tse_beleg,omitempty"`
+	UebernachtungNaechte   *[]string      `json:"uebernachtung_naechte,omitempty"`
+	UstKurs                *string        `json:"ust_kurs,omitempty"`
+	Verkehrsmittel         *string        `json:"verkehrsmittel,omitempty"`
+	Version                int64          `json:"version"`
+	Waehrung               string         `json:"waehrung"`
+	Warnungen              *[]string      `json:"warnungen,omitempty"`
+}
+
+// AusgabeListe defines model for AusgabeListe.
+type AusgabeListe struct {
+	Items []Ausgabe `json:"items"`
+}
+
+// AusgabeWrite defines model for AusgabeWrite.
+type AusgabeWrite struct {
+	Anteile                *[]SteueranteilWrite `json:"anteile,omitempty"`
+	BelegIds               *[]string            `json:"beleg_ids,omitempty"`
+	Beschreibung           *string              `json:"beschreibung,omitempty"`
+	BetragCent             int64                `json:"betrag_cent"`
+	BetragEurCent          *int64               `json:"betrag_eur_cent,omitempty"`
+	Bewirtung              *Bewirtung           `json:"bewirtung,omitempty"`
+	Datum                  string               `json:"datum"`
+	Empfaenger             *string              `json:"empfaenger,omitempty"`
+	FruehstueckEnthalten   *bool                `json:"fruehstueck_enthalten,omitempty"`
+	Kostenart              string               `json:"kostenart"`
+	Kurs                   *string              `json:"kurs,omitempty"`
+	KursGrund              *string              `json:"kurs_grund,omitempty"`
+	KursQuelle             *string              `json:"kurs_quelle,omitempty"`
+	Leistender             *string              `json:"leistender,omitempty"`
+	Mahlzeit               *string              `json:"mahlzeit,omitempty"`
+	RechnungAufArbeitgeber *bool                `json:"rechnung_auf_arbeitgeber,omitempty"`
+	Rechnungsart           *string              `json:"rechnungsart,omitempty"`
+	TseBeleg               *bool                `json:"tse_beleg,omitempty"`
+	UebernachtungNaechte   *[]string            `json:"uebernachtung_naechte,omitempty"`
+	Verkehrsmittel         *string              `json:"verkehrsmittel,omitempty"`
+	Waehrung               string               `json:"waehrung"`
+}
+
 // Auslandssatz defines model for Auslandssatz.
 type Auslandssatz struct {
 	LandIso       string  `json:"land_iso"`
@@ -251,18 +313,26 @@ type BelegStorno struct {
 	Grund string `json:"grund"`
 }
 
+// BelegZuordnung defines model for BelegZuordnung.
+type BelegZuordnung struct {
+	BelegIds []string `json:"beleg_ids"`
+}
+
 // Berechnung defines model for Berechnung.
 type Berechnung struct {
-	BewirtungCent        int64           `json:"bewirtung_cent"`
-	Blocker              *[]string       `json:"blocker,omitempty"`
-	FahrtkostenCent      int64           `json:"fahrtkosten_cent"`
-	ReiseId              string          `json:"reise_id"`
-	ReisenebenkostenCent int64           `json:"reisenebenkosten_cent"`
-	SummeCent            int64           `json:"summe_cent"`
-	Tage                 []BerechnungTag `json:"tage"`
-	UebernachtungCent    int64           `json:"uebernachtung_cent"`
-	VerpflegungCent      int64           `json:"verpflegung_cent"`
-	Warnungen            *[]string       `json:"warnungen,omitempty"`
+	BewirtungAbziehbarCent      *int64          `json:"bewirtung_abziehbar_cent,omitempty"`
+	BewirtungCent               int64           `json:"bewirtung_cent"`
+	BewirtungNichtAbziehbarCent *int64          `json:"bewirtung_nicht_abziehbar_cent,omitempty"`
+	Blocker                     *[]string       `json:"blocker,omitempty"`
+	FahrtkostenCent             int64           `json:"fahrtkosten_cent"`
+	ReiseId                     string          `json:"reise_id"`
+	ReisenebenkostenCent        int64           `json:"reisenebenkosten_cent"`
+	SummeCent                   int64           `json:"summe_cent"`
+	Tage                        []BerechnungTag `json:"tage"`
+	UebernachtungCent           int64           `json:"uebernachtung_cent"`
+	VerpflegungCent             int64           `json:"verpflegung_cent"`
+	VorsteuerCent               *int64          `json:"vorsteuer_cent,omitempty"`
+	Warnungen                   *[]string       `json:"warnungen,omitempty"`
 }
 
 // BerechnungTag defines model for BerechnungTag.
@@ -280,6 +350,31 @@ type BerechnungTag struct {
 	Tagesart           string    `json:"tagesart"`
 	UebernachtungCent  int64     `json:"uebernachtung_cent"`
 	Warnungen          *[]string `json:"warnungen,omitempty"`
+}
+
+// Bewirtung defines model for Bewirtung.
+type Bewirtung struct {
+	Anlass        *string       `json:"anlass,omitempty"`
+	BestaetigtAm  *string       `json:"bestaetigt_am,omitempty"`
+	Bewirtender   *string       `json:"bewirtender,omitempty"`
+	Ort           *string       `json:"ort,omitempty"`
+	Teilnehmer    *[]Teilnehmer `json:"teilnehmer,omitempty"`
+	TrinkgeldCent *int64        `json:"trinkgeld_cent,omitempty"`
+}
+
+// Eigenbeleg defines model for Eigenbeleg.
+type Eigenbeleg struct {
+	Art                string  `json:"art"`
+	BestaetigtAm       *string `json:"bestaetigt_am,omitempty"`
+	Grund              string  `json:"grund"`
+	Zahlungsempfaenger string  `json:"zahlungsempfaenger"`
+}
+
+// EigenbelegWrite defines model for EigenbelegWrite.
+type EigenbelegWrite struct {
+	Art                string `json:"art"`
+	Grund              string `json:"grund"`
+	Zahlungsempfaenger string `json:"zahlungsempfaenger"`
 }
 
 // Fahrt defines model for Fahrt.
@@ -355,6 +450,18 @@ type Land struct {
 type LoginRequest struct {
 	Benutzername string `json:"benutzername"`
 	Passwort     string `json:"passwort"`
+}
+
+// MwstHelfer defines model for MwstHelfer.
+type MwstHelfer struct {
+	Art        string `json:"art"`
+	BetragCent int64  `json:"betrag_cent"`
+	Jahr       *int   `json:"jahr,omitempty"`
+}
+
+// MwstHelferAntwort defines model for MwstHelferAntwort.
+type MwstHelferAntwort struct {
+	Anteile []SteueranteilWrite `json:"anteile"`
 }
 
 // Nutzer defines model for Nutzer.
@@ -642,6 +749,28 @@ type SetupRequest struct {
 	Token        string  `json:"token"`
 }
 
+// Steueranteil defines model for Steueranteil.
+type Steueranteil struct {
+	BruttoCent    int64  `json:"brutto_cent"`
+	BruttoEurCent int64  `json:"brutto_eur_cent"`
+	NettoCent     int64  `json:"netto_cent"`
+	NettoEurCent  int64  `json:"netto_eur_cent"`
+	Satz          int64  `json:"satz"`
+	SteuerCent    int64  `json:"steuer_cent"`
+	SteuerEurCent int64  `json:"steuer_eur_cent"`
+	Steuerland    string `json:"steuerland"`
+	Vorsteuer     *bool  `json:"vorsteuer,omitempty"`
+}
+
+// SteueranteilWrite defines model for SteueranteilWrite.
+type SteueranteilWrite struct {
+	BruttoCent int64  `json:"brutto_cent"`
+	NettoCent  *int64 `json:"netto_cent,omitempty"`
+	Satz       int64  `json:"satz"`
+	SteuerCent *int64 `json:"steuer_cent,omitempty"`
+	Steuerland string `json:"steuerland"`
+}
+
 // Taetigkeitsstaette defines model for Taetigkeitsstaette.
 type Taetigkeitsstaette struct {
 	Anschrift   string  `json:"anschrift"`
@@ -667,6 +796,20 @@ type TaetigkeitsstaetteWrite struct {
 	Kunde       *string `json:"kunde,omitempty"`
 	LandIso     string  `json:"land_iso"`
 	Satzort     *string `json:"satzort,omitempty"`
+}
+
+// Teilnehmer defines model for Teilnehmer.
+type Teilnehmer struct {
+	Firma *string `json:"firma,omitempty"`
+	Name  string  `json:"name"`
+}
+
+// UstKurs defines model for UstKurs.
+type UstKurs struct {
+	Jahr     int    `json:"jahr"`
+	Kurs     string `json:"kurs"`
+	Monat    int    `json:"monat"`
+	Waehrung string `json:"waehrung"`
 }
 
 // Vorlage defines model for Vorlage.
@@ -707,19 +850,53 @@ type VorlageWrite struct {
 	Name  string                 `json:"name"`
 }
 
+// Vorschuss defines model for Vorschuss.
+type Vorschuss struct {
+	ArbeitgeberId string  `json:"arbeitgeber_id"`
+	BetragCent    int64   `json:"betrag_cent"`
+	Datum         string  `json:"datum"`
+	Id            string  `json:"id"`
+	Notiz         *string `json:"notiz,omitempty"`
+	Verrechnet    *bool   `json:"verrechnet,omitempty"`
+	Version       int64   `json:"version"`
+}
+
+// VorschussListe defines model for VorschussListe.
+type VorschussListe struct {
+	Items []Vorschuss `json:"items"`
+}
+
+// VorschussWrite defines model for VorschussWrite.
+type VorschussWrite struct {
+	ArbeitgeberId string  `json:"arbeitgeber_id"`
+	BetragCent    int64   `json:"betrag_cent"`
+	Datum         string  `json:"datum"`
+	Notiz         *string `json:"notiz,omitempty"`
+}
+
 // Warnung defines model for Warnung.
 type Warnung struct {
-	Anlass  string  `json:"anlass"`
-	BelegId *string `json:"beleg_id,omitempty"`
-	Code    string  `json:"code"`
-	Datum   *string `json:"datum,omitempty"`
-	ReiseId string  `json:"reise_id"`
-	Staette *string `json:"staette,omitempty"`
+	Anlass    string  `json:"anlass"`
+	AusgabeId *string `json:"ausgabe_id,omitempty"`
+	BelegId   *string `json:"beleg_id,omitempty"`
+	Code      string  `json:"code"`
+	Datum     *string `json:"datum,omitempty"`
+	ReiseId   string  `json:"reise_id"`
+	Staette   *string `json:"staette,omitempty"`
 }
 
 // WarnungListe defines model for WarnungListe.
 type WarnungListe struct {
 	Items []Warnung `json:"items"`
+}
+
+// Wechselkurs defines model for Wechselkurs.
+type Wechselkurs struct {
+	Datum     string `json:"datum"`
+	Kurs      string `json:"kurs"`
+	KursDatum string `json:"kurs_datum"`
+	Quelle    string `json:"quelle"`
+	Waehrung  string `json:"waehrung"`
 }
 
 // Cursor defines model for Cursor.
@@ -778,6 +955,31 @@ type PostArbeitgeberLogoMultipartBody struct {
 
 // PostArbeitgeberLogoParams defines parameters for PostArbeitgeberLogo.
 type PostArbeitgeberLogoParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// DeleteAusgabeParams defines parameters for DeleteAusgabe.
+type DeleteAusgabeParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PatchAusgabeParams defines parameters for PatchAusgabe.
+type PatchAusgabeParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PutAusgabeBelegeParams defines parameters for PutAusgabeBelege.
+type PutAusgabeBelegeParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PostBewirtungBestaetigenParams defines parameters for PostBewirtungBestaetigen.
+type PostBewirtungBestaetigenParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PutEigenbelegParams defines parameters for PutEigenbeleg.
+type PutEigenbelegParams struct {
 	IfMatch *IfMatch `json:"If-Match,omitempty"`
 }
 
@@ -907,6 +1109,13 @@ type PatchTaetigkeitsstaetteParams struct {
 	IfMatch *IfMatch `json:"If-Match,omitempty"`
 }
 
+// GetUstKursParams defines parameters for GetUstKurs.
+type GetUstKursParams struct {
+	Waehrung string `form:"waehrung" json:"waehrung"`
+	Jahr     int    `form:"jahr" json:"jahr"`
+	Monat    int    `form:"monat" json:"monat"`
+}
+
 // GetVorlagenParams defines parameters for GetVorlagen.
 type GetVorlagenParams struct {
 	Art    *string `form:"art,omitempty" json:"art,omitempty"`
@@ -917,6 +1126,22 @@ type GetVorlagenParams struct {
 // PatchVorlageParams defines parameters for PatchVorlage.
 type PatchVorlageParams struct {
 	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// DeleteVorschussParams defines parameters for DeleteVorschuss.
+type DeleteVorschussParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PatchVorschussParams defines parameters for PatchVorschuss.
+type PatchVorschussParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// GetWechselkursParams defines parameters for GetWechselkurs.
+type GetWechselkursParams struct {
+	Waehrung string `form:"waehrung" json:"waehrung"`
+	Datum    string `form:"datum" json:"datum"`
 }
 
 // PostAdminNutzerJSONRequestBody defines body for PostAdminNutzer for application/json ContentType.
@@ -936,6 +1161,15 @@ type PatchArbeitgeberJSONRequestBody = ArbeitgeberPatch
 
 // PostArbeitgeberLogoMultipartRequestBody defines body for PostArbeitgeberLogo for multipart/form-data ContentType.
 type PostArbeitgeberLogoMultipartRequestBody PostArbeitgeberLogoMultipartBody
+
+// PatchAusgabeJSONRequestBody defines body for PatchAusgabe for application/json ContentType.
+type PatchAusgabeJSONRequestBody = AusgabeWrite
+
+// PutAusgabeBelegeJSONRequestBody defines body for PutAusgabeBelege for application/json ContentType.
+type PutAusgabeBelegeJSONRequestBody = BelegZuordnung
+
+// PutEigenbelegJSONRequestBody defines body for PutEigenbeleg for application/json ContentType.
+type PutEigenbelegJSONRequestBody = EigenbelegWrite
 
 // PostAuthLoginJSONRequestBody defines body for PostAuthLogin for application/json ContentType.
 type PostAuthLoginJSONRequestBody = LoginRequest
@@ -961,11 +1195,17 @@ type PatchFahrtJSONRequestBody = FahrtWrite
 // PatchMeJSONRequestBody defines body for PatchMe for application/json ContentType.
 type PatchMeJSONRequestBody = ProfilPatch
 
+// PostMwstHelferJSONRequestBody defines body for PostMwstHelfer for application/json ContentType.
+type PostMwstHelferJSONRequestBody = MwstHelfer
+
 // PostReiseJSONRequestBody defines body for PostReise for application/json ContentType.
 type PostReiseJSONRequestBody = ReiseWrite
 
 // PatchReiseJSONRequestBody defines body for PatchReise for application/json ContentType.
 type PatchReiseJSONRequestBody = ReiseWrite
+
+// PostAusgabeJSONRequestBody defines body for PostAusgabe for application/json ContentType.
+type PostAusgabeJSONRequestBody = AusgabeWrite
 
 // PostFahrtJSONRequestBody defines body for PostFahrt for application/json ContentType.
 type PostFahrtJSONRequestBody = FahrtWrite
@@ -993,6 +1233,12 @@ type PatchVorlageJSONRequestBody = VorlageWrite
 
 // PostVorlageAnwendenJSONRequestBody defines body for PostVorlageAnwenden for application/json ContentType.
 type PostVorlageAnwendenJSONRequestBody = VorlageAnwenden
+
+// PostVorschussJSONRequestBody defines body for PostVorschuss for application/json ContentType.
+type PostVorschussJSONRequestBody = VorschussWrite
+
+// PatchVorschussJSONRequestBody defines body for PatchVorschuss for application/json ContentType.
+type PatchVorschussJSONRequestBody = VorschussWrite
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -1035,6 +1281,24 @@ type ServerInterface interface {
 	// PostArbeitgeberLogo Upload a PNG or JPEG logo
 	// (POST /api/v1/arbeitgeber/{id}/logo)
 	PostArbeitgeberLogo(w http.ResponseWriter, r *http.Request, id Id, params PostArbeitgeberLogoParams)
+
+	// (DELETE /api/v1/ausgaben/{id})
+	DeleteAusgabe(w http.ResponseWriter, r *http.Request, id Id, params DeleteAusgabeParams)
+
+	// (GET /api/v1/ausgaben/{id})
+	GetAusgabe(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (PATCH /api/v1/ausgaben/{id})
+	PatchAusgabe(w http.ResponseWriter, r *http.Request, id Id, params PatchAusgabeParams)
+
+	// (PUT /api/v1/ausgaben/{id}/belege)
+	PutAusgabeBelege(w http.ResponseWriter, r *http.Request, id Id, params PutAusgabeBelegeParams)
+
+	// (POST /api/v1/ausgaben/{id}/bewirtung/bestaetigen)
+	PostBewirtungBestaetigen(w http.ResponseWriter, r *http.Request, id Id, params PostBewirtungBestaetigenParams)
+
+	// (PUT /api/v1/ausgaben/{id}/eigenbeleg)
+	PutEigenbeleg(w http.ResponseWriter, r *http.Request, id Id, params PutEigenbelegParams)
 	// GetAuthConfig Active login methods
 	// (GET /api/v1/auth/config)
 	GetAuthConfig(w http.ResponseWriter, r *http.Request)
@@ -1111,6 +1375,9 @@ type ServerInterface interface {
 	// (DELETE /api/v1/me/sessions/{id})
 	DeleteMeSession(w http.ResponseWriter, r *http.Request, id string)
 
+	// (POST /api/v1/mwst-helfer)
+	PostMwstHelfer(w http.ResponseWriter, r *http.Request)
+
 	// (GET /api/v1/projekte)
 	GetProjekte(w http.ResponseWriter, r *http.Request, params GetProjekteParams)
 
@@ -1128,6 +1395,12 @@ type ServerInterface interface {
 
 	// (PATCH /api/v1/reisen/{id})
 	PatchReise(w http.ResponseWriter, r *http.Request, id Id, params PatchReiseParams)
+
+	// (GET /api/v1/reisen/{id}/ausgaben)
+	GetAusgaben(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (POST /api/v1/reisen/{id}/ausgaben)
+	PostAusgabe(w http.ResponseWriter, r *http.Request, id Id)
 
 	// (GET /api/v1/reisen/{id}/berechnung)
 	GetReiseBerechnung(w http.ResponseWriter, r *http.Request, id Id)
@@ -1177,6 +1450,9 @@ type ServerInterface interface {
 	// (PATCH /api/v1/taetigkeitsstaetten/{id})
 	PatchTaetigkeitsstaette(w http.ResponseWriter, r *http.Request, id Id, params PatchTaetigkeitsstaetteParams)
 
+	// (GET /api/v1/ust-kurse)
+	GetUstKurs(w http.ResponseWriter, r *http.Request, params GetUstKursParams)
+
 	// (GET /api/v1/vorlagen)
 	GetVorlagen(w http.ResponseWriter, r *http.Request, params GetVorlagenParams)
 
@@ -1195,8 +1471,23 @@ type ServerInterface interface {
 	// (POST /api/v1/vorlagen/{id}/anwenden)
 	PostVorlageAnwenden(w http.ResponseWriter, r *http.Request, id Id)
 
+	// (GET /api/v1/vorschuesse)
+	GetVorschuesse(w http.ResponseWriter, r *http.Request)
+
+	// (POST /api/v1/vorschuesse)
+	PostVorschuss(w http.ResponseWriter, r *http.Request)
+
+	// (DELETE /api/v1/vorschuesse/{id})
+	DeleteVorschuss(w http.ResponseWriter, r *http.Request, id Id, params DeleteVorschussParams)
+
+	// (PATCH /api/v1/vorschuesse/{id})
+	PatchVorschuss(w http.ResponseWriter, r *http.Request, id Id, params PatchVorschussParams)
+
 	// (GET /api/v1/warnungen)
 	GetWarnungen(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/wechselkurse)
+	GetWechselkurs(w http.ResponseWriter, r *http.Request, params GetWechselkursParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1674,6 +1965,282 @@ func (siw *ServerInterfaceWrapper) PostArbeitgeberLogo(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostArbeitgeberLogo(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteAusgabe operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAusgabe(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteAusgabeParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteAusgabe(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAusgabe operation middleware
+func (siw *ServerInterfaceWrapper) GetAusgabe(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAusgabe(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchAusgabe operation middleware
+func (siw *ServerInterfaceWrapper) PatchAusgabe(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchAusgabeParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchAusgabe(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutAusgabeBelege operation middleware
+func (siw *ServerInterfaceWrapper) PutAusgabeBelege(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutAusgabeBelegeParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutAusgabeBelege(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostBewirtungBestaetigen operation middleware
+func (siw *ServerInterfaceWrapper) PostBewirtungBestaetigen(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostBewirtungBestaetigenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostBewirtungBestaetigen(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutEigenbeleg operation middleware
+func (siw *ServerInterfaceWrapper) PutEigenbeleg(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutEigenbelegParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutEigenbeleg(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2470,6 +3037,20 @@ func (siw *ServerInterfaceWrapper) DeleteMeSession(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// PostMwstHelfer operation middleware
+func (siw *ServerInterfaceWrapper) PostMwstHelfer(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostMwstHelfer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetProjekte operation middleware
 func (siw *ServerInterfaceWrapper) GetProjekte(w http.ResponseWriter, r *http.Request) {
 
@@ -2734,6 +3315,58 @@ func (siw *ServerInterfaceWrapper) PatchReise(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PatchReise(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAusgaben operation middleware
+func (siw *ServerInterfaceWrapper) GetAusgaben(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAusgaben(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAusgabe operation middleware
+func (siw *ServerInterfaceWrapper) PostAusgabe(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAusgabe(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3291,6 +3924,65 @@ func (siw *ServerInterfaceWrapper) PatchTaetigkeitsstaette(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// GetUstKurs operation middleware
+func (siw *ServerInterfaceWrapper) GetUstKurs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetUstKursParams
+
+	// ------------- Required query parameter "waehrung" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "waehrung", r.URL.Query(), &params.Waehrung, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "waehrung"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "waehrung", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "jahr" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "jahr", r.URL.Query(), &params.Jahr, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "jahr"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "jahr", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "monat" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "monat", r.URL.Query(), &params.Monat, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "monat"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "monat", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUstKurs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetVorlagen operation middleware
 func (siw *ServerInterfaceWrapper) GetVorlagen(w http.ResponseWriter, r *http.Request) {
 
@@ -3492,11 +4184,185 @@ func (siw *ServerInterfaceWrapper) PostVorlageAnwenden(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// GetVorschuesse operation middleware
+func (siw *ServerInterfaceWrapper) GetVorschuesse(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVorschuesse(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostVorschuss operation middleware
+func (siw *ServerInterfaceWrapper) PostVorschuss(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostVorschuss(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteVorschuss operation middleware
+func (siw *ServerInterfaceWrapper) DeleteVorschuss(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteVorschussParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteVorschuss(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchVorschuss operation middleware
+func (siw *ServerInterfaceWrapper) PatchVorschuss(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchVorschussParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchVorschuss(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetWarnungen operation middleware
 func (siw *ServerInterfaceWrapper) GetWarnungen(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetWarnungen(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWechselkurs operation middleware
+func (siw *ServerInterfaceWrapper) GetWechselkurs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetWechselkursParams
+
+	// ------------- Required query parameter "waehrung" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "waehrung", r.URL.Query(), &params.Waehrung, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "waehrung"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "waehrung", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "datum" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "datum", r.URL.Query(), &params.Datum, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "datum"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "datum", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWechselkurs(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3693,6 +4559,21 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/neu-aufbereiten", wrapper.PostBelegNeuAufbereiten)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/bestaetigen", wrapper.PostBelegBestaetigen)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/stornieren", wrapper.PostBelegStornieren)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/reisen/{id}/ausgaben", wrapper.GetAusgaben)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/reisen/{id}/ausgaben", wrapper.PostAusgabe)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/ausgaben/{id}", wrapper.DeleteAusgabe)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/ausgaben/{id}", wrapper.GetAusgabe)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/ausgaben/{id}", wrapper.PatchAusgabe)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/ausgaben/{id}/belege", wrapper.PutAusgabeBelege)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/ausgaben/{id}/eigenbeleg", wrapper.PutEigenbeleg)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/ausgaben/{id}/bewirtung/bestaetigen", wrapper.PostBewirtungBestaetigen)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/wechselkurse", wrapper.GetWechselkurs)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/ust-kurse", wrapper.GetUstKurs)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vorschuesse", wrapper.GetVorschuesse)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/vorschuesse", wrapper.PostVorschuss)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/vorschuesse/{id}", wrapper.DeleteVorschuss)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/vorschuesse/{id}", wrapper.PatchVorschuss)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/mwst-helfer", wrapper.PostMwstHelfer)
 
 	return m
 }
@@ -4616,6 +5497,572 @@ func (response PostArbeitgeberLogo422ApplicationProblemPlusJSONResponse) VisitPo
 type PostArbeitgeberLogo428ApplicationProblemPlusJSONResponse Problem
 
 func (response PostArbeitgeberLogo428ApplicationProblemPlusJSONResponse) VisitPostArbeitgeberLogoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAusgabeRequestObject struct {
+	Id     Id `json:"id"`
+	Params DeleteAusgabeParams
+}
+
+type DeleteAusgabeResponseObject interface {
+	VisitDeleteAusgabeResponse(w http.ResponseWriter) error
+}
+
+type DeleteAusgabe204Response struct {
+}
+
+func (response DeleteAusgabe204Response) VisitDeleteAusgabeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAusgabe401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteAusgabe401ApplicationProblemPlusJSONResponse) VisitDeleteAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAusgabe404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteAusgabe404ApplicationProblemPlusJSONResponse) VisitDeleteAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAusgabe409ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteAusgabe409ApplicationProblemPlusJSONResponse) VisitDeleteAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAusgabe428ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteAusgabe428ApplicationProblemPlusJSONResponse) VisitDeleteAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAusgabeRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetAusgabeResponseObject interface {
+	VisitGetAusgabeResponse(w http.ResponseWriter) error
+}
+
+type GetAusgabe200JSONResponse Ausgabe
+
+func (response GetAusgabe200JSONResponse) VisitGetAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAusgabe401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAusgabe401ApplicationProblemPlusJSONResponse) VisitGetAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAusgabe404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAusgabe404ApplicationProblemPlusJSONResponse) VisitGetAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAusgabeRequestObject struct {
+	Id     Id `json:"id"`
+	Params PatchAusgabeParams
+	Body   *PatchAusgabeJSONRequestBody
+}
+
+type PatchAusgabeResponseObject interface {
+	VisitPatchAusgabeResponse(w http.ResponseWriter) error
+}
+
+type PatchAusgabe200JSONResponse Ausgabe
+
+func (response PatchAusgabe200JSONResponse) VisitPatchAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAusgabe401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PatchAusgabe401ApplicationProblemPlusJSONResponse) VisitPatchAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAusgabe404ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAusgabe404ApplicationProblemPlusJSONResponse) VisitPatchAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAusgabe409ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAusgabe409ApplicationProblemPlusJSONResponse) VisitPatchAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAusgabe412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAusgabe412ApplicationProblemPlusJSONResponse) VisitPatchAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAusgabe422ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAusgabe422ApplicationProblemPlusJSONResponse) VisitPatchAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAusgabe428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAusgabe428ApplicationProblemPlusJSONResponse) VisitPatchAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAusgabeBelegeRequestObject struct {
+	Id     Id `json:"id"`
+	Params PutAusgabeBelegeParams
+	Body   *PutAusgabeBelegeJSONRequestBody
+}
+
+type PutAusgabeBelegeResponseObject interface {
+	VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error
+}
+
+type PutAusgabeBelege200JSONResponse Ausgabe
+
+func (response PutAusgabeBelege200JSONResponse) VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAusgabeBelege401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PutAusgabeBelege401ApplicationProblemPlusJSONResponse) VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAusgabeBelege404ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAusgabeBelege404ApplicationProblemPlusJSONResponse) VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAusgabeBelege409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAusgabeBelege409ApplicationProblemPlusJSONResponse) VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAusgabeBelege412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAusgabeBelege412ApplicationProblemPlusJSONResponse) VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAusgabeBelege422ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAusgabeBelege422ApplicationProblemPlusJSONResponse) VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAusgabeBelege428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAusgabeBelege428ApplicationProblemPlusJSONResponse) VisitPutAusgabeBelegeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBewirtungBestaetigenRequestObject struct {
+	Id     Id `json:"id"`
+	Params PostBewirtungBestaetigenParams
+}
+
+type PostBewirtungBestaetigenResponseObject interface {
+	VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error
+}
+
+type PostBewirtungBestaetigen200JSONResponse Ausgabe
+
+func (response PostBewirtungBestaetigen200JSONResponse) VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBewirtungBestaetigen401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostBewirtungBestaetigen401ApplicationProblemPlusJSONResponse) VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBewirtungBestaetigen404ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBewirtungBestaetigen404ApplicationProblemPlusJSONResponse) VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBewirtungBestaetigen409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBewirtungBestaetigen409ApplicationProblemPlusJSONResponse) VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBewirtungBestaetigen412ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBewirtungBestaetigen412ApplicationProblemPlusJSONResponse) VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBewirtungBestaetigen422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBewirtungBestaetigen422ApplicationProblemPlusJSONResponse) VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBewirtungBestaetigen428ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBewirtungBestaetigen428ApplicationProblemPlusJSONResponse) VisitPostBewirtungBestaetigenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEigenbelegRequestObject struct {
+	Id     Id `json:"id"`
+	Params PutEigenbelegParams
+	Body   *PutEigenbelegJSONRequestBody
+}
+
+type PutEigenbelegResponseObject interface {
+	VisitPutEigenbelegResponse(w http.ResponseWriter) error
+}
+
+type PutEigenbeleg200JSONResponse Ausgabe
+
+func (response PutEigenbeleg200JSONResponse) VisitPutEigenbelegResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEigenbeleg401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PutEigenbeleg401ApplicationProblemPlusJSONResponse) VisitPutEigenbelegResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEigenbeleg404ApplicationProblemPlusJSONResponse Problem
+
+func (response PutEigenbeleg404ApplicationProblemPlusJSONResponse) VisitPutEigenbelegResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEigenbeleg409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutEigenbeleg409ApplicationProblemPlusJSONResponse) VisitPutEigenbelegResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEigenbeleg412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutEigenbeleg412ApplicationProblemPlusJSONResponse) VisitPutEigenbelegResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEigenbeleg422ApplicationProblemPlusJSONResponse Problem
+
+func (response PutEigenbeleg422ApplicationProblemPlusJSONResponse) VisitPutEigenbelegResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEigenbeleg428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutEigenbeleg428ApplicationProblemPlusJSONResponse) VisitPutEigenbelegResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -6032,6 +7479,58 @@ func (response DeleteMeSession404ApplicationProblemPlusJSONResponse) VisitDelete
 	return err
 }
 
+type PostMwstHelferRequestObject struct {
+	Body *PostMwstHelferJSONRequestBody
+}
+
+type PostMwstHelferResponseObject interface {
+	VisitPostMwstHelferResponse(w http.ResponseWriter) error
+}
+
+type PostMwstHelfer200JSONResponse MwstHelferAntwort
+
+func (response PostMwstHelfer200JSONResponse) VisitPostMwstHelferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMwstHelfer401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostMwstHelfer401ApplicationProblemPlusJSONResponse) VisitPostMwstHelferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMwstHelfer422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostMwstHelfer422ApplicationProblemPlusJSONResponse) VisitPostMwstHelferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProjekteRequestObject struct {
 	Params GetProjekteParams
 }
@@ -6378,6 +7877,139 @@ func (response PatchReise428ApplicationProblemPlusJSONResponse) VisitPatchReiseR
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAusgabenRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetAusgabenResponseObject interface {
+	VisitGetAusgabenResponse(w http.ResponseWriter) error
+}
+
+type GetAusgaben200JSONResponse AusgabeListe
+
+func (response GetAusgaben200JSONResponse) VisitGetAusgabenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAusgaben401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAusgaben401ApplicationProblemPlusJSONResponse) VisitGetAusgabenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAusgaben404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAusgaben404ApplicationProblemPlusJSONResponse) VisitGetAusgabenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAusgabeRequestObject struct {
+	Id   Id `json:"id"`
+	Body *PostAusgabeJSONRequestBody
+}
+
+type PostAusgabeResponseObject interface {
+	VisitPostAusgabeResponse(w http.ResponseWriter) error
+}
+
+type PostAusgabe201JSONResponse Ausgabe
+
+func (response PostAusgabe201JSONResponse) VisitPostAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAusgabe401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostAusgabe401ApplicationProblemPlusJSONResponse) VisitPostAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAusgabe404ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAusgabe404ApplicationProblemPlusJSONResponse) VisitPostAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAusgabe409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAusgabe409ApplicationProblemPlusJSONResponse) VisitPostAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAusgabe422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAusgabe422ApplicationProblemPlusJSONResponse) VisitPostAusgabeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7399,6 +9031,58 @@ func (response PatchTaetigkeitsstaette428ApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type GetUstKursRequestObject struct {
+	Params GetUstKursParams
+}
+
+type GetUstKursResponseObject interface {
+	VisitGetUstKursResponse(w http.ResponseWriter) error
+}
+
+type GetUstKurs200JSONResponse UstKurs
+
+func (response GetUstKurs200JSONResponse) VisitGetUstKursResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUstKurs401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetUstKurs401ApplicationProblemPlusJSONResponse) VisitGetUstKursResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUstKurs404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetUstKurs404ApplicationProblemPlusJSONResponse) VisitGetUstKursResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetVorlagenRequestObject struct {
 	Params GetVorlagenParams
 }
@@ -7750,6 +9434,280 @@ func (response PostVorlageAnwenden422ApplicationProblemPlusJSONResponse) VisitPo
 	return err
 }
 
+type GetVorschuesseRequestObject struct {
+}
+
+type GetVorschuesseResponseObject interface {
+	VisitGetVorschuesseResponse(w http.ResponseWriter) error
+}
+
+type GetVorschuesse200JSONResponse VorschussListe
+
+func (response GetVorschuesse200JSONResponse) VisitGetVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVorschuesse401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetVorschuesse401ApplicationProblemPlusJSONResponse) VisitGetVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostVorschussRequestObject struct {
+	Body *PostVorschussJSONRequestBody
+}
+
+type PostVorschussResponseObject interface {
+	VisitPostVorschussResponse(w http.ResponseWriter) error
+}
+
+type PostVorschuss201JSONResponse Vorschuss
+
+func (response PostVorschuss201JSONResponse) VisitPostVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostVorschuss401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostVorschuss401ApplicationProblemPlusJSONResponse) VisitPostVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostVorschuss422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostVorschuss422ApplicationProblemPlusJSONResponse) VisitPostVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVorschussRequestObject struct {
+	Id     Id `json:"id"`
+	Params DeleteVorschussParams
+}
+
+type DeleteVorschussResponseObject interface {
+	VisitDeleteVorschussResponse(w http.ResponseWriter) error
+}
+
+type DeleteVorschuss204Response struct {
+}
+
+func (response DeleteVorschuss204Response) VisitDeleteVorschussResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteVorschuss401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteVorschuss401ApplicationProblemPlusJSONResponse) VisitDeleteVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVorschuss404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteVorschuss404ApplicationProblemPlusJSONResponse) VisitDeleteVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVorschuss409ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteVorschuss409ApplicationProblemPlusJSONResponse) VisitDeleteVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVorschuss428ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteVorschuss428ApplicationProblemPlusJSONResponse) VisitDeleteVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchVorschussRequestObject struct {
+	Id     Id `json:"id"`
+	Params PatchVorschussParams
+	Body   *PatchVorschussJSONRequestBody
+}
+
+type PatchVorschussResponseObject interface {
+	VisitPatchVorschussResponse(w http.ResponseWriter) error
+}
+
+type PatchVorschuss200JSONResponse Vorschuss
+
+func (response PatchVorschuss200JSONResponse) VisitPatchVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchVorschuss401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PatchVorschuss401ApplicationProblemPlusJSONResponse) VisitPatchVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchVorschuss404ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchVorschuss404ApplicationProblemPlusJSONResponse) VisitPatchVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchVorschuss409ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchVorschuss409ApplicationProblemPlusJSONResponse) VisitPatchVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchVorschuss412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchVorschuss412ApplicationProblemPlusJSONResponse) VisitPatchVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchVorschuss422ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchVorschuss422ApplicationProblemPlusJSONResponse) VisitPatchVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchVorschuss428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchVorschuss428ApplicationProblemPlusJSONResponse) VisitPatchVorschussResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetWarnungenRequestObject struct {
 }
 
@@ -7783,6 +9741,58 @@ func (response GetWarnungen401ApplicationProblemPlusJSONResponse) VisitGetWarnun
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWechselkursRequestObject struct {
+	Params GetWechselkursParams
+}
+
+type GetWechselkursResponseObject interface {
+	VisitGetWechselkursResponse(w http.ResponseWriter) error
+}
+
+type GetWechselkurs200JSONResponse Wechselkurs
+
+func (response GetWechselkurs200JSONResponse) VisitGetWechselkursResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWechselkurs401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetWechselkurs401ApplicationProblemPlusJSONResponse) VisitGetWechselkursResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWechselkurs404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetWechselkurs404ApplicationProblemPlusJSONResponse) VisitGetWechselkursResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7828,6 +9838,24 @@ type StrictServerInterface interface {
 	// PostArbeitgeberLogo Upload a PNG or JPEG logo
 	// (POST /api/v1/arbeitgeber/{id}/logo)
 	PostArbeitgeberLogo(ctx context.Context, request PostArbeitgeberLogoRequestObject) (PostArbeitgeberLogoResponseObject, error)
+
+	// (DELETE /api/v1/ausgaben/{id})
+	DeleteAusgabe(ctx context.Context, request DeleteAusgabeRequestObject) (DeleteAusgabeResponseObject, error)
+
+	// (GET /api/v1/ausgaben/{id})
+	GetAusgabe(ctx context.Context, request GetAusgabeRequestObject) (GetAusgabeResponseObject, error)
+
+	// (PATCH /api/v1/ausgaben/{id})
+	PatchAusgabe(ctx context.Context, request PatchAusgabeRequestObject) (PatchAusgabeResponseObject, error)
+
+	// (PUT /api/v1/ausgaben/{id}/belege)
+	PutAusgabeBelege(ctx context.Context, request PutAusgabeBelegeRequestObject) (PutAusgabeBelegeResponseObject, error)
+
+	// (POST /api/v1/ausgaben/{id}/bewirtung/bestaetigen)
+	PostBewirtungBestaetigen(ctx context.Context, request PostBewirtungBestaetigenRequestObject) (PostBewirtungBestaetigenResponseObject, error)
+
+	// (PUT /api/v1/ausgaben/{id}/eigenbeleg)
+	PutEigenbeleg(ctx context.Context, request PutEigenbelegRequestObject) (PutEigenbelegResponseObject, error)
 	// GetAuthConfig Active login methods
 	// (GET /api/v1/auth/config)
 	GetAuthConfig(ctx context.Context, request GetAuthConfigRequestObject) (GetAuthConfigResponseObject, error)
@@ -7904,6 +9932,9 @@ type StrictServerInterface interface {
 	// (DELETE /api/v1/me/sessions/{id})
 	DeleteMeSession(ctx context.Context, request DeleteMeSessionRequestObject) (DeleteMeSessionResponseObject, error)
 
+	// (POST /api/v1/mwst-helfer)
+	PostMwstHelfer(ctx context.Context, request PostMwstHelferRequestObject) (PostMwstHelferResponseObject, error)
+
 	// (GET /api/v1/projekte)
 	GetProjekte(ctx context.Context, request GetProjekteRequestObject) (GetProjekteResponseObject, error)
 
@@ -7921,6 +9952,12 @@ type StrictServerInterface interface {
 
 	// (PATCH /api/v1/reisen/{id})
 	PatchReise(ctx context.Context, request PatchReiseRequestObject) (PatchReiseResponseObject, error)
+
+	// (GET /api/v1/reisen/{id}/ausgaben)
+	GetAusgaben(ctx context.Context, request GetAusgabenRequestObject) (GetAusgabenResponseObject, error)
+
+	// (POST /api/v1/reisen/{id}/ausgaben)
+	PostAusgabe(ctx context.Context, request PostAusgabeRequestObject) (PostAusgabeResponseObject, error)
 
 	// (GET /api/v1/reisen/{id}/berechnung)
 	GetReiseBerechnung(ctx context.Context, request GetReiseBerechnungRequestObject) (GetReiseBerechnungResponseObject, error)
@@ -7970,6 +10007,9 @@ type StrictServerInterface interface {
 	// (PATCH /api/v1/taetigkeitsstaetten/{id})
 	PatchTaetigkeitsstaette(ctx context.Context, request PatchTaetigkeitsstaetteRequestObject) (PatchTaetigkeitsstaetteResponseObject, error)
 
+	// (GET /api/v1/ust-kurse)
+	GetUstKurs(ctx context.Context, request GetUstKursRequestObject) (GetUstKursResponseObject, error)
+
 	// (GET /api/v1/vorlagen)
 	GetVorlagen(ctx context.Context, request GetVorlagenRequestObject) (GetVorlagenResponseObject, error)
 
@@ -7988,8 +10028,23 @@ type StrictServerInterface interface {
 	// (POST /api/v1/vorlagen/{id}/anwenden)
 	PostVorlageAnwenden(ctx context.Context, request PostVorlageAnwendenRequestObject) (PostVorlageAnwendenResponseObject, error)
 
+	// (GET /api/v1/vorschuesse)
+	GetVorschuesse(ctx context.Context, request GetVorschuesseRequestObject) (GetVorschuesseResponseObject, error)
+
+	// (POST /api/v1/vorschuesse)
+	PostVorschuss(ctx context.Context, request PostVorschussRequestObject) (PostVorschussResponseObject, error)
+
+	// (DELETE /api/v1/vorschuesse/{id})
+	DeleteVorschuss(ctx context.Context, request DeleteVorschussRequestObject) (DeleteVorschussResponseObject, error)
+
+	// (PATCH /api/v1/vorschuesse/{id})
+	PatchVorschuss(ctx context.Context, request PatchVorschussRequestObject) (PatchVorschussResponseObject, error)
+
 	// (GET /api/v1/warnungen)
 	GetWarnungen(ctx context.Context, request GetWarnungenRequestObject) (GetWarnungenResponseObject, error)
+
+	// (GET /api/v1/wechselkurse)
+	GetWechselkurs(ctx context.Context, request GetWechselkursRequestObject) (GetWechselkursResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -8404,6 +10459,188 @@ func (sh *strictHandler) PostArbeitgeberLogo(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostArbeitgeberLogoResponseObject); ok {
 		if err := validResponse.VisitPostArbeitgeberLogoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteAusgabe operation middleware
+func (sh *strictHandler) DeleteAusgabe(w http.ResponseWriter, r *http.Request, id Id, params DeleteAusgabeParams) {
+	var request DeleteAusgabeRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAusgabe(ctx, request.(DeleteAusgabeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAusgabe")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteAusgabeResponseObject); ok {
+		if err := validResponse.VisitDeleteAusgabeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAusgabe operation middleware
+func (sh *strictHandler) GetAusgabe(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetAusgabeRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAusgabe(ctx, request.(GetAusgabeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAusgabe")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAusgabeResponseObject); ok {
+		if err := validResponse.VisitGetAusgabeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchAusgabe operation middleware
+func (sh *strictHandler) PatchAusgabe(w http.ResponseWriter, r *http.Request, id Id, params PatchAusgabeParams) {
+	var request PatchAusgabeRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PatchAusgabeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchAusgabe(ctx, request.(PatchAusgabeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchAusgabe")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchAusgabeResponseObject); ok {
+		if err := validResponse.VisitPatchAusgabeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutAusgabeBelege operation middleware
+func (sh *strictHandler) PutAusgabeBelege(w http.ResponseWriter, r *http.Request, id Id, params PutAusgabeBelegeParams) {
+	var request PutAusgabeBelegeRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PutAusgabeBelegeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutAusgabeBelege(ctx, request.(PutAusgabeBelegeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutAusgabeBelege")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutAusgabeBelegeResponseObject); ok {
+		if err := validResponse.VisitPutAusgabeBelegeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostBewirtungBestaetigen operation middleware
+func (sh *strictHandler) PostBewirtungBestaetigen(w http.ResponseWriter, r *http.Request, id Id, params PostBewirtungBestaetigenParams) {
+	var request PostBewirtungBestaetigenRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostBewirtungBestaetigen(ctx, request.(PostBewirtungBestaetigenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostBewirtungBestaetigen")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostBewirtungBestaetigenResponseObject); ok {
+		if err := validResponse.VisitPostBewirtungBestaetigenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutEigenbeleg operation middleware
+func (sh *strictHandler) PutEigenbeleg(w http.ResponseWriter, r *http.Request, id Id, params PutEigenbelegParams) {
+	var request PutEigenbelegRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PutEigenbelegJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutEigenbeleg(ctx, request.(PutEigenbelegRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutEigenbeleg")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutEigenbelegResponseObject); ok {
+		if err := validResponse.VisitPutEigenbelegResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9105,6 +11342,37 @@ func (sh *strictHandler) DeleteMeSession(w http.ResponseWriter, r *http.Request,
 	}
 }
 
+// PostMwstHelfer operation middleware
+func (sh *strictHandler) PostMwstHelfer(w http.ResponseWriter, r *http.Request) {
+	var request PostMwstHelferRequestObject
+
+	var body PostMwstHelferJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostMwstHelfer(ctx, request.(PostMwstHelferRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostMwstHelfer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostMwstHelferResponseObject); ok {
+		if err := validResponse.VisitPostMwstHelferResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetProjekte operation middleware
 func (sh *strictHandler) GetProjekte(w http.ResponseWriter, r *http.Request, params GetProjekteParams) {
 	var request GetProjekteRequestObject
@@ -9267,6 +11535,65 @@ func (sh *strictHandler) PatchReise(w http.ResponseWriter, r *http.Request, id I
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PatchReiseResponseObject); ok {
 		if err := validResponse.VisitPatchReiseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAusgaben operation middleware
+func (sh *strictHandler) GetAusgaben(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetAusgabenRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAusgaben(ctx, request.(GetAusgabenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAusgaben")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAusgabenResponseObject); ok {
+		if err := validResponse.VisitGetAusgabenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAusgabe operation middleware
+func (sh *strictHandler) PostAusgabe(w http.ResponseWriter, r *http.Request, id Id) {
+	var request PostAusgabeRequestObject
+
+	request.Id = id
+
+	var body PostAusgabeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAusgabe(ctx, request.(PostAusgabeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAusgabe")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAusgabeResponseObject); ok {
+		if err := validResponse.VisitPostAusgabeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9733,6 +12060,32 @@ func (sh *strictHandler) PatchTaetigkeitsstaette(w http.ResponseWriter, r *http.
 	}
 }
 
+// GetUstKurs operation middleware
+func (sh *strictHandler) GetUstKurs(w http.ResponseWriter, r *http.Request, params GetUstKursParams) {
+	var request GetUstKursRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUstKurs(ctx, request.(GetUstKursRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUstKurs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUstKursResponseObject); ok {
+		if err := validResponse.VisitGetUstKursResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetVorlagen operation middleware
 func (sh *strictHandler) GetVorlagen(w http.ResponseWriter, r *http.Request, params GetVorlagenParams) {
 	var request GetVorlagenRequestObject
@@ -9909,6 +12262,122 @@ func (sh *strictHandler) PostVorlageAnwenden(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// GetVorschuesse operation middleware
+func (sh *strictHandler) GetVorschuesse(w http.ResponseWriter, r *http.Request) {
+	var request GetVorschuesseRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetVorschuesse(ctx, request.(GetVorschuesseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetVorschuesse")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetVorschuesseResponseObject); ok {
+		if err := validResponse.VisitGetVorschuesseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostVorschuss operation middleware
+func (sh *strictHandler) PostVorschuss(w http.ResponseWriter, r *http.Request) {
+	var request PostVorschussRequestObject
+
+	var body PostVorschussJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostVorschuss(ctx, request.(PostVorschussRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostVorschuss")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostVorschussResponseObject); ok {
+		if err := validResponse.VisitPostVorschussResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteVorschuss operation middleware
+func (sh *strictHandler) DeleteVorschuss(w http.ResponseWriter, r *http.Request, id Id, params DeleteVorschussParams) {
+	var request DeleteVorschussRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteVorschuss(ctx, request.(DeleteVorschussRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteVorschuss")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteVorschussResponseObject); ok {
+		if err := validResponse.VisitDeleteVorschussResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchVorschuss operation middleware
+func (sh *strictHandler) PatchVorschuss(w http.ResponseWriter, r *http.Request, id Id, params PatchVorschussParams) {
+	var request PatchVorschussRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PatchVorschussJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchVorschuss(ctx, request.(PatchVorschussRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchVorschuss")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchVorschussResponseObject); ok {
+		if err := validResponse.VisitPatchVorschussResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetWarnungen operation middleware
 func (sh *strictHandler) GetWarnungen(w http.ResponseWriter, r *http.Request) {
 	var request GetWarnungenRequestObject
@@ -9926,6 +12395,32 @@ func (sh *strictHandler) GetWarnungen(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetWarnungenResponseObject); ok {
 		if err := validResponse.VisitGetWarnungenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWechselkurs operation middleware
+func (sh *strictHandler) GetWechselkurs(w http.ResponseWriter, r *http.Request, params GetWechselkursParams) {
+	var request GetWechselkursRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWechselkurs(ctx, request.(GetWechselkursRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWechselkurs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWechselkursResponseObject); ok {
+		if err := validResponse.VisitGetWechselkursResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

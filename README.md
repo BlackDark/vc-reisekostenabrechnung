@@ -12,7 +12,7 @@
 
 Self-hosted web app (PWA) for a German **Reisekostenabrechnung** (travel expense claim): record business trips, capture a **Beleg** (receipt) with the phone camera, calculate the **Verpflegungspauschale** (meal allowance) and **Kilometerpauschale** (mileage allowance), and file a reviewable **Abrechnung** (expense claim) as PDF/A with every receipt. German and English, multiple users, sign-in with a password, OIDC (for example Pocket ID), or reverse-proxy headers.
 
-> **Status:** milestone M4 (Belege). See [milestones](docs/MILESTONES.md). A **Beleg** (receipt) is captured in the browser, straightened, and stored as an **Archivbeleg** (colour AVIF archive copy) with a SHA-256 checksum. PDFs and e-invoice XML stay byte-for-byte. ADR 0005 stays proposed until real receipt photos are measured. A **Reise** (business trip) is still split into **Reisetage** (travel days), with one **Verpflegungspauschale** (meal allowance) per calendar day across every employer.
+> **Status:** milestone M5 (Ausgaben). See [milestones](docs/MILESTONES.md). An **Ausgabe** (expense) belongs to exactly one **Reise** (business trip) and is always paid by the traveller. It can carry several VAT rates, a foreign-currency amount (ECB daily rate, with the BMF monthly VAT rate shown only as a hint), **Bewirtung** (business entertainment) and a **Vorschuss** (cash advance). A **Beleg** (receipt) is captured in the browser, straightened, and stored as an **Archivbeleg** (colour AVIF archive copy). One Beleg can cover several Ausgaben. ADR 0005 stays proposed until real receipt photos are measured. One **Verpflegungspauschale** (meal allowance) is applied per calendar day across every employer.
 
 ## Screenshots
 
