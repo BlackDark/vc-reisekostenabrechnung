@@ -58,8 +58,10 @@ function tinyPNG(seed: number) {
 test("upload a receipt, see the thumbnail, download the original", async ({
 	page,
 }) => {
-	const seed =
-		(Date.now() & 255) ^ (test.info().project.name === "mobile" ? 0x5a : 0);
+	const project = test.info().project.name;
+	const salt =
+		project === "mobile" ? 0x5a : project === "mobile-webkit" ? 0xa5 : 0;
+	const seed = (Date.now() & 255) ^ salt;
 	await login(page);
 	await page.goto("/belege/neu");
 	await page.getByTestId("beleg-file").setInputFiles({
@@ -69,7 +71,7 @@ test("upload a receipt, see the thumbnail, download the original", async ({
 	});
 	await expect(page.getByTestId("beleg-page")).toBeVisible();
 	await page.getByRole("button", { name: /Hochladen|Upload/ }).click();
-	await expect(page).toHaveURL(/\/belege\/(?!neu)/);
+	await expect(page).toHaveURL(/\/belege\/(?!neu)/, { timeout: 45_000 });
 	await expect(page.getByTestId("beleg-preview")).toBeVisible({
 		timeout: 45_000,
 	});

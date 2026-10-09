@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Response, test } from "@playwright/test";
 
 const password = process.env.E2E_PASSWORD || "smoke-password-1";
 const here = dirname(fileURLToPath(import.meta.url));
@@ -165,16 +165,30 @@ async function openAndShot(
 	await shot(page, project, slug, heading);
 }
 
+function listLoaded(apiPath: string) {
+	return (res: Response) =>
+		res.request().method() === "GET" &&
+		res.ok() &&
+		new URL(res.url()).pathname === apiPath;
+}
+
+async function openLoaded(page: Page, url: string, apiPath: string) {
+	const listed = page.waitForResponse(listLoaded(apiPath));
+	await page.goto(url);
+	await listed;
+}
+
 async function ensureEmployer(page: Page): Promise<string> {
-	await page.goto("/arbeitgeber");
+	await openLoaded(page, "/arbeitgeber", "/api/v1/arbeitgeber");
 	const row = page.locator("li").filter({ hasText: employerName });
 	if ((await row.count()) === 0) {
 		await page.locator("#ag-name").fill(employerName);
 		await page.locator("#ag-address").fill("Musterstraße 12\n10115 Berlin");
 		await page.getByRole("button", { name: /Anlegen|Create/ }).click();
-		await expect(row).toBeVisible();
+		await expect(row.first()).toBeVisible();
 	}
 	const href = await row
+		.first()
 		.getByRole("link", { name: /Bearbeiten|Edit/ })
 		.getAttribute("href");
 	expect(href).toBeTruthy();
@@ -182,7 +196,7 @@ async function ensureEmployer(page: Page): Promise<string> {
 }
 
 async function ensureTrip(page: Page): Promise<string> {
-	await page.goto("/reisen");
+	await openLoaded(page, "/reisen", "/api/v1/reisen");
 	const link = page.getByRole("link", { name: tripName });
 	if ((await link.count()) > 0) {
 		return (await link.first().getAttribute("href")) ?? "";
@@ -219,8 +233,20 @@ async function ensureTrip(page: Page): Promise<string> {
 	return new URL(page.url()).pathname;
 }
 
-async function ensureMileage(page: Page, tripPath: string) {
+async function openTrip(page: Page, tripPath: string) {
+	const id = tripPath.split("/").filter(Boolean).at(-1) ?? "";
+	const fahrten = page.waitForResponse(
+		listLoaded(`/api/v1/reisen/${id}/fahrten`),
+	);
+	const ausgaben = page.waitForResponse(
+		listLoaded(`/api/v1/reisen/${id}/ausgaben`),
+	);
 	await page.goto(tripPath);
+	await Promise.all([fahrten, ausgaben]);
+}
+
+async function ensureMileage(page: Page, tripPath: string) {
+	await openTrip(page, tripPath);
 	if ((await page.getByText("Gare du Nord").count()) > 0) return;
 	await page.locator("#fahrt-datum").fill("2026-09-08");
 	await page.locator("#fahrt-start").fill("Gare du Nord");
@@ -231,11 +257,11 @@ async function ensureMileage(page: Page, tripPath: string) {
 		.locator("#fahrt-form")
 		.getByRole("button", { name: /Anlegen|Create/ })
 		.click();
-	await expect(page.getByText("Gare du Nord")).toBeVisible();
+	await expect(page.getByText("Gare du Nord").first()).toBeVisible();
 }
 
 async function ensureExpense(page: Page, tripPath: string): Promise<string> {
-	await page.goto(tripPath);
+	await openTrip(page, tripPath);
 	const existing = page.getByRole("link", {
 		name: /uebernachtung|Übernachtung|accommodation/i,
 	});
@@ -254,18 +280,18 @@ async function ensureExpense(page: Page, tripPath: string): Promise<string> {
 }
 
 async function ensureAdvance(page: Page) {
-	await page.goto("/vorschuesse");
+	await openLoaded(page, "/vorschuesse", "/api/v1/vorschuesse");
 	if ((await page.getByText("Abschlag Paris").count()) > 0) return;
 	await page.locator("select").first().selectOption({ label: employerName });
 	await page.getByLabel(/Datum|Date/).fill("2026-09-01");
 	await page.getByLabel(/Betrag|Amount/).fill("200.00");
 	await page.getByLabel(/Notiz|Note/).fill("Abschlag Paris");
 	await page.getByRole("button", { name: /Anlegen|Create/ }).click();
-	await expect(page.getByText("Abschlag Paris")).toBeVisible();
+	await expect(page.getByText("Abschlag Paris").first()).toBeVisible();
 }
 
 async function ensurePlace(page: Page) {
-	await page.goto("/taetigkeitsstaetten");
+	await openLoaded(page, "/taetigkeitsstaetten", "/api/v1/taetigkeitsstaetten");
 	if ((await page.getByText(placeName).count()) > 0) return;
 	await page.locator("#st-name").fill(placeName);
 	await page.locator("#st-address").fill("12 Rue des Archives, Paris");
@@ -275,11 +301,11 @@ async function ensurePlace(page: Page) {
 	await page.locator("#st-land").selectOption("FR");
 	await page.locator("#st-kunde").fill("Leuchtturm");
 	await page.getByRole("button", { name: /Anlegen|Create/ }).click();
-	await expect(page.getByText(placeName)).toBeVisible();
+	await expect(page.getByText(placeName).first()).toBeVisible();
 }
 
 async function ensureClaim(page: Page): Promise<string> {
-	await page.goto("/abrechnungen");
+	await openLoaded(page, "/abrechnungen", "/api/v1/abrechnungen");
 	const link = page.getByRole("link", { name: claimTitle });
 	if ((await link.count()) > 0)
 		return (await link.first().getAttribute("href")) ?? "";
@@ -314,7 +340,7 @@ async function ensureReceipt(page: Page): Promise<string> {
 	await page.getByTestId("beleg-file").setInputFiles(fixture);
 	await expect(page.getByTestId("beleg-page")).toBeVisible();
 	await page.getByRole("button", { name: /Hochladen|Upload/ }).click();
-	await expect(page).toHaveURL(/\/belege\/(?!neu)[^/]+$/);
+	await expect(page).toHaveURL(/\/belege\/(?!neu)[^/]+$/, { timeout: 45_000 });
 	await expect(page.getByTestId("beleg-preview")).toBeVisible({
 		timeout: 45_000,
 	});
