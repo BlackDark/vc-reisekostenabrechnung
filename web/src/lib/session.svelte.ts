@@ -20,6 +20,8 @@ class Session {
 	online = $state(true);
 	locale = $state<Locale>("de");
 	ready = $state(false);
+	aiAktiv = $state(false);
+	aiBasisURL = $state("");
 
 	async init() {
 		if (typeof navigator !== "undefined") {
@@ -32,6 +34,8 @@ class Session {
 			});
 		}
 		const config = await api.GET("/api/v1/auth/config");
+		this.aiAktiv = config.data?.ai_aktiviert === true;
+		this.aiBasisURL = config.data?.ai_basis_url ?? "";
 		const me = await api.GET("/api/v1/auth/me");
 		if (me.response.ok && me.data) this.nutzer = me.data;
 		const stored = localStorage.getItem("PARAGLIDE_LOCALE");

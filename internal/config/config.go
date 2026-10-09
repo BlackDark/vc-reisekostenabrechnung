@@ -59,7 +59,20 @@ type Config struct {
 	RateAI     Rate
 
 	JobWorkers int
-	AIEnabled  bool
+	AI         AI
+}
+
+// AI is the optional OpenAI-compatible receipt reader. It stays off unless
+// AI_ENABLED is true and a base URL and model are set.
+type AI struct {
+	Enabled        bool
+	BaseURL        string
+	APIKey         string
+	Model          string
+	Timeout        time.Duration
+	MaxConcurrency int
+	MaxImagePx     int
+	ResponseFormat string
 }
 
 // OIDC holds the OpenID Connect client settings.
@@ -139,7 +152,20 @@ func Load() (Config, error) {
 		TypstPath:           lookupDefault("TYPST_PATH", "/usr/local/bin/typst"),
 		ExportTimeout:       lookupDuration("EXPORT_TIMEOUT", 120*time.Second, &errs),
 		JobWorkers:          lookupInt("JOB_WORKERS", 2, &errs),
-		AIEnabled:           lookupBool("AI_ENABLED", false),
+	}
+	aiKey, err := secret("AI_API_KEY")
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+	cfg.AI = AI{
+		Enabled:        lookupBool("AI_ENABLED", false),
+		BaseURL:        strings.TrimRight(lookup("AI_BASE_URL"), "/"),
+		APIKey:         aiKey,
+		Model:          lookup("AI_MODEL"),
+		Timeout:        lookupDuration("AI_TIMEOUT", 60*time.Second, &errs),
+		MaxConcurrency: lookupInt("AI_MAX_CONCURRENCY", 2, &errs),
+		MaxImagePx:     lookupInt("AI_MAX_IMAGE_PX", 2480, &errs),
+		ResponseFormat: lookupDefault("AI_RESPONSE_FORMAT", "auto"),
 	}
 	cfg.AppBaseURL = strings.TrimRight(cfg.AppBaseURL, "/")
 	cfg.DBPath = lookupDefault("DB_PATH", cfg.DataDir+"/reisekosten.db")
@@ -297,7 +323,43 @@ func validate(cfg Config) []string {
 	if cfg.SessionIdle > cfg.SessionLifetime {
 		errs = append(errs, "SESSION_IDLE_TIMEOUT cannot exceed SESSION_LIFETIME")
 	}
+	if cfg.AI.Enabled {
+		if cfg.AI.BaseURL == "" || cfg.AI.Model == "" {
+			errs = append(errs, "AI_BASE_URL and AI_MODEL are required when AI_ENABLED=true")
+		} else if u, err := url.Parse(cfg.AI.BaseURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			errs = append(errs, "AI_BASE_URL must be an absolute http(s) URL")
+		}
+		switch cfg.AI.ResponseFormat {
+		case "auto", "json_schema", "json_object", "text":
+		default:
+			errs = append(errs, "AI_RESPONSE_FORMAT must be auto, json_schema, json_object, or text")
+		}
+		if cfg.AI.Timeout <= 0 {
+			errs = append(errs, "AI_TIMEOUT must be positive")
+		}
+		if cfg.AI.MaxConcurrency < 1 {
+			errs = append(errs, "AI_MAX_CONCURRENCY must be at least 1")
+		}
+		if cfg.AI.MaxImagePx < 256 {
+			errs = append(errs, "AI_MAX_IMAGE_PX must be at least 256")
+		}
+	}
 	return errs
+}
+
+// PublicBaseURL is the AI endpoint without userinfo, query, or fragment.
+func (a AI) PublicBaseURL() string {
+	if !a.Enabled || a.BaseURL == "" {
+		return ""
+	}
+	u, err := url.Parse(a.BaseURL)
+	if err != nil {
+		return ""
+	}
+	u.User = nil
+	u.RawQuery = ""
+	u.Fragment = ""
+	return strings.TrimRight(u.String(), "/")
 }
 
 // OriginURL is scheme://host of APP_BASE_URL, used as the trusted CSRF origin.

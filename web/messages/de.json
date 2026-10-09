@@ -230,5 +230,17 @@
 	"warn_W10": "Keine deutsche Vorsteuer – ggf. Vorsteuer-Vergütung",
 	"warn_W11": "Ausgabedatum liegt außerhalb der Reise",
 	"warn_W13": "USt-Betrag weicht vom rechnerischen ab",
-	"warn_H_UST_KURS": "Deutsche USt in Fremdwährung: Erstattung mit EZB-Tageskurs, BMF-Monatskurs nur als Hinweis"
+	"warn_H_UST_KURS": "Deutsche USt in Fremdwährung: Erstattung mit EZB-Tageskurs, BMF-Monatskurs nur als Hinweis",
+	"ki_opt_in": "Belege mit KI auslesen",
+	"ki_privacy": "Belegbilder werden an {url} gesendet.",
+	"ki_read": "Mit KI auslesen",
+	"ki_suggestion": "KI-Vorschlag",
+	"ki_accept": "Übernehmen",
+	"ki_discard": "Verwerfen",
+	"ki_unreachable": "KI nicht erreichbar",
+	"ki_empty": "Kein Vorschlag",
+	"ki_running": "KI liest den Beleg …",
+	"ki_mark": "KI",
+	"ki_confidence": "Konfidenz",
+	"ausgabe_empfaenger": "Rechnungsempfänger"
 }

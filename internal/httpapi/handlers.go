@@ -39,6 +39,8 @@ func (a *App) GetAuthConfig(w http.ResponseWriter, r *http.Request) {
 		OidcButtonLabel:   &label,
 		Passwort:          a.cfg.AuthPasswordEnabled,
 		SetupErforderlich: n == 0,
+		AiAktiviert:       a.cfg.AI.Enabled,
+		AiBasisUrl:        a.cfg.AI.PublicBaseURL(),
 	})
 }
 

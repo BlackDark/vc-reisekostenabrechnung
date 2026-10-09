@@ -7,6 +7,7 @@
 
 	let anzeigename = $state("");
 	let personalnummer = $state("");
+	let kiErlaubt = $state(false);
 	let letterhead = $state<{ id: string; name: string; anschrift: string; logo_datei_id?: string | null } | null>(null);
 	let sessions = $state<{ id: string; aktuell: boolean; user_agent?: string | null }[]>([]);
 
@@ -15,6 +16,7 @@
 		if (session.nutzer) {
 			anzeigename = session.nutzer.anzeigename;
 			personalnummer = session.nutzer.personalnummer ?? "";
+			kiErlaubt = session.nutzer.ki_erlaubt;
 		}
 	});
 
@@ -35,7 +37,12 @@
 		const sprache = session.locale;
 		const res = await api.PATCH("/api/v1/me", {
 			params: { header: { "If-Match": String(session.nutzer.version) } },
-			body: { anzeigename, sprache, personalnummer },
+			body: {
+				anzeigename,
+				sprache,
+				personalnummer,
+				...(session.aiAktiv ? { ki_erlaubt: kiErlaubt } : {}),
+			},
 		});
 		if (res.response.ok && res.data) session.nutzer = res.data;
 	}
@@ -65,6 +72,13 @@
 				<input id="personalnummer" class="rounded border px-2 py-1" bind:value={personalnummer} />
 			</label>
 			<p class="text-sm">{m.language()}: {session.locale}</p>
+			{#if session.aiAktiv}
+				<label class="flex items-center gap-2 text-sm" for="ki-erlaubt">
+					<input id="ki-erlaubt" type="checkbox" bind:checked={kiErlaubt} />
+					{m.ki_opt_in()}
+				</label>
+				<p class="text-sm" data-testid="ki-privacy">{m.ki_privacy({ url: session.aiBasisURL })}</p>
+			{/if}
 			<Button type="submit">{m.save()}</Button>
 		</fieldset>
 	</form>

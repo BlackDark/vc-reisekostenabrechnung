@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Reisekostenabrechnung API
-  version: 0.5.0
-  description: Reisen, Pauschalen, Ausgaben, Belege, Fremdwährung, Bewirtung, Vorschüsse, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
+  version: 0.6.0
+  description: Reisen, Pauschalen, Ausgaben, Belege, optionales KI-Auslesen, Fremdwährung, Bewirtung, Vorschüsse, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
 servers:
   - url: /
 paths:
@@ -1480,6 +1480,90 @@ paths:
           $ref: "#/components/responses/Problem"
         "428":
           $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/ki-auslesen:
+    post:
+      operationId: postBelegKi
+      tags: [belege]
+      summary: Queue a KI suggestion for this Beleg
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "202":
+          description: Queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KiAuftrag"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/ki:
+    get:
+      operationId: getBelegKi
+      tags: [belege]
+      summary: Current KI suggestion or job status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Suggestion status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KiStand"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/texte:
+    get:
+      operationId: getBelegTexte
+      tags: [belege]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Belegtext versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BelegtextListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postBelegText
+      tags: [belege]
+      summary: Store the confirmed Belegtext version
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BelegtextWrite"
+      responses:
+        "201":
+          description: Confirmed version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Belegtext"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
   /api/v1/reisen/{id}/ausgaben:
     get:
       operationId: getAusgaben
@@ -1908,7 +1992,7 @@ components:
           type: string
     AuthConfig:
       type: object
-      required: [passwort, oidc, header, setup_erforderlich, default_locale]
+      required: [passwort, oidc, header, setup_erforderlich, default_locale, ai_aktiviert, ai_basis_url]
       properties:
         passwort:
           type: boolean
@@ -1927,6 +2011,11 @@ components:
         default_locale:
           type: string
           enum: [de, en]
+        ai_aktiviert:
+          type: boolean
+        ai_basis_url:
+          type: string
+          description: Public base URL of the KI endpoint. Empty when KI is off. Never includes the API key.
     LoginRequest:
       type: object
       required: [benutzername, passwort]
@@ -2838,6 +2927,108 @@ components:
             $ref: "#/components/schemas/Beleg"
         next_cursor:
           type: string
+    KiAuftrag:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+        job_id:
+          type: string
+    KiAnteil:
+      type: object
+      required: [satz, brutto_cent]
+      properties:
+        satz:
+          type: integer
+        netto_cent:
+          type: integer
+          format: int64
+        steuer_cent:
+          type: integer
+          format: int64
+        brutto_cent:
+          type: integer
+          format: int64
+    KiVorschlag:
+      type: object
+      properties:
+        leistender:
+          type: string
+        datum:
+          type: string
+        waehrung:
+          type: string
+        betrag_brutto_cent:
+          type: integer
+          format: int64
+        steueranteile:
+          type: array
+          items:
+            $ref: "#/components/schemas/KiAnteil"
+        rechnungsart:
+          type: string
+        kostenart:
+          type: string
+        empfaenger_name:
+          type: string
+        rechnungsnummer:
+          type: string
+        ust_id_leistender:
+          type: string
+        trinkgeld_cent:
+          type: integer
+          format: int64
+        volltext:
+          type: string
+        konfidenz:
+          type: object
+          additionalProperties:
+            type: number
+    KiStand:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: aus, nicht_erlaubt, keine, laeuft, vorschlag, leer, or nicht_erreichbar
+        vorschlag:
+          $ref: "#/components/schemas/KiVorschlag"
+    Belegtext:
+      type: object
+      required: [id, beleg_id, version, quelle, volltext]
+      properties:
+        id:
+          type: string
+        beleg_id:
+          type: string
+        version:
+          type: integer
+          format: int64
+        quelle:
+          type: string
+        volltext:
+          type: string
+        bestaetigt_am:
+          type: string
+          format: date-time
+        felder:
+          $ref: "#/components/schemas/KiVorschlag"
+    BelegtextListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Belegtext"
+    BelegtextWrite:
+      type: object
+      properties:
+        volltext:
+          type: string
+        felder:
+          $ref: "#/components/schemas/KiVorschlag"
     BelegStorno:
       type: object
       required: [grund]

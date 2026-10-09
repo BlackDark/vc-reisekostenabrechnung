@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 docker rm -f rk-e2e rk-mock >/dev/null 2>&1 || true
+pkill -f scripts/ki-stub.py >/dev/null 2>&1 || true
 docker volume rm rk-e2e-data >/dev/null 2>&1 || true
 docker volume create rk-e2e-data >/dev/null
 docker run -d --name rk-mock --network host \
@@ -27,10 +28,18 @@ docker run -d --name rk-e2e --network host \
   -e OIDC_ADMIN_GROUP=rk-admins \
   -e OIDC_ALLOWED_GROUP=rk-users \
   -e OIDC_BUTTON_LABEL=SSO \
+  -e AI_ENABLED=true \
+  -e AI_BASE_URL=http://127.0.0.1:8091/v1 \
+  -e AI_API_KEY=e2e-key \
+  -e AI_MODEL=fake \
+  -e AI_TIMEOUT=15s \
+  -e AI_RESPONSE_FORMAT=json_object \
   vc-reisekosten:ci
+nohup python3 scripts/ki-stub.py >/tmp/ki-stub.log 2>&1 &
 for i in $(seq 1 40); do
   if curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1 \
-    && curl -fsS http://127.0.0.1:8089/default/.well-known/openid-configuration >/dev/null 2>&1; then
+    && curl -fsS http://127.0.0.1:8089/default/.well-known/openid-configuration >/dev/null 2>&1 \
+    && curl -fsS http://127.0.0.1:8091/health >/dev/null 2>&1; then
     echo "e2e stack ready"
     exit 0
   fi
@@ -38,4 +47,5 @@ for i in $(seq 1 40); do
 done
 docker logs rk-e2e >&2 || true
 docker logs rk-mock >&2 || true
+cat /tmp/ki-stub.log >&2 || true
 exit 1

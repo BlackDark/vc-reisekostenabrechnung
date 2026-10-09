@@ -275,6 +275,10 @@ type AuslandssatzListe struct {
 
 // AuthConfig defines model for AuthConfig.
 type AuthConfig struct {
+	AiAktiviert bool `json:"ai_aktiviert"`
+
+	// AiBasisUrl Public base URL of the KI endpoint. Empty when KI is off. Never includes the API key.
+	AiBasisUrl        string                  `json:"ai_basis_url"`
 	DefaultLocale     AuthConfigDefaultLocale `json:"default_locale"`
 	Header            bool                    `json:"header"`
 	HeaderLogoutUrl   *string                 `json:"header_logout_url,omitempty"`
@@ -316,6 +320,28 @@ type BelegStorno struct {
 // BelegZuordnung defines model for BelegZuordnung.
 type BelegZuordnung struct {
 	BelegIds []string `json:"beleg_ids"`
+}
+
+// Belegtext defines model for Belegtext.
+type Belegtext struct {
+	BelegId      string       `json:"beleg_id"`
+	BestaetigtAm *time.Time   `json:"bestaetigt_am,omitempty"`
+	Felder       *KiVorschlag `json:"felder,omitempty"`
+	Id           string       `json:"id"`
+	Quelle       string       `json:"quelle"`
+	Version      int64        `json:"version"`
+	Volltext     string       `json:"volltext"`
+}
+
+// BelegtextListe defines model for BelegtextListe.
+type BelegtextListe struct {
+	Items []Belegtext `json:"items"`
+}
+
+// BelegtextWrite defines model for BelegtextWrite.
+type BelegtextWrite struct {
+	Felder   *KiVorschlag `json:"felder,omitempty"`
+	Volltext *string      `json:"volltext,omitempty"`
 }
 
 // Berechnung defines model for Berechnung.
@@ -439,6 +465,44 @@ type IdentitaetWrite struct {
 
 // IdentitaetWriteArt defines model for IdentitaetWrite.Art.
 type IdentitaetWriteArt string
+
+// KiAnteil defines model for KiAnteil.
+type KiAnteil struct {
+	BruttoCent int64  `json:"brutto_cent"`
+	NettoCent  *int64 `json:"netto_cent,omitempty"`
+	Satz       int    `json:"satz"`
+	SteuerCent *int64 `json:"steuer_cent,omitempty"`
+}
+
+// KiAuftrag defines model for KiAuftrag.
+type KiAuftrag struct {
+	JobId  *string `json:"job_id,omitempty"`
+	Status string  `json:"status"`
+}
+
+// KiStand defines model for KiStand.
+type KiStand struct {
+	// Status aus, nicht_erlaubt, keine, laeuft, vorschlag, leer, or nicht_erreichbar
+	Status    string       `json:"status"`
+	Vorschlag *KiVorschlag `json:"vorschlag,omitempty"`
+}
+
+// KiVorschlag defines model for KiVorschlag.
+type KiVorschlag struct {
+	BetragBruttoCent *int64              `json:"betrag_brutto_cent,omitempty"`
+	Datum            *string             `json:"datum,omitempty"`
+	EmpfaengerName   *string             `json:"empfaenger_name,omitempty"`
+	Konfidenz        *map[string]float32 `json:"konfidenz,omitempty"`
+	Kostenart        *string             `json:"kostenart,omitempty"`
+	Leistender       *string             `json:"leistender,omitempty"`
+	Rechnungsart     *string             `json:"rechnungsart,omitempty"`
+	Rechnungsnummer  *string             `json:"rechnungsnummer,omitempty"`
+	Steueranteile    *[]KiAnteil         `json:"steueranteile,omitempty"`
+	TrinkgeldCent    *int64              `json:"trinkgeld_cent,omitempty"`
+	UstIdLeistender  *string             `json:"ust_id_leistender,omitempty"`
+	Volltext         *string             `json:"volltext,omitempty"`
+	Waehrung         *string             `json:"waehrung,omitempty"`
+}
 
 // Land defines model for Land.
 type Land struct {
@@ -1189,6 +1253,9 @@ type PostBelegNeuAufbereitenMultipartRequestBody PostBelegNeuAufbereitenMultipar
 // PostBelegStornierenJSONRequestBody defines body for PostBelegStornieren for application/json ContentType.
 type PostBelegStornierenJSONRequestBody = BelegStorno
 
+// PostBelegTextJSONRequestBody defines body for PostBelegText for application/json ContentType.
+type PostBelegTextJSONRequestBody = BelegtextWrite
+
 // PatchFahrtJSONRequestBody defines body for PatchFahrt for application/json ContentType.
 type PatchFahrtJSONRequestBody = FahrtWrite
 
@@ -1341,6 +1408,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/belege/{id}/bestaetigen)
 	PostBelegBestaetigen(w http.ResponseWriter, r *http.Request, id Id, params PostBelegBestaetigenParams)
+	// GetBelegKi Current KI suggestion or job status
+	// (GET /api/v1/belege/{id}/ki)
+	GetBelegKi(w http.ResponseWriter, r *http.Request, id Id)
+	// PostBelegKi Queue a KI suggestion for this Beleg
+	// (POST /api/v1/belege/{id}/ki-auslesen)
+	PostBelegKi(w http.ResponseWriter, r *http.Request, id Id)
 
 	// (POST /api/v1/belege/{id}/neu-aufbereiten)
 	PostBelegNeuAufbereiten(w http.ResponseWriter, r *http.Request, id Id, params PostBelegNeuAufbereitenParams)
@@ -1353,6 +1426,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/belege/{id}/stornieren)
 	PostBelegStornieren(w http.ResponseWriter, r *http.Request, id Id, params PostBelegStornierenParams)
+
+	// (GET /api/v1/belege/{id}/texte)
+	GetBelegTexte(w http.ResponseWriter, r *http.Request, id Id)
+	// PostBelegText Store the confirmed Belegtext version
+	// (POST /api/v1/belege/{id}/texte)
+	PostBelegText(w http.ResponseWriter, r *http.Request, id Id)
 
 	// (GET /api/v1/belege/{id}/vorschau)
 	GetBelegVorschau(w http.ResponseWriter, r *http.Request, id Id)
@@ -2679,6 +2758,58 @@ func (siw *ServerInterfaceWrapper) PostBelegBestaetigen(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// GetBelegKi operation middleware
+func (siw *ServerInterfaceWrapper) GetBelegKi(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBelegKi(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostBelegKi operation middleware
+func (siw *ServerInterfaceWrapper) PostBelegKi(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostBelegKi(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // PostBelegNeuAufbereiten operation middleware
 func (siw *ServerInterfaceWrapper) PostBelegNeuAufbereiten(w http.ResponseWriter, r *http.Request) {
 
@@ -2831,6 +2962,58 @@ func (siw *ServerInterfaceWrapper) PostBelegStornieren(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostBelegStornieren(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBelegTexte operation middleware
+func (siw *ServerInterfaceWrapper) GetBelegTexte(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBelegTexte(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostBelegText operation middleware
+func (siw *ServerInterfaceWrapper) PostBelegText(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostBelegText(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4559,6 +4742,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/neu-aufbereiten", wrapper.PostBelegNeuAufbereiten)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/bestaetigen", wrapper.PostBelegBestaetigen)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/stornieren", wrapper.PostBelegStornieren)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/ki-auslesen", wrapper.PostBelegKi)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/ki", wrapper.GetBelegKi)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/texte", wrapper.GetBelegTexte)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/texte", wrapper.PostBelegText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/reisen/{id}/ausgaben", wrapper.GetAusgaben)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/reisen/{id}/ausgaben", wrapper.PostAusgabe)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/ausgaben/{id}", wrapper.DeleteAusgabe)
@@ -6753,6 +6940,152 @@ func (response PostBelegBestaetigen428ApplicationProblemPlusJSONResponse) VisitP
 	return err
 }
 
+type GetBelegKiRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetBelegKiResponseObject interface {
+	VisitGetBelegKiResponse(w http.ResponseWriter) error
+}
+
+type GetBelegKi200JSONResponse KiStand
+
+func (response GetBelegKi200JSONResponse) VisitGetBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegKi401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetBelegKi401ApplicationProblemPlusJSONResponse) VisitGetBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegKi404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetBelegKi404ApplicationProblemPlusJSONResponse) VisitGetBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegKiRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type PostBelegKiResponseObject interface {
+	VisitPostBelegKiResponse(w http.ResponseWriter) error
+}
+
+type PostBelegKi202JSONResponse KiAuftrag
+
+func (response PostBelegKi202JSONResponse) VisitPostBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegKi401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostBelegKi401ApplicationProblemPlusJSONResponse) VisitPostBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegKi404ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBelegKi404ApplicationProblemPlusJSONResponse) VisitPostBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegKi409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBelegKi409ApplicationProblemPlusJSONResponse) VisitPostBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegKi422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBelegKi422ApplicationProblemPlusJSONResponse) VisitPostBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegKi429ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBelegKi429ApplicationProblemPlusJSONResponse) VisitPostBelegKiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PostBelegNeuAufbereitenRequestObject struct {
 	Id     Id `json:"id"`
 	Params PostBelegNeuAufbereitenParams
@@ -7058,6 +7391,125 @@ func (response PostBelegStornieren428ApplicationProblemPlusJSONResponse) VisitPo
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegTexteRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetBelegTexteResponseObject interface {
+	VisitGetBelegTexteResponse(w http.ResponseWriter) error
+}
+
+type GetBelegTexte200JSONResponse BelegtextListe
+
+func (response GetBelegTexte200JSONResponse) VisitGetBelegTexteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegTexte401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetBelegTexte401ApplicationProblemPlusJSONResponse) VisitGetBelegTexteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegTexte404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetBelegTexte404ApplicationProblemPlusJSONResponse) VisitGetBelegTexteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegTextRequestObject struct {
+	Id   Id `json:"id"`
+	Body *PostBelegTextJSONRequestBody
+}
+
+type PostBelegTextResponseObject interface {
+	VisitPostBelegTextResponse(w http.ResponseWriter) error
+}
+
+type PostBelegText201JSONResponse Belegtext
+
+func (response PostBelegText201JSONResponse) VisitPostBelegTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegText401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostBelegText401ApplicationProblemPlusJSONResponse) VisitPostBelegTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegText404ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBelegText404ApplicationProblemPlusJSONResponse) VisitPostBelegTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostBelegText422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostBelegText422ApplicationProblemPlusJSONResponse) VisitPostBelegTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -9898,6 +10350,12 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/belege/{id}/bestaetigen)
 	PostBelegBestaetigen(ctx context.Context, request PostBelegBestaetigenRequestObject) (PostBelegBestaetigenResponseObject, error)
+	// GetBelegKi Current KI suggestion or job status
+	// (GET /api/v1/belege/{id}/ki)
+	GetBelegKi(ctx context.Context, request GetBelegKiRequestObject) (GetBelegKiResponseObject, error)
+	// PostBelegKi Queue a KI suggestion for this Beleg
+	// (POST /api/v1/belege/{id}/ki-auslesen)
+	PostBelegKi(ctx context.Context, request PostBelegKiRequestObject) (PostBelegKiResponseObject, error)
 
 	// (POST /api/v1/belege/{id}/neu-aufbereiten)
 	PostBelegNeuAufbereiten(ctx context.Context, request PostBelegNeuAufbereitenRequestObject) (PostBelegNeuAufbereitenResponseObject, error)
@@ -9910,6 +10368,12 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/belege/{id}/stornieren)
 	PostBelegStornieren(ctx context.Context, request PostBelegStornierenRequestObject) (PostBelegStornierenResponseObject, error)
+
+	// (GET /api/v1/belege/{id}/texte)
+	GetBelegTexte(ctx context.Context, request GetBelegTexteRequestObject) (GetBelegTexteResponseObject, error)
+	// PostBelegText Store the confirmed Belegtext version
+	// (POST /api/v1/belege/{id}/texte)
+	PostBelegText(ctx context.Context, request PostBelegTextRequestObject) (PostBelegTextResponseObject, error)
 
 	// (GET /api/v1/belege/{id}/vorschau)
 	GetBelegVorschau(ctx context.Context, request GetBelegVorschauRequestObject) (GetBelegVorschauResponseObject, error)
@@ -11028,6 +11492,58 @@ func (sh *strictHandler) PostBelegBestaetigen(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// GetBelegKi operation middleware
+func (sh *strictHandler) GetBelegKi(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetBelegKiRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBelegKi(ctx, request.(GetBelegKiRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBelegKi")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBelegKiResponseObject); ok {
+		if err := validResponse.VisitGetBelegKiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostBelegKi operation middleware
+func (sh *strictHandler) PostBelegKi(w http.ResponseWriter, r *http.Request, id Id) {
+	var request PostBelegKiRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostBelegKi(ctx, request.(PostBelegKiRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostBelegKi")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostBelegKiResponseObject); ok {
+		if err := validResponse.VisitPostBelegKiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // PostBelegNeuAufbereiten operation middleware
 func (sh *strictHandler) PostBelegNeuAufbereiten(w http.ResponseWriter, r *http.Request, id Id, params PostBelegNeuAufbereitenParams) {
 	var request PostBelegNeuAufbereitenRequestObject
@@ -11142,6 +11658,65 @@ func (sh *strictHandler) PostBelegStornieren(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostBelegStornierenResponseObject); ok {
 		if err := validResponse.VisitPostBelegStornierenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBelegTexte operation middleware
+func (sh *strictHandler) GetBelegTexte(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetBelegTexteRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBelegTexte(ctx, request.(GetBelegTexteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBelegTexte")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBelegTexteResponseObject); ok {
+		if err := validResponse.VisitGetBelegTexteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostBelegText operation middleware
+func (sh *strictHandler) PostBelegText(w http.ResponseWriter, r *http.Request, id Id) {
+	var request PostBelegTextRequestObject
+
+	request.Id = id
+
+	var body PostBelegTextJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostBelegText(ctx, request.(PostBelegTextRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostBelegText")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostBelegTextResponseObject); ok {
+		if err := validResponse.VisitPostBelegTextResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

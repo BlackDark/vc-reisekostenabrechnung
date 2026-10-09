@@ -469,7 +469,11 @@ func (s *Store) FailBelegJob(ctx context.Context, job sqlitedb.Job, cause error)
 	}
 	return s.tx(ctx, func(q *sqlitedb.Queries) error {
 		now := time.Now().UTC()
-		if job.Versuche >= 5 {
+		limit := int64(5)
+		if job.Art == "ki_auslesen" {
+			limit = 1
+		}
+		if job.Versuche >= limit {
 			if err := q.FailJobRow(ctx, sqlitedb.FailJobRowParams{Fehler: &msg, Jetzt: now, ID: job.ID}); err != nil {
 				return err
 			}
