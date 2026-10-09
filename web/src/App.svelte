@@ -41,7 +41,7 @@
 						<Button variant="outline" size="sm" type="button" onclick={() => session.applyLocale("en")}>EN</Button>
 					</div>
 				</header>
-				<main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 md:pb-10">
+				<main class="mx-auto w-full min-w-0 max-w-5xl flex-1 px-4 py-6 pb-24 md:pb-10">
 					<Router />
 				</main>
 			</Sidebar.Inset>

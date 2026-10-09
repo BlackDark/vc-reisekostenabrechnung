@@ -3,7 +3,7 @@ import { mkdir, readdir, copyFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
-const source = path.join(root, "e2e/screenshots");
+const source = path.join(root, "e2e/screenshots/gallery");
 const dest = path.join(root, "docs/assets/screenshots");
 const viewports = ["desktop", "mobile"];
 

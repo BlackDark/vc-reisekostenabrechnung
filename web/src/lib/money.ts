@@ -5,3 +5,13 @@ export function euro(cents: number, locale: string): string {
 	const sep = locale === "en" ? "." : ",";
 	return `${cents < 0 ? "-" : ""}${whole}${sep}${frac}`;
 }
+
+/** Locale currency with grouping. de → 1.234,56 €, en → €1,234.56. */
+export function euroAmount(cents: number, locale: string): string {
+	const value = Math.trunc(cents) / 100;
+	const tag = locale === "en" ? "en-GB" : "de-DE";
+	return new Intl.NumberFormat(tag, {
+		style: "currency",
+		currency: "EUR",
+	}).format(value);
+}

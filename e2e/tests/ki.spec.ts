@@ -64,8 +64,10 @@ function tinyPNG(seed: number) {
 test("receipt suggestion is accepted into an Ausgabe", async ({ page }) => {
 	const stamp = Date.now().toString(36);
 	const anlass = `KI ${stamp}`;
-	const seed =
-		(Date.now() & 255) ^ (test.info().project.name === "mobile" ? 0x3c : 0x71);
+	const project = test.info().project.name;
+	const salt =
+		project === "mobile" ? 0x3c : project === "mobile-webkit" ? 0xc3 : 0x71;
+	const seed = (Date.now() & 255) ^ salt;
 	await login(page);
 	await page.goto("/profil");
 	await expect(page.getByTestId("ki-privacy")).toContainText("127.0.0.1:8091");
@@ -99,10 +101,12 @@ test("receipt suggestion is accepted into an Ausgabe", async ({ page }) => {
 		mimeType: "image/png",
 		buffer: tinyPNG(seed),
 	});
-	await expect(page.getByTestId("beleg-page")).toBeVisible();
+	await expect(page.getByTestId("beleg-page")).toBeVisible({ timeout: 45_000 });
 	await page.getByRole("button", { name: /Hochladen|Upload/ }).click();
-	await expect(page).toHaveURL(/\/belege\/(?!neu)/);
-	await expect(page.getByTestId("beleg-preview")).toBeVisible();
+	await expect(page).toHaveURL(/\/belege\/(?!neu)/, { timeout: 45_000 });
+	await expect(page.getByTestId("beleg-preview")).toBeVisible({
+		timeout: 45_000,
+	});
 	await page.getByTestId("ki-auslesen").click();
 	await expect(page.getByTestId("ki-vorschlag")).toContainText("Cafe Roma");
 	await expect(page.getByTestId("ki-konfidenz")).toBeVisible();

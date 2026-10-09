@@ -81,7 +81,7 @@
 	class="bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur md:hidden"
 	aria-label={m.nav_label()}
 >
-	<div class="flex gap-1 overflow-x-auto px-2 py-2">
+	<div class="flex min-w-0 gap-1 overflow-x-auto px-2 py-2">
 		{#each visible as item (item.href)}
 			<a
 				href={item.href}

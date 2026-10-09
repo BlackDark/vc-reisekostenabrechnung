@@ -2,10 +2,12 @@
 	import { api } from "$lib/api";
 	import type { components } from "$lib/api/schema";
 	import DateField from "$lib/components/date-field.svelte";
+	import StatCard from "$lib/components/stat-card.svelte";
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
-	import { euro } from "$lib/money";
+	import { formatWhen } from "$lib/dates";
+	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, route } from "../router";
@@ -232,155 +234,173 @@
 </script>
 
 {#if row}
-	<h1 class="text-2xl font-semibold tracking-tight">{row.titel}</h1>
-	<p class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+	<div class="flex flex-wrap items-start justify-between gap-3">
+		<div class="min-w-0">
+			<h1 class="truncate text-2xl font-semibold tracking-tight">{row.titel}</h1>
+			<p class="text-muted-foreground mt-1 text-sm">
+				{formatWhen(row.von, session.locale, "date")} – {formatWhen(row.bis, session.locale, "date")}
+				{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
+				{#if row.aktuelle_export_version > 0} · v{row.aktuelle_export_version}{/if}
+			</p>
+		</div>
 		<StatusBadge status={row.status} />
-		<span>
-			{row.von} – {row.bis}
-			{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
-			{#if row.aktuelle_export_version > 0} · v{row.aktuelle_export_version}{/if}
-		</span>
-	</p>
-	<p class="mt-3 text-sm">
-		{m.abrechnung_erstattung()}: {euro(erstattung, session.locale)} EUR ·
-		{m.abrechnung_vorschuss_sum()}: {euro(vorschuss, session.locale)} EUR ·
-		{m.abrechnung_auszahlung()}: {euro(auszahlung, session.locale)} EUR
-	</p>
+	</div>
 
-	{#if row.status === "entwurf" && !row.einreichung_laeuft}
-		<section class="mt-4 grid gap-3">
-			<h2 class="text-lg font-medium">{m.abrechnung_reisen()}</h2>
-			{#each reisen as trip (trip.id)}
-				<label class="flex items-center gap-2 text-sm">
-					<input
-						type="checkbox"
-						checked={selectedReisen.includes(trip.id)}
-						onchange={(event) => {
-							const on = (event.currentTarget as HTMLInputElement).checked;
-							selectedReisen = toggle(selectedReisen, trip.id, on);
-						}}
-					/>
-					{trip.anlass}
-				</label>
-			{/each}
-			<h2 class="text-lg font-medium">{m.abrechnung_vorschuesse()}</h2>
-			{#each advances as item (item.id)}
-				<label class="flex items-center gap-2 text-sm">
-					<input
-						type="checkbox"
-						checked={selectedAdvances.includes(item.id)}
-						onchange={(event) => {
-							const on = (event.currentTarget as HTMLInputElement).checked;
-							selectedAdvances = toggle(selectedAdvances, item.id, on);
-						}}
-					/>
-					{item.datum} · {euro(item.betrag_cent, session.locale)} EUR
-				</label>
-			{/each}
-			<Button variant="outline" class="w-fit" type="button" onclick={saveSelection}>
-				{m.save()}
-			</Button>
-		</section>
-	{/if}
+	<div class="mt-4 grid grid-cols-3 gap-2">
+		<StatCard label={m.abrechnung_erstattung()} value={euroAmount(erstattung, session.locale)} />
+		<StatCard label={m.abrechnung_vorschuss_sum()} value={euroAmount(vorschuss, session.locale)} />
+		<StatCard label={m.abrechnung_auszahlung()} value={euroAmount(auszahlung, session.locale)} />
+	</div>
 
-	{#if blocker.length > 0}
-		<ul class="mt-4 grid gap-1 text-sm" data-testid="abrechnung-blocker">
-			{#each blocker as point (`${point.code}-${point.objekt_id}`)}
-				<li>{point.code}: {warnLabel(point.code)}</li>
-			{/each}
-		</ul>
-	{/if}
-	{#if warnungen.length > 0 && row.status === "entwurf"}
-		<ul class="mt-4 grid gap-2 text-sm">
-			{#each warnungen as point (`${point.code}-${point.objekt_id}`)}
-				<li>
-					<label class="flex items-start gap-2">
-						<input
-							type="checkbox"
-							data-warn={point.code}
-							checked={checked[keyOf(point)] === true}
-							onchange={(event) => {
-								const on = (event.currentTarget as HTMLInputElement).checked;
-							checked = { ...checked, [keyOf(point)]: on };
-							}}
-						/>
-						<span>{point.code}: {warnLabel(point.code)}</span>
+	<div class="mt-4 grid items-start gap-4 md:grid-cols-2">
+		<div class="grid gap-4">
+			{#if row.status === "entwurf" && !row.einreichung_laeuft}
+				<section class="grid gap-2">
+					<h2 class="text-sm font-medium">{m.abrechnung_reisen()}</h2>
+					{#each reisen as trip (trip.id)}
+						<label class="bg-card flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+							<input
+								type="checkbox"
+								checked={selectedReisen.includes(trip.id)}
+								onchange={(event) => {
+									const on = (event.currentTarget as HTMLInputElement).checked;
+									selectedReisen = toggle(selectedReisen, trip.id, on);
+								}}
+							/>
+							<span class="min-w-0">{trip.anlass}</span>
+						</label>
+					{/each}
+					<h2 class="mt-2 text-sm font-medium">{m.abrechnung_vorschuesse()}</h2>
+					{#each advances as item (item.id)}
+						<label class="bg-card flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+							<input
+								type="checkbox"
+								checked={selectedAdvances.includes(item.id)}
+								onchange={(event) => {
+									const on = (event.currentTarget as HTMLInputElement).checked;
+									selectedAdvances = toggle(selectedAdvances, item.id, on);
+								}}
+							/>
+							<span>{formatWhen(item.datum, session.locale, "date")}</span>
+							<span class="ml-auto tabular-nums">{euroAmount(item.betrag_cent, session.locale)}</span>
+						</label>
+					{/each}
+					<Button variant="outline" size="sm" class="w-fit" type="button" onclick={saveSelection}>
+						{m.save()}
+					</Button>
+				</section>
+			{/if}
+
+			{#if blocker.length > 0}
+				<ul class="grid gap-1 text-sm" data-testid="abrechnung-blocker">
+					{#each blocker as point (`${point.code}-${point.objekt_id}`)}
+						<li class="bg-card rounded-lg border px-3 py-2">{point.code}: {warnLabel(point.code)}</li>
+					{/each}
+				</ul>
+			{/if}
+			{#if warnungen.length > 0 && row.status === "entwurf"}
+				<ul class="grid gap-2 text-sm">
+					{#each warnungen as point (`${point.code}-${point.objekt_id}`)}
+						<li>
+							<label class="bg-card flex items-start gap-2 rounded-lg border px-3 py-2">
+								<input
+									type="checkbox"
+									data-warn={point.code}
+									checked={checked[keyOf(point)] === true}
+									onchange={(event) => {
+										const on = (event.currentTarget as HTMLInputElement).checked;
+										checked = { ...checked, [keyOf(point)]: on };
+									}}
+								/>
+								<span>{point.code}: {warnLabel(point.code)}</span>
+							</label>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+
+		<div class="grid gap-3">
+			{#if error}
+				<p class="text-sm" role="alert">{error}</p>
+			{/if}
+			{#if row.einreichung_laeuft || busy}
+				<p class="text-sm" role="status">{m.abrechnung_submitting()}</p>
+			{/if}
+			{#if row.status === "entwurf" && !row.einreichung_laeuft}
+				<div class="bg-background/95 sticky bottom-16 z-30 -mx-4 border-t px-4 py-3 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+					<Button
+						type="button"
+						data-testid="abrechnung-submit"
+						disabled={busy || blocker.length > 0}
+						onclick={submit}
+					>
+						{m.abrechnung_submit()}
+					</Button>
+				</div>
+			{/if}
+
+			{#if ready.length > 0}
+				<ul class="grid gap-2 text-sm">
+					{#each ready as item (item.id)}
+						<li class="bg-card flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2" data-export-version={item.version}>
+							<span>
+								{m.abrechnung_version()} {item.version}
+								{#if item.ersetzt_durch_version} · {m.abrechnung_replaced()}{/if}
+							</span>
+							<Button
+								variant="link"
+								size="sm"
+								type="button"
+								data-testid="abrechnung-pdf"
+								onclick={() => download(`/api/v1/exporte/${item.id}/pdf`, `abrechnung-v${item.version}.pdf`)}
+							>
+								PDF
+							</Button>
+							<Button
+								variant="link"
+								size="sm"
+								type="button"
+								onclick={() => download(`/api/v1/exporte/${item.id}/zip`, `abrechnung-v${item.version}.zip`)}
+							>
+								ZIP
+							</Button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+
+			{#if row.status === "eingereicht"}
+				<form class="grid gap-2" onsubmit={markPaid}>
+					<label class="grid gap-1 text-sm" for="bezahlt-am">
+						{m.abrechnung_paid_date()}
+						<DateField id="bezahlt-am" type="date" bind:value={paidDate} required />
 					</label>
-				</li>
-			{/each}
-		</ul>
-	{/if}
-
-	{#if error}
-		<p class="mt-3 text-sm" role="alert">{error}</p>
-	{/if}
-	{#if row.einreichung_laeuft || busy}
-		<p class="mt-3 text-sm" role="status">{m.abrechnung_submitting()}</p>
-	{/if}
-	{#if row.status === "entwurf" && !row.einreichung_laeuft}
-		<Button class="mt-4"
-			type="button"
-			data-testid="abrechnung-submit"
-			disabled={busy || blocker.length > 0}
-			onclick={submit}
-		>
-			{m.abrechnung_submit()}
-		</Button>
-	{/if}
-
-	{#if ready.length > 0}
-		<ul class="mt-4 grid gap-2 text-sm">
-			{#each ready as item (item.id)}
-				<li data-export-version={item.version}>
-					{m.abrechnung_version()} {item.version}
-					{#if item.ersetzt_durch_version} · {m.abrechnung_replaced()}{/if}
-					<Button variant="link" size="sm" class="ml-2"
-						type="button"
-						data-testid="abrechnung-pdf"
-						onclick={() => download(`/api/v1/exporte/${item.id}/pdf`, `abrechnung-v${item.version}.pdf`)}
-					>
-						PDF
+					<Button class="w-fit" type="submit" data-testid="abrechnung-paid">
+						{m.abrechnung_mark_paid()}
 					</Button>
-					<Button variant="link" size="sm" class="ml-2"
-						type="button"
-						onclick={() => download(`/api/v1/exporte/${item.id}/zip`, `abrechnung-v${item.version}.zip`)}
-					>
-						ZIP
+				</form>
+				<form class="grid gap-2" onsubmit={unlock}>
+					<label class="grid gap-1 text-sm" for="entsperr-grund">
+						{m.abrechnung_reason()}
+						<Input id="entsperr-grund" bind:value={reason} minlength={10} required />
+					</label>
+					<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-unlock">
+						{m.abrechnung_unlock()}
 					</Button>
-				</li>
-			{/each}
-		</ul>
-	{/if}
-
-	{#if row.status === "eingereicht"}
-		<form class="mt-4 grid gap-2" onsubmit={markPaid}>
-			<label class="grid gap-1 text-sm" for="bezahlt-am">
-				{m.abrechnung_paid_date()}
-				<DateField id="bezahlt-am" type="date" bind:value={paidDate} required  />
-			</label>
-			<Button class="w-fit" type="submit" data-testid="abrechnung-paid">
-				{m.abrechnung_mark_paid()}
-			</Button>
-		</form>
-		<form class="mt-4 grid gap-2" onsubmit={unlock}>
-			<label class="grid gap-1 text-sm" for="entsperr-grund">
-				{m.abrechnung_reason()}
-				<Input id="entsperr-grund" bind:value={reason} minlength={10} required  />
-			</label>
-			<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-unlock">
-				{m.abrechnung_unlock()}
-			</Button>
-		</form>
-	{/if}
-	{#if row.status === "bezahlt"}
-		<form class="mt-4 grid gap-2" onsubmit={withdraw}>
-			<label class="grid gap-1 text-sm" for="zurueck-grund">
-				{m.abrechnung_reason()}
-				<Input id="zurueck-grund" bind:value={reason} required  />
-			</label>
-			<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-withdraw">
-				{m.abrechnung_withdraw()}
-			</Button>
-		</form>
-	{/if}
+				</form>
+			{/if}
+			{#if row.status === "bezahlt"}
+				<form class="grid gap-2" onsubmit={withdraw}>
+					<label class="grid gap-1 text-sm" for="zurueck-grund">
+						{m.abrechnung_reason()}
+						<Input id="zurueck-grund" bind:value={reason} required />
+					</label>
+					<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-withdraw">
+						{m.abrechnung_withdraw()}
+					</Button>
+				</form>
+			{/if}
+		</div>
+	</div>
 {/if}

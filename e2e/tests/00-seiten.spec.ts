@@ -10,7 +10,7 @@ const fixture = join(here, "../fixtures/receipt.png");
 
 const employerName = "Nordlicht GmbH";
 const tripName = "Kundenbesuch Paris";
-const claimTitle = "Reisekosten September 2026";
+const claimTitle = "Reisekosten November 2026";
 const placeName = "Atelier Leuchtturm";
 
 /** Route patterns must match web/src/router.ts. Concrete URLs are filled after seeding. */
@@ -147,6 +147,22 @@ async function shot(
 	const dir = join(here, "../screenshots", project);
 	await mkdir(dir, { recursive: true });
 	await page.screenshot({ path: join(dir, `${slug}.png`), fullPage: true });
+	if (project === "desktop" || project === "mobile") {
+		const previous = page.viewportSize();
+		await page.setViewportSize(
+			project === "desktop"
+				? { width: 1440, height: 900 }
+				: { width: 390, height: 844 },
+		);
+		const gallery = join(here, "../screenshots/gallery", project);
+		await mkdir(gallery, { recursive: true });
+		await page.screenshot({
+			path: join(gallery, `${slug}.png`),
+			fullPage: false,
+			scale: "css",
+		});
+		if (previous) await page.setViewportSize(previous);
+	}
 	// Console errors can arrive while the screenshot is taken. Check after it,
 	// so the page that logged the error fails instead of the next route.
 	const errors = (page as Page & { __errors?: string[] }).__errors ?? [];
@@ -160,8 +176,10 @@ async function openAndShot(
 	slug: string,
 	url: string,
 	heading: RegExp,
+	ready?: string,
 ) {
 	await page.goto(url);
+	if (ready) await expect(page.locator(ready).first()).toBeVisible();
 	await shot(page, project, slug, heading);
 }
 
@@ -208,8 +226,10 @@ async function ensureTrip(page: Page): Promise<string> {
 	await page.locator("#reise-ag").selectOption({ label: employerName });
 	await page.locator("#reise-anlass").fill(tripName);
 	await page.locator("#reise-projekt").fill("Leuchtturm");
-	await page.locator("#reise-beginn").fill("2026-09-07T20:00");
-	await page.locator("#reise-ende").fill("2026-09-10T18:00");
+	// November, not the September dates reisen.spec.ts also uses. A later trip on
+	// the same calendar days takes the meal allowance (H-TAG-VERRECHNET).
+	await page.locator("#reise-beginn").fill("2026-11-16T20:00");
+	await page.locator("#reise-ende").fill("2026-11-19T18:00");
 	await page.locator("#reise-zone").fill("Europe/Berlin");
 	await expect
 		.poll(async () => page.locator("#leg-land option").count())
@@ -247,8 +267,12 @@ async function openTrip(page: Page, tripPath: string) {
 
 async function ensureMileage(page: Page, tripPath: string) {
 	await openTrip(page, tripPath);
+	await page.getByRole("tab", { name: /Fahrten|Mileage/ }).click();
 	if ((await page.getByText("Gare du Nord").count()) > 0) return;
-	await page.locator("#fahrt-datum").fill("2026-09-08");
+	await page
+		.getByRole("button", { name: /Fahrt erfassen|Add mileage/ })
+		.click();
+	await page.locator("#fahrt-datum").fill("2026-11-17");
 	await page.locator("#fahrt-start").fill("Gare du Nord");
 	await page.locator("#fahrt-ziel").fill(placeName);
 	await page.locator("#fahrt-km").fill("14");
@@ -262,15 +286,16 @@ async function ensureMileage(page: Page, tripPath: string) {
 
 async function ensureExpense(page: Page, tripPath: string): Promise<string> {
 	await openTrip(page, tripPath);
+	await page.getByRole("tab", { name: /Ausgaben|Expenses/ }).click();
 	const existing = page.getByRole("link", {
-		name: /uebernachtung|Übernachtung|accommodation/i,
+		name: /uebernachtung|Übernachtung|accommodation|lodging/i,
 	});
 	if ((await existing.count()) > 0) {
 		return (await existing.first().getAttribute("href")) ?? "";
 	}
 	await page.getByRole("link", { name: /Ausgabe anlegen|Add expense/ }).click();
 	await page.locator("#ausgabe-kostenart").selectOption("uebernachtung");
-	await page.locator("#ausgabe-datum").fill("2026-09-08");
+	await page.locator("#ausgabe-datum").fill("2026-11-17");
 	await page.locator("#ausgabe-leistender").fill("Hotel Le Marais");
 	await page.locator("#ausgabe-empfaenger").fill(employerName);
 	await page.locator("#ausgabe-betrag").fill("186.00");
@@ -283,7 +308,7 @@ async function ensureAdvance(page: Page) {
 	await openLoaded(page, "/vorschuesse", "/api/v1/vorschuesse");
 	if ((await page.getByText("Abschlag Paris").count()) > 0) return;
 	await page.locator("select").first().selectOption({ label: employerName });
-	await page.getByLabel(/Datum|Date/).fill("2026-09-01");
+	await page.getByLabel(/Datum|Date/).fill("2026-11-01");
 	await page.getByLabel(/Betrag|Amount/).fill("200.00");
 	await page.getByLabel(/Notiz|Note/).fill("Abschlag Paris");
 	await page.getByRole("button", { name: /Anlegen|Create/ }).click();
@@ -315,7 +340,7 @@ async function ensureClaim(page: Page): Promise<string> {
 		.toBeGreaterThan(0);
 	await page.locator("#abrechnung-ag").selectOption({ label: employerName });
 	await page.locator("#abrechnung-art").selectOption("monat");
-	await page.locator("#abrechnung-von").fill("2026-09-01");
+	await page.locator("#abrechnung-von").fill("2026-11-01");
 	await page.locator("#abrechnung-titel").fill(claimTitle);
 	await page.getByTestId("abrechnung-create").click();
 	await expect(page.getByRole("heading", { name: claimTitle })).toBeVisible();
@@ -399,8 +424,18 @@ test("every page loads", async ({ page }, info) => {
 	expect(yearHref).toBeTruthy();
 	bucket.__errors = [];
 
-	const pages: { slug: string; url: string; heading: RegExp }[] = [
-		{ slug: "home", url: "/", heading: /Reisen|Business trips/ },
+	const pages: {
+		slug: string;
+		url: string;
+		heading: RegExp;
+		ready?: string;
+	}[] = [
+		{
+			slug: "home",
+			url: "/",
+			heading: /Reisen|Business trips/,
+			ready: "[data-dashboard=ready]",
+		},
 		{ slug: "profil", url: "/profil", heading: /Profil|Profile/ },
 		{ slug: "admin", url: "/admin", heading: /Nutzer|Users/ },
 		{
@@ -413,7 +448,12 @@ test("every page loads", async ({ page }, info) => {
 			url: "/arbeitgeber",
 			heading: /Arbeitgeber|Employers/,
 		},
-		{ slug: "arbeitgeber-detail", url: ag, heading: /Bearbeiten|Edit/ },
+		{
+			slug: "arbeitgeber-detail",
+			url: ag,
+			heading: /Bearbeiten|Edit/,
+			ready: "#ag-name",
+		},
 		{
 			slug: "taetigkeitsstaetten",
 			url: "/taetigkeitsstaetten",
@@ -431,7 +471,12 @@ test("every page loads", async ({ page }, info) => {
 		},
 		{ slug: "reisen", url: "/reisen", heading: /Reisen|Trips/ },
 		{ slug: "reise-neu", url: "/reisen/neu", heading: /Neue Reise|New trip/ },
-		{ slug: "reise-detail", url: trip, heading: new RegExp(tripName) },
+		{
+			slug: "reise-detail",
+			url: trip,
+			heading: new RegExp(tripName),
+			ready: "[data-stat=verpflegung]",
+		},
 		{
 			slug: "ausgabe-neu",
 			url: `${trip}/ausgaben/neu`,
@@ -450,7 +495,12 @@ test("every page loads", async ({ page }, info) => {
 			url: "/abrechnungen/neu",
 			heading: /Neue Abrechnung|New claim/,
 		},
-		{ slug: "abrechnung-detail", url: claim, heading: new RegExp(claimTitle) },
+		{
+			slug: "abrechnung-detail",
+			url: claim,
+			heading: new RegExp(claimTitle),
+			ready: "[data-status]",
+		},
 		{
 			slug: "abrechnungen",
 			url: "/abrechnungen",
@@ -458,7 +508,45 @@ test("every page loads", async ({ page }, info) => {
 		},
 	];
 	for (const item of pages) {
-		await openAndShot(page, project, item.slug, item.url, item.heading);
+		await openAndShot(
+			page,
+			project,
+			item.slug,
+			item.url,
+			item.heading,
+			item.ready,
+		);
+		if (item.slug === "reise-detail") {
+			// Paris 16–19 Nov 2026: 39 + 58 + 58 + 39 = 194 €. Lodging is provided,
+			// so the day allowance is 0 and the 186 € hotel receipt is the total.
+			await expect(page.locator("[data-stat=verpflegung]")).toContainText(
+				/194[,.]00/,
+			);
+			await expect(
+				page.locator("[data-datum]").first().locator("[data-field=pauschale]"),
+			).toContainText(/39[,.]00/);
+			await expect(page.locator("[data-stat=uebernachtung]")).toContainText(
+				/186[,.]00/,
+			);
+			await expect(
+				page.locator("[data-field=uebernachtung-belege]"),
+			).toContainText(/186[,.]00/);
+			await expect(
+				page
+					.locator("[data-datum]")
+					.first()
+					.locator("[data-field=uebernachtung]"),
+			).toContainText(/0[,.]00/);
+			await expect(page.locator("[data-field=zeitraum]")).toContainText(
+				/16[./]11[./]2026/,
+			);
+			await expect(page.locator("[data-status=in_entwurf]")).toHaveText(
+				/Im Entwurf|In draft/,
+			);
+			await expect(page.getByText("anreisetag", { exact: true })).toHaveCount(
+				0,
+			);
+		}
 	}
 
 	await page.goto("/belege/neu");

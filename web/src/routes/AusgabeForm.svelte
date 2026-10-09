@@ -5,6 +5,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
+	import { formatWhen } from "$lib/dates";
 	import { euro } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -229,7 +230,7 @@
 {#if loaded}
 	<p class="mt-3 text-sm" data-testid="betrag-eur">{m.ausgabe_betrag()}: {money(loaded.betrag_eur_cent)} EUR</p>
 	{#if loaded.kurs}
-		<p class="text-sm">{loaded.waehrung} {loaded.kurs} ({loaded.kurs_datum})</p>
+		<p class="text-sm">{loaded.waehrung} {loaded.kurs} ({formatWhen(loaded.kurs_datum ?? "", session.locale, "date")})</p>
 	{/if}
 	{#if loaded.ust_kurs}
 		<p class="text-sm">{m.ausgabe_ust_kurs()}: {loaded.ust_kurs}</p>

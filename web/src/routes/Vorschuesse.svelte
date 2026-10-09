@@ -5,6 +5,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
+	import { formatWhen } from "$lib/dates";
 	import { euro } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -69,7 +70,7 @@
 	<ul class="mt-4 grid gap-2">
 		{#each rows as row (row.id)}
 			<li class="bg-card rounded-xl border px-3 py-3 text-sm">
-				{row.datum} · {euro(row.betrag_cent, session.locale)} EUR
+				{formatWhen(row.datum, session.locale, "date")} · {euro(row.betrag_cent, session.locale)} EUR
 				{#if row.notiz} · {row.notiz}{/if}
 			</li>
 		{/each}
