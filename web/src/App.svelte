@@ -25,6 +25,7 @@
 				{#if session.nutzer}
 					<a href={p("/belege")}>{m.nav_belege()}</a>
 					<a href={p("/reisen")}>{m.nav_reisen()}</a>
+					<a href={p("/abrechnungen")}>{m.nav_abrechnungen()}</a>
 					<a href={p("/vorschuesse")}>{m.nav_vorschuesse()}</a>
 					<a href={p("/arbeitgeber")}>{m.nav_arbeitgeber()}</a>
 					<a href={p("/taetigkeitsstaetten")}>{m.nav_staetten()}</a>

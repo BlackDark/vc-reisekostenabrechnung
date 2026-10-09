@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Reisekostenabrechnung API
-  version: 0.6.0
-  description: Reisen, Pauschalen, Ausgaben, Belege, optionales KI-Auslesen, Fremdwährung, Bewirtung, Vorschüsse, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
+  version: 0.7.0
+  description: Abrechnungen, Exporte, Reisen, Pauschalen, Ausgaben, Belege, optionales KI-Auslesen, Fremdwährung, Bewirtung, Vorschüsse, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
 servers:
   - url: /
 paths:
@@ -1922,6 +1922,398 @@ paths:
           $ref: "#/components/responses/Problem"
         "422":
           $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen:
+    get:
+      operationId: getAbrechnungen
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Abrechnungen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AbrechnungListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postAbrechnung
+      tags: [abrechnungen]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AbrechnungWrite"
+      responses:
+        "201":
+          description: Draft with the suggested selection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}:
+    get:
+      operationId: getAbrechnung
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Abrechnung
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchAbrechnung
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AbrechnungKopf"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteAbrechnung
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/reisen:
+    put:
+      operationId: putAbrechnungReisen
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdListe"
+      responses:
+        "200":
+          description: Selection replaced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/vorschuesse:
+    put:
+      operationId: putAbrechnungVorschuesse
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdListe"
+      responses:
+        "200":
+          description: Advances replaced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/pruefung:
+    get:
+      operationId: getAbrechnungPruefung
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Blockers, warnings and payout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AbrechnungPruefung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/vorschau.pdf:
+    get:
+      operationId: getAbrechnungVorschau
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Draft PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/einreichen:
+    post:
+      operationId: postAbrechnungEinreichen
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Einreichen"
+      responses:
+        "202":
+          description: Export queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/entsperren:
+    post:
+      operationId: postAbrechnungEntsperren
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Grund"
+      responses:
+        "200":
+          description: Unlocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/bezahlt:
+    post:
+      operationId: postAbrechnungBezahlt
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Bezahlt"
+      responses:
+        "200":
+          description: Marked paid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/bezahlt-zuruecknehmen:
+    post:
+      operationId: postAbrechnungBezahltZuruecknehmen
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Grund"
+      responses:
+        "200":
+          description: Payment withdrawn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abrechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/exporte:
+    get:
+      operationId: getAbrechnungExporte
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Export versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/abrechnungen/{id}/protokoll:
+    get:
+      operationId: getAbrechnungProtokoll
+      tags: [abrechnungen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Audit rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtokollListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/exporte/{id}:
+    get:
+      operationId: getExport
+      tags: [exporte]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: One export
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Export"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/exporte/{id}/pdf:
+    get:
+      operationId: getExportPdf
+      tags: [exporte]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: PDF/A-3b
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+  /api/v1/exporte/{id}/zip:
+    get:
+      operationId: getExportZip
+      tags: [exporte]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: ZIP archive
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
 components:
   parameters:
     IfMatch:
@@ -3383,3 +3775,202 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Warnung"
+    Abrechnung:
+      type: object
+      required: [id, arbeitgeber_id, zeitraum_art, von, bis, titel, status, export_sprache, aktuelle_export_version, einreichung_laeuft, reise_ids, vorschuss_ids, vorschlaege_reise, vorschlaege_vorschuss, version]
+      properties:
+        id:
+          type: string
+        arbeitgeber_id:
+          type: string
+        abrechnungsnummer:
+          type: string
+        zeitraum_art:
+          type: string
+        von:
+          type: string
+        bis:
+          type: string
+        titel:
+          type: string
+        status:
+          type: string
+        eingereicht_am:
+          type: string
+          format: date-time
+        bezahlt_am:
+          type: string
+        bezahlt_vermerk:
+          type: string
+        export_sprache:
+          type: string
+        aktuelle_export_version:
+          type: integer
+          format: int64
+        einreichung_laeuft:
+          type: boolean
+        einreichung_fehler:
+          type: string
+        reise_ids:
+          type: array
+          items:
+            type: string
+        vorschuss_ids:
+          type: array
+          items:
+            type: string
+        vorschlaege_reise:
+          type: array
+          items:
+            type: string
+        vorschlaege_vorschuss:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+          format: int64
+    AbrechnungWrite:
+      type: object
+      required: [arbeitgeber_id, zeitraum_art, von, bis]
+      properties:
+        arbeitgeber_id:
+          type: string
+        zeitraum_art:
+          type: string
+        von:
+          type: string
+        bis:
+          type: string
+        titel:
+          type: string
+        sprache:
+          type: string
+        reise_ids:
+          type: array
+          items:
+            type: string
+        vorschuss_ids:
+          type: array
+          items:
+            type: string
+    AbrechnungKopf:
+      type: object
+      required: [titel, sprache]
+      properties:
+        titel:
+          type: string
+        sprache:
+          type: string
+    AbrechnungListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Abrechnung"
+        next_cursor:
+          type: string
+    IdListe:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+    PruefPunkt:
+      type: object
+      required: [code, objekt_id, reise_id]
+      properties:
+        code:
+          type: string
+        objekt_id:
+          type: string
+        reise_id:
+          type: string
+        anlass:
+          type: string
+    AbrechnungPruefung:
+      type: object
+      required: [blocker, warnungen, erstattung_cent, vorschuss_cent, auszahlung_cent]
+      properties:
+        blocker:
+          type: array
+          items:
+            $ref: "#/components/schemas/PruefPunkt"
+        warnungen:
+          type: array
+          items:
+            $ref: "#/components/schemas/PruefPunkt"
+        erstattung_cent:
+          type: integer
+          format: int64
+        vorschuss_cent:
+          type: integer
+          format: int64
+        auszahlung_cent:
+          type: integer
+          format: int64
+    Quittung:
+      type: object
+      required: [code, objekt_id]
+      properties:
+        code:
+          type: string
+        objekt_id:
+          type: string
+    Einreichen:
+      type: object
+      required: [quittierte_warnungen]
+      properties:
+        quittierte_warnungen:
+          type: array
+          items:
+            $ref: "#/components/schemas/Quittung"
+    Grund:
+      type: object
+      required: [grund]
+      properties:
+        grund:
+          type: string
+    Bezahlt:
+      type: object
+      required: [bezahlt_am]
+      properties:
+        bezahlt_am:
+          type: string
+        vermerk:
+          type: string
+    Export:
+      type: object
+      required: [id, abrechnung_id, version, anlass, status, erstellt_am]
+      properties:
+        id:
+          type: string
+        abrechnung_id:
+          type: string
+        version:
+          type: integer
+          format: int64
+        anlass:
+          type: string
+        status:
+          type: string
+        fehler:
+          type: string
+        ersetzt_durch_version:
+          type: integer
+          format: int64
+        erstellt_am:
+          type: string
+          format: date-time
+    ExportListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Export"

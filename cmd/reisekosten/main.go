@@ -5,12 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -45,6 +47,8 @@ func main() {
 		err = cmdAudit(os.Args[2:])
 	case "export-sample":
 		err = cmdExport(os.Args[2:])
+	case "export-check":
+		err = cmdExportCheck(os.Args[2:])
 	case "version":
 		fmt.Printf("%s %s\n", version, commit)
 	default:
@@ -64,7 +68,8 @@ func usage() {
   healthcheck
   config check
   audit verify
-  export-sample [--out file]
+  export-sample [--out file-or-dir]
+  export-check --dir dir
   version
 `)
 }
@@ -230,10 +235,51 @@ func cmdExport(args []string) error {
 	if typst == "" {
 		typst = "/usr/local/bin/typst"
 	}
-	if err := export.Sample(typst, out); err != nil {
+	if strings.HasSuffix(strings.ToLower(out), ".pdf") {
+		if err := export.Sample(typst, out); err != nil {
+			return err
+		}
+		fmt.Println(out)
+		return nil
+	}
+	if err := export.Samples(typst, out); err != nil {
 		return err
 	}
 	fmt.Println(out)
+	return nil
+}
+
+func cmdExportCheck(args []string) error {
+	dir := ""
+	set := flag.NewFlagSet("export-check", flag.ContinueOnError)
+	set.StringVar(&dir, "dir", "", "directory that contains abrechnung.json files")
+	if err := set.Parse(args); err != nil {
+		return err
+	}
+	if dir == "" {
+		return errors.New("usage: reisekosten export-check --dir dir")
+	}
+	n := 0
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || d.Name() != "abrechnung.json" {
+			return nil
+		}
+		if err := export.CheckFile(path); err != nil {
+			return err
+		}
+		n++
+		fmt.Println(path)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return errors.New("no abrechnung.json")
+	}
 	return nil
 }
 

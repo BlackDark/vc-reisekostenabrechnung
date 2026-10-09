@@ -12,7 +12,7 @@
 
 Self-hosted web app (PWA) for a German **Reisekostenabrechnung** (travel expense claim): record business trips, capture a **Beleg** (receipt) with the phone camera, calculate the **Verpflegungspauschale** (meal allowance) and **Kilometerpauschale** (mileage allowance), and file a reviewable **Abrechnung** (expense claim) as PDF/A with every receipt. German and English, multiple users, sign-in with a password, OIDC (for example Pocket ID), or reverse-proxy headers.
 
-> **Status:** milestone M6 (KI). See [milestones](docs/MILESTONES.md). **KI** (optional receipt reading) suggests vendor, date, total, VAT, currency, and payee from a **Beleg** (receipt). Nothing is booked until the user accepts the suggestion. The feature stays off unless `AI_ENABLED` is set and the user opts in; receipt images are sent only then, to the configured OpenAI-compatible endpoint. An **Ausgabe** (expense) still belongs to exactly one **Reise** (business trip). ADR 0005 stays proposed until real receipt photos are measured.
+> **Status:** milestone M7 (Abrechnung). See [milestones](docs/MILESTONES.md). An **Abrechnung** (expense claim) covers one **Abrechnungszeitraum** (day, week, month, or quarter). A **Reise** (business trip) belongs to the period of its end date. Submitting locks the included trips and writes a PDF/A-3b plus a ZIP of the PDF, CSV files, and receipt originals. **Entsperrung** (a logged unlock) keeps the old export and creates the next version. A **Vorschuss** (cash advance) is settled on the claim. **KI** (optional receipt reading) still suggests fields only after the user opts in. ADR 0005 stays proposed until real receipt photos are measured.
 
 ## Screenshots
 

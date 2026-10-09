@@ -93,6 +93,13 @@ jobs:
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.14.0
+      - name: Typst and poppler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+          curl -fsSL -o /tmp/typst.tar.xz https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz
+          tar -C /tmp -xJf /tmp/typst.tar.xz
+          echo "TYPST_PATH=/tmp/typst-x86_64-unknown-linux-musl/typst" >> "$GITHUB_ENV"
       - name: MinIO
         # minio/minio is gone from Docker Hub, and quay.io rejects anonymous pulls.
         run: |
@@ -262,6 +269,71 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  pdfa:
+    needs: image
+    if: needs.image.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: image-amd64
+      - run: zstd -d image-amd64.tar.zst -c | docker load
+      - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /tmp/verapdf-1.30.2.zip
+          key: verapdf-1.30.2
+      - name: Install veraPDF 1.30.2
+        run: |
+          if [ ! -s /tmp/verapdf-1.30.2.zip ]; then
+            curl -fsSL -o /tmp/verapdf-1.30.2.zip https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip
+          fi
+          rm -rf /tmp/verapdf-src
+          unzip -q /tmp/verapdf-1.30.2.zip -d /tmp/verapdf-src
+          cd /tmp/verapdf-src/verapdf-greenfield-1.30.2
+          printf '1\n%s/verapdf\nO\n1\nN\nY\nN\nN\n1\nN\n' "$HOME" | java -jar verapdf-izpack-installer-1.30.2.jar -console
+          test -x "$HOME/verapdf/verapdf"
+      - name: Sample exports
+        run: |
+          rm -rf out
+          mkdir -p out
+          chmod 777 out
+          docker run --rm --user 65532:65532 \
+            --read-only \
+            --tmpfs /tmp:rw,nosuid,size=512m \
+            -v "$PWD/out":/out \
+            -e HOME=/tmp \
+            -e TYPST_PATH=/usr/local/bin/typst \
+            vc-reisekosten:ci export-sample --out /out
+          docker run --rm --user 65532:65532 \
+            -v "$PWD/out":/out:ro \
+            vc-reisekosten:ci export-check --dir /out
+      - name: Validate PDF/A-3b
+        run: |
+          mkdir -p reports
+          fail=0
+          for pdf in out/*/abrechnung.pdf; do
+            name=$(basename "$(dirname "$pdf")")
+            if ! "$HOME/verapdf/verapdf" --flavour 3b --format text "$pdf"; then
+              fail=1
+            fi
+            "$HOME/verapdf/verapdf" --flavour 3b --format xml "$pdf" > "reports/verapdf-${name}.xml" || fail=1
+            "$HOME/verapdf/verapdf" --flavour 3b --format html "$pdf" > "reports/verapdf-${name}.html" || true
+          done
+          exit "$fail"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: verapdf-reports
+          path: reports
+          retention-days: 7
+          if-no-files-found: ignore
+
   pr-titel:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -274,7 +346,7 @@ jobs:
           printf '%s\n' "$TITLE" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z0-9._/-]+\))?!?: .+'
 
   ci-ok:
-    needs: [changes, go, codegen, web, image, smoke, e2e, pr-titel]
+    needs: [changes, go, codegen, web, image, smoke, e2e, pdfa, pr-titel]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -288,11 +360,12 @@ jobs:
           IMAGE: ${{ needs.image.result }}
           SMOKE: ${{ needs.smoke.result }}
           E2E: ${{ needs.e2e.result }}
+          PDFA: ${{ needs.pdfa.result }}
           TITLE: ${{ needs.pr-titel.result }}
         run: |
           python3 - << 'PY'
           import os, sys
-          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "TITLE"]
+          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "TITLE"]
           bad = [name for name in names if os.environ[name] not in ("success", "skipped")]
           print({name: os.environ[name] for name in names})
           sys.exit(1 if bad else 0)

@@ -832,7 +832,8 @@ func writeStoreErr(w http.ResponseWriter, err error) bool {
 	var code *store.CodeError
 	if errors.As(err, &code) {
 		status := http.StatusUnprocessableEntity
-		if code.Code == "reise_gesperrt" || code.Code == "beleg_fest" || code.Code == "vorschuss_verrechnet" {
+		switch code.Code {
+		case "reise_gesperrt", "beleg_fest", "vorschuss_verrechnet", "reise_belegt", "vorschuss_belegt", "einreichung_laeuft", "uebergang":
 			status = http.StatusConflict
 		}
 		writeProblem(w, status, code.Code, "Check the input", "")
