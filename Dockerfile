@@ -23,10 +23,11 @@ COPY go.mod go.sum ./
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod go mod download
 COPY . .
 COPY --from=web /src/web/dist internal/webui/dist
+# nodynamic keeps gen2brain/avif and webp on wazero. The default build dlopens libavif and is not static.
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
+    go build -tags nodynamic -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
       -o /out/reisekosten ./cmd/reisekosten \
  && mkdir -p /out/data
 
