@@ -8,6 +8,23 @@ import (
 	"time"
 )
 
+type Arbeitgeber struct {
+	ID                       string
+	NutzerID                 string
+	Name                     string
+	Anschrift                string
+	UstID                    *string
+	Steuernummer             *string
+	LogoDateiID              *string
+	IstStandard              bool
+	Konstellation            string
+	AbrechnungsnummerPraefix string
+	Archiviert               bool
+	ErstelltAm               time.Time
+	GeaendertAm              time.Time
+	Version                  int64
+}
+
 type AuditEreigni struct {
 	ID             string
 	Zeitpunkt      time.Time
@@ -22,6 +39,28 @@ type AuditEreigni struct {
 	Ip             *string
 	VorgaengerHash string
 	Hash           string
+}
+
+type Auslandssatz struct {
+	ID            string
+	Jahr          int64
+	LandIso       string
+	LandNameDe    string
+	Satzort       string
+	OrtName       string
+	Vma24h        int64
+	Vma8h         int64
+	Uebernachtung int64
+}
+
+type Datei struct {
+	ID                 string
+	NutzerID           string
+	Mime               string
+	Bytes              int64
+	Sha256             string
+	SpeicherSchluessel string
+	ErstelltAm         time.Time
 }
 
 type Job struct {
@@ -65,6 +104,45 @@ type NutzerIdentitaet struct {
 	GeaendertAm    time.Time
 }
 
+type SatzOverride struct {
+	ID        string
+	Jahr      int64
+	LandIso   *string
+	Satzort   *string
+	Feld      string
+	AlterWert string
+	NeuerWert string
+	Grund     string
+	AdminID   string
+	Zeitpunkt time.Time
+}
+
+type Satztabelle struct {
+	Jahr                         int64
+	Status                       string
+	Quelle                       string
+	VmaInland24h                 int64
+	VmaInland8h                  int64
+	KuerzungFruehstueckPct       int64
+	KuerzungHauptmahlzeitPct     int64
+	UebernachtungInlandPauschale int64
+	KmKraftwagen                 int64
+	KmAnderesMotorfahrzeug       int64
+	SachbezugFruehstueck         int64
+	SachbezugHauptmahlzeit       int64
+	UeblicheMahlzeitGrenze       int64
+	Kleinbetragsgrenze           int64
+	BewirtungAbzugPct            int64
+	UstSaetze                    string
+	AufbewahrungJahre            int64
+	Ersatzlaender                string
+	FlugZwischentageLand         string
+	SchiffLand                   string
+	ErstelltAm                   time.Time
+	GeaendertAm                  time.Time
+	Version                      int64
+}
+
 type Session struct {
 	Token         string
 	Data          string
@@ -75,4 +153,17 @@ type Session struct {
 	OeffentlichID string
 	ErstelltAm    time.Time
 	LetzteNutzung time.Time
+}
+
+type Taetigkeitsstaette struct {
+	ID          string
+	NutzerID    string
+	Bezeichnung string
+	Anschrift   string
+	LandIso     string
+	Satzort     string
+	Kunde       *string
+	ErstelltAm  time.Time
+	GeaendertAm time.Time
+	Version     int64
 }

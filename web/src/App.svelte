@@ -23,6 +23,9 @@
 				<Button variant="outline" size="sm" type="button" onclick={() => session.applyLocale("de")}>DE</Button>
 				<Button variant="outline" size="sm" type="button" onclick={() => session.applyLocale("en")}>EN</Button>
 				{#if session.nutzer}
+					<a href={p("/arbeitgeber")}>{m.nav_arbeitgeber()}</a>
+					<a href={p("/taetigkeitsstaetten")}>{m.nav_staetten()}</a>
+					<a href={p("/satztabellen")}>{m.nav_saetze()}</a>
 					<a href={p("/profil")}>{m.profile_title()}</a>
 					{#if session.nutzer.ist_admin}
 						<a href={p("/admin")}>{m.admin_title()}</a>

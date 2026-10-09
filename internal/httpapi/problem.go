@@ -9,6 +9,19 @@ import (
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
 )
 
+func writeProblemFields(w http.ResponseWriter, status int, code, title string, errs []api.FieldError) {
+	p := api.Problem{
+		Type:   "about:blank",
+		Title:  title,
+		Status: status,
+		Code:   code,
+		Errors: &errs,
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(p)
+}
+
 func writeProblem(w http.ResponseWriter, status int, code, title, detail string) {
 	p := api.Problem{
 		Type:   "about:blank",

@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Reisekostenabrechnung API
-  version: 0.1.0
-  description: Walking-skeleton authentication and profile API.
+  version: 0.2.0
+  description: Arbeitgeber, Tätigkeitsstätten, Satztabellen, and profile API.
 servers:
   - url: /
 paths:
@@ -313,6 +313,490 @@ paths:
           $ref: "#/components/responses/Problem"
         "428":
           $ref: "#/components/responses/Problem"
+  /api/v1/arbeitgeber:
+    get:
+      operationId: getArbeitgeber
+      tags: [arbeitgeber]
+      summary: List the current Nutzer's Arbeitgeber
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Arbeitgeber page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArbeitgeberListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postArbeitgeber
+      tags: [arbeitgeber]
+      summary: Create an Arbeitgeber
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArbeitgeberWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Arbeitgeber"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/arbeitgeber/{id}:
+    get:
+      operationId: getArbeitgeberById
+      tags: [arbeitgeber]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Arbeitgeber
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Arbeitgeber"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchArbeitgeber
+      tags: [arbeitgeber]
+      summary: Update an Arbeitgeber
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArbeitgeberPatch"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Arbeitgeber"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/arbeitgeber/{id}/logo:
+    get:
+      operationId: getArbeitgeberLogo
+      tags: [arbeitgeber]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Logo image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postArbeitgeberLogo
+      tags: [arbeitgeber]
+      summary: Upload a PNG or JPEG logo
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [datei]
+              properties:
+                datei:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Arbeitgeber with the new logo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Arbeitgeber"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/taetigkeitsstaetten:
+    get:
+      operationId: getTaetigkeitsstaetten
+      tags: [taetigkeitsstaetten]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Tätigkeitsstätten page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaetigkeitsstaetteListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postTaetigkeitsstaette
+      tags: [taetigkeitsstaetten]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaetigkeitsstaetteWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Taetigkeitsstaette"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/taetigkeitsstaetten/{id}:
+    get:
+      operationId: getTaetigkeitsstaette
+      tags: [taetigkeitsstaetten]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Tätigkeitsstätte
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Taetigkeitsstaette"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchTaetigkeitsstaette
+      tags: [taetigkeitsstaetten]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaetigkeitsstaetteWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Taetigkeitsstaette"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteTaetigkeitsstaette
+      tags: [taetigkeitsstaetten]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/satztabellen:
+    get:
+      operationId: getSatztabellen
+      tags: [satztabellen]
+      responses:
+        "200":
+          description: Years
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatztabelleListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/satztabellen/{jahr}:
+    get:
+      operationId: getSatztabelle
+      tags: [satztabellen]
+      parameters:
+        - $ref: "#/components/parameters/Jahr"
+      responses:
+        "200":
+          description: Year with effective domestic rates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Satztabelle"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchSatztabelle
+      tags: [satztabellen]
+      summary: Admin override of one rate
+      parameters:
+        - $ref: "#/components/parameters/Jahr"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SatzOverrideRequest"
+      responses:
+        "200":
+          description: Year after the override
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Satztabelle"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/satztabellen/{jahr}/auslandssaetze:
+    get:
+      operationId: getAuslandssaetze
+      tags: [satztabellen]
+      parameters:
+        - $ref: "#/components/parameters/Jahr"
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: land_iso
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Abroad rates, effective values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuslandssatzListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/satztabellen/{jahr}/overrides:
+    get:
+      operationId: getSatzOverrides
+      tags: [satztabellen]
+      parameters:
+        - $ref: "#/components/parameters/Jahr"
+      responses:
+        "200":
+          description: Override log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatzOverrideListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/satztabellen/{jahr}/import:
+    post:
+      operationId: postSatztabelleImport
+      tags: [satztabellen]
+      parameters:
+        - $ref: "#/components/parameters/Jahr"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [datei]
+              properties:
+                datei:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Imported as Entwurf
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatztabelleImport"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/satztabellen/{jahr}/aktivieren:
+    post:
+      operationId: postSatztabelleAktivieren
+      tags: [satztabellen]
+      parameters:
+        - $ref: "#/components/parameters/Jahr"
+      responses:
+        "200":
+          description: Year is aktiv
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Satztabelle"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/nutzer/{id}/identitaeten:
+    get:
+      operationId: getAdminIdentitaeten
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Linked identities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentitaetListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postAdminIdentitaet
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentitaetWrite"
+      responses:
+        "201":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Identitaet"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteAdminIdentitaet
+      tags: [admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - name: identitaet_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Unlinked
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/protokoll:
+    get:
+      operationId: getAdminProtokoll
+      tags: [admin]
+      parameters:
+        - name: objekt_typ
+          in: query
+          schema:
+            type: string
+        - name: objekt_id
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Admin audit events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtokollListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
 components:
   parameters:
     IfMatch:
@@ -321,6 +805,32 @@ components:
       required: false
       schema:
         type: string
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Jahr:
+      name: jahr
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 2000
+        maximum: 2100
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
   responses:
     Problem:
       description: RFC 9457 problem
@@ -494,3 +1004,361 @@ components:
           format: date-time
         aktuell:
           type: boolean
+    Arbeitgeber:
+      type: object
+      required: [id, name, anschrift, ist_standard, konstellation, abrechnungsnummer_praefix, archiviert, version]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        anschrift:
+          type: string
+        ust_id:
+          type: string
+        steuernummer:
+          type: string
+        logo_datei_id:
+          type: string
+        ist_standard:
+          type: boolean
+        konstellation:
+          type: string
+          enum: [arbeitgebererstattung, werbungskosten, betriebsausgaben]
+        abrechnungsnummer_praefix:
+          type: string
+        archiviert:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    ArbeitgeberListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Arbeitgeber"
+        next_cursor:
+          type: string
+    ArbeitgeberWrite:
+      type: object
+      required: [name, anschrift]
+      properties:
+        name:
+          type: string
+        anschrift:
+          type: string
+        ust_id:
+          type: string
+        steuernummer:
+          type: string
+        ist_standard:
+          type: boolean
+        abrechnungsnummer_praefix:
+          type: string
+    ArbeitgeberPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        anschrift:
+          type: string
+        ust_id:
+          type: string
+        steuernummer:
+          type: string
+        ist_standard:
+          type: boolean
+        abrechnungsnummer_praefix:
+          type: string
+        archiviert:
+          type: boolean
+    Taetigkeitsstaette:
+      type: object
+      required: [id, bezeichnung, anschrift, land_iso, satzort, version]
+      properties:
+        id:
+          type: string
+        bezeichnung:
+          type: string
+        anschrift:
+          type: string
+        land_iso:
+          type: string
+        satzort:
+          type: string
+        ort_name:
+          type: string
+        kunde:
+          type: string
+        version:
+          type: integer
+          format: int64
+    TaetigkeitsstaetteListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Taetigkeitsstaette"
+        next_cursor:
+          type: string
+    TaetigkeitsstaetteWrite:
+      type: object
+      required: [bezeichnung, land_iso]
+      properties:
+        bezeichnung:
+          type: string
+        anschrift:
+          type: string
+        land_iso:
+          type: string
+        satzort:
+          type: string
+        kunde:
+          type: string
+    Land:
+      type: object
+      required: [land_iso, land_name_de]
+      properties:
+        land_iso:
+          type: string
+        land_name_de:
+          type: string
+    Satztabelle:
+      type: object
+      required: [jahr, status, quelle, version, vma_inland_24h, vma_inland_8h, uebernachtung_inland_pauschale, laender]
+      properties:
+        jahr:
+          type: integer
+        status:
+          type: string
+          enum: [entwurf, aktiv]
+        quelle:
+          type: string
+        version:
+          type: integer
+          format: int64
+        vma_inland_24h:
+          type: integer
+          format: int64
+        vma_inland_8h:
+          type: integer
+          format: int64
+        kuerzung_fruehstueck_pct:
+          type: integer
+          format: int64
+        kuerzung_hauptmahlzeit_pct:
+          type: integer
+          format: int64
+        uebernachtung_inland_pauschale:
+          type: integer
+          format: int64
+        km_kraftwagen:
+          type: integer
+          format: int64
+        km_anderes_motorfahrzeug:
+          type: integer
+          format: int64
+        sachbezug_fruehstueck:
+          type: integer
+          format: int64
+        sachbezug_hauptmahlzeit:
+          type: integer
+          format: int64
+        uebliche_mahlzeit_grenze:
+          type: integer
+          format: int64
+        kleinbetragsgrenze:
+          type: integer
+          format: int64
+        bewirtung_abzug_pct:
+          type: integer
+          format: int64
+        aufbewahrung_jahre:
+          type: integer
+          format: int64
+        flug_zwischentage_land:
+          type: string
+        schiff_land:
+          type: string
+        ust_saetze:
+          type: string
+        laender:
+          type: array
+          items:
+            $ref: "#/components/schemas/Land"
+    SatztabelleListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SatztabelleKurz"
+    SatztabelleKurz:
+      type: object
+      required: [jahr, status, quelle, version]
+      properties:
+        jahr:
+          type: integer
+        status:
+          type: string
+        quelle:
+          type: string
+        version:
+          type: integer
+          format: int64
+        auslandssaetze:
+          type: integer
+    Auslandssatz:
+      type: object
+      required: [land_iso, land_name_de, satzort, vma_24h, vma_8h, uebernachtung]
+      properties:
+        land_iso:
+          type: string
+        land_name_de:
+          type: string
+        satzort:
+          type: string
+        ort_name:
+          type: string
+        vma_24h:
+          type: integer
+          format: int64
+        vma_8h:
+          type: integer
+          format: int64
+        uebernachtung:
+          type: integer
+          format: int64
+    AuslandssatzListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Auslandssatz"
+        next_cursor:
+          type: string
+    SatzOverride:
+      type: object
+      required: [id, jahr, feld, alter_wert, neuer_wert, grund, zeitpunkt]
+      properties:
+        id:
+          type: string
+        jahr:
+          type: integer
+        land_iso:
+          type: string
+        satzort:
+          type: string
+        feld:
+          type: string
+        alter_wert:
+          type: string
+        neuer_wert:
+          type: string
+        grund:
+          type: string
+        admin_id:
+          type: string
+        zeitpunkt:
+          type: string
+          format: date-time
+    SatzOverrideListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SatzOverride"
+    SatzOverrideRequest:
+      type: object
+      required: [feld, neuer_wert, grund]
+      properties:
+        feld:
+          type: string
+        neuer_wert:
+          type: integer
+          format: int64
+        grund:
+          type: string
+        land_iso:
+          type: string
+        satzort:
+          type: string
+    SatztabelleImport:
+      type: object
+      required: [jahr, status, zeilen]
+      properties:
+        jahr:
+          type: integer
+        status:
+          type: string
+        zeilen:
+          type: integer
+    Identitaet:
+      type: object
+      required: [id, art, aussteller, subjekt]
+      properties:
+        id:
+          type: string
+        art:
+          type: string
+          enum: [oidc, header]
+        aussteller:
+          type: string
+        subjekt:
+          type: string
+    IdentitaetListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Identitaet"
+    IdentitaetWrite:
+      type: object
+      required: [art, aussteller, subjekt]
+      properties:
+        art:
+          type: string
+          enum: [oidc, header]
+        aussteller:
+          type: string
+        subjekt:
+          type: string
+    ProtokollEreignis:
+      type: object
+      required: [id, zeitpunkt, aktion, objekt_typ, objekt_id, akteur_art]
+      properties:
+        id:
+          type: string
+        zeitpunkt:
+          type: string
+          format: date-time
+        aktion:
+          type: string
+        objekt_typ:
+          type: string
+        objekt_id:
+          type: string
+        akteur_art:
+          type: string
+        grund:
+          type: string
+    ProtokollListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProtokollEreignis"

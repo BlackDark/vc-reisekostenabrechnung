@@ -6,17 +6,26 @@
 	import { navigate } from "../router";
 
 	let anzeigename = $state("");
+	let personalnummer = $state("");
+	let letterhead = $state<{ id: string; name: string; anschrift: string; logo_datei_id?: string | null } | null>(null);
 	let sessions = $state<{ id: string; aktuell: boolean; user_agent?: string | null }[]>([]);
 
 	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
-		if (session.nutzer) anzeigename = session.nutzer.anzeigename;
+		if (session.nutzer) {
+			anzeigename = session.nutzer.anzeigename;
+			personalnummer = session.nutzer.personalnummer ?? "";
+		}
 	});
 
 	$effect(() => {
 		if (!session.nutzer) return;
 		void api.GET("/api/v1/me/sessions").then((res) => {
 			if (res.data) sessions = res.data.items;
+		});
+		void api.GET("/api/v1/arbeitgeber").then((res) => {
+			const standard = res.data?.items.find((row) => row.ist_standard && !row.archiviert);
+			letterhead = standard ?? null;
 		});
 	});
 
@@ -26,7 +35,7 @@
 		const sprache = session.locale;
 		const res = await api.PATCH("/api/v1/me", {
 			params: { header: { "If-Match": String(session.nutzer.version) } },
-			body: { anzeigename, sprache },
+			body: { anzeigename, sprache, personalnummer },
 		});
 		if (res.response.ok && res.data) session.nutzer = res.data;
 	}
@@ -51,10 +60,24 @@
 				{m.setup_name()}
 				<input id="anzeigename" class="rounded border px-2 py-1" bind:value={anzeigename} />
 			</label>
+			<label class="grid gap-1 text-sm" for="personalnummer">
+				{m.personalnummer()}
+				<input id="personalnummer" class="rounded border px-2 py-1" bind:value={personalnummer} />
+			</label>
 			<p class="text-sm">{m.language()}: {session.locale}</p>
 			<Button type="submit">{m.save()}</Button>
 		</fieldset>
 	</form>
+	{#if letterhead}
+		<section class="mt-8 max-w-sm rounded border p-4" aria-label={m.letterhead()}>
+			<h2 class="text-lg font-medium">{m.letterhead()}</h2>
+			{#if letterhead.logo_datei_id}
+				<img class="mt-2 h-12 w-auto" alt={letterhead.name} src={`/api/v1/arbeitgeber/${letterhead.id}/logo`} />
+			{/if}
+			<p class="mt-2 font-medium">{letterhead.name}</p>
+			<p class="whitespace-pre-line text-sm">{letterhead.anschrift}</p>
+		</section>
+	{/if}
 	<h2 class="mt-8 text-lg font-medium">{m.sessions()}</h2>
 	<ul class="mt-2 grid gap-2 text-sm">
 		{#each sessions as row (row.id)}

@@ -227,6 +227,219 @@ export interface paths {
         patch: operations["patchAdminNutzer"];
         trace?: never;
     };
+    "/api/v1/arbeitgeber": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current Nutzer's Arbeitgeber */
+        get: operations["getArbeitgeber"];
+        put?: never;
+        /** Create an Arbeitgeber */
+        post: operations["postArbeitgeber"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/arbeitgeber/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getArbeitgeberById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update an Arbeitgeber */
+        patch: operations["patchArbeitgeber"];
+        trace?: never;
+    };
+    "/api/v1/arbeitgeber/{id}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getArbeitgeberLogo"];
+        put?: never;
+        /** Upload a PNG or JPEG logo */
+        post: operations["postArbeitgeberLogo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taetigkeitsstaetten": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTaetigkeitsstaetten"];
+        put?: never;
+        post: operations["postTaetigkeitsstaette"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taetigkeitsstaetten/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTaetigkeitsstaette"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteTaetigkeitsstaette"];
+        options?: never;
+        head?: never;
+        patch: operations["patchTaetigkeitsstaette"];
+        trace?: never;
+    };
+    "/api/v1/satztabellen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSatztabellen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/satztabellen/{jahr}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSatztabelle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin override of one rate */
+        patch: operations["patchSatztabelle"];
+        trace?: never;
+    };
+    "/api/v1/satztabellen/{jahr}/auslandssaetze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAuslandssaetze"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/satztabellen/{jahr}/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSatzOverrides"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/satztabellen/{jahr}/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postSatztabelleImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/satztabellen/{jahr}/aktivieren": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postSatztabelleAktivieren"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/nutzer/{id}/identitaeten": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdminIdentitaeten"];
+        put?: never;
+        post: operations["postAdminIdentitaet"];
+        delete: operations["deleteAdminIdentitaet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/protokoll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdminProtokoll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -315,6 +528,191 @@ export interface components {
             letzte_nutzung: string;
             aktuell: boolean;
         };
+        Arbeitgeber: {
+            id: string;
+            name: string;
+            anschrift: string;
+            ust_id?: string;
+            steuernummer?: string;
+            logo_datei_id?: string;
+            ist_standard: boolean;
+            /** @enum {string} */
+            konstellation: "arbeitgebererstattung" | "werbungskosten" | "betriebsausgaben";
+            abrechnungsnummer_praefix: string;
+            archiviert: boolean;
+            /** Format: int64 */
+            version: number;
+        };
+        ArbeitgeberListe: {
+            items: components["schemas"]["Arbeitgeber"][];
+            next_cursor?: string;
+        };
+        ArbeitgeberWrite: {
+            name: string;
+            anschrift: string;
+            ust_id?: string;
+            steuernummer?: string;
+            ist_standard?: boolean;
+            abrechnungsnummer_praefix?: string;
+        };
+        ArbeitgeberPatch: {
+            name?: string;
+            anschrift?: string;
+            ust_id?: string;
+            steuernummer?: string;
+            ist_standard?: boolean;
+            abrechnungsnummer_praefix?: string;
+            archiviert?: boolean;
+        };
+        Taetigkeitsstaette: {
+            id: string;
+            bezeichnung: string;
+            anschrift: string;
+            land_iso: string;
+            satzort: string;
+            ort_name?: string;
+            kunde?: string;
+            /** Format: int64 */
+            version: number;
+        };
+        TaetigkeitsstaetteListe: {
+            items: components["schemas"]["Taetigkeitsstaette"][];
+            next_cursor?: string;
+        };
+        TaetigkeitsstaetteWrite: {
+            bezeichnung: string;
+            anschrift?: string;
+            land_iso: string;
+            satzort?: string;
+            kunde?: string;
+        };
+        Land: {
+            land_iso: string;
+            land_name_de: string;
+        };
+        Satztabelle: {
+            jahr: number;
+            /** @enum {string} */
+            status: "entwurf" | "aktiv";
+            quelle: string;
+            /** Format: int64 */
+            version: number;
+            /** Format: int64 */
+            vma_inland_24h: number;
+            /** Format: int64 */
+            vma_inland_8h: number;
+            /** Format: int64 */
+            kuerzung_fruehstueck_pct?: number;
+            /** Format: int64 */
+            kuerzung_hauptmahlzeit_pct?: number;
+            /** Format: int64 */
+            uebernachtung_inland_pauschale: number;
+            /** Format: int64 */
+            km_kraftwagen?: number;
+            /** Format: int64 */
+            km_anderes_motorfahrzeug?: number;
+            /** Format: int64 */
+            sachbezug_fruehstueck?: number;
+            /** Format: int64 */
+            sachbezug_hauptmahlzeit?: number;
+            /** Format: int64 */
+            uebliche_mahlzeit_grenze?: number;
+            /** Format: int64 */
+            kleinbetragsgrenze?: number;
+            /** Format: int64 */
+            bewirtung_abzug_pct?: number;
+            /** Format: int64 */
+            aufbewahrung_jahre?: number;
+            flug_zwischentage_land?: string;
+            schiff_land?: string;
+            ust_saetze?: string;
+            laender: components["schemas"]["Land"][];
+        };
+        SatztabelleListe: {
+            items: components["schemas"]["SatztabelleKurz"][];
+        };
+        SatztabelleKurz: {
+            jahr: number;
+            status: string;
+            quelle: string;
+            /** Format: int64 */
+            version: number;
+            auslandssaetze?: number;
+        };
+        Auslandssatz: {
+            land_iso: string;
+            land_name_de: string;
+            satzort: string;
+            ort_name?: string;
+            /** Format: int64 */
+            vma_24h: number;
+            /** Format: int64 */
+            vma_8h: number;
+            /** Format: int64 */
+            uebernachtung: number;
+        };
+        AuslandssatzListe: {
+            items: components["schemas"]["Auslandssatz"][];
+            next_cursor?: string;
+        };
+        SatzOverride: {
+            id: string;
+            jahr: number;
+            land_iso?: string;
+            satzort?: string;
+            feld: string;
+            alter_wert: string;
+            neuer_wert: string;
+            grund: string;
+            admin_id?: string;
+            /** Format: date-time */
+            zeitpunkt: string;
+        };
+        SatzOverrideListe: {
+            items: components["schemas"]["SatzOverride"][];
+        };
+        SatzOverrideRequest: {
+            feld: string;
+            /** Format: int64 */
+            neuer_wert: number;
+            grund: string;
+            land_iso?: string;
+            satzort?: string;
+        };
+        SatztabelleImport: {
+            jahr: number;
+            status: string;
+            zeilen: number;
+        };
+        Identitaet: {
+            id: string;
+            /** @enum {string} */
+            art: "oidc" | "header";
+            aussteller: string;
+            subjekt: string;
+        };
+        IdentitaetListe: {
+            items: components["schemas"]["Identitaet"][];
+        };
+        IdentitaetWrite: {
+            /** @enum {string} */
+            art: "oidc" | "header";
+            aussteller: string;
+            subjekt: string;
+        };
+        ProtokollEreignis: {
+            id: string;
+            /** Format: date-time */
+            zeitpunkt: string;
+            aktion: string;
+            objekt_typ: string;
+            objekt_id: string;
+            akteur_art: string;
+            grund?: string;
+        };
+        ProtokollListe: {
+            items: components["schemas"]["ProtokollEreignis"][];
+        };
     };
     responses: {
         /** @description RFC 9457 problem */
@@ -329,6 +727,10 @@ export interface components {
     };
     parameters: {
         IfMatch: string;
+        Id: string;
+        Jahr: number;
+        Cursor: string;
+        Limit: number;
     };
     requestBodies: never;
     headers: never;
@@ -698,6 +1100,600 @@ export interface operations {
             409: components["responses"]["Problem"];
             412: components["responses"]["Problem"];
             428: components["responses"]["Problem"];
+        };
+    };
+    getArbeitgeber: {
+        parameters: {
+            query?: {
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Arbeitgeber page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArbeitgeberListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    postArbeitgeber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArbeitgeberWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arbeitgeber"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    getArbeitgeberById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Arbeitgeber */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arbeitgeber"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    patchArbeitgeber: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArbeitgeberPatch"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arbeitgeber"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getArbeitgeberLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logo image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    postArbeitgeberLogo: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    datei: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Arbeitgeber with the new logo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arbeitgeber"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getTaetigkeitsstaetten: {
+        parameters: {
+            query?: {
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tätigkeitsstätten page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaetigkeitsstaetteListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    postTaetigkeitsstaette: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaetigkeitsstaetteWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Taetigkeitsstaette"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    getTaetigkeitsstaette: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tätigkeitsstätte */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Taetigkeitsstaette"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    deleteTaetigkeitsstaette: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    patchTaetigkeitsstaette: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaetigkeitsstaetteWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Taetigkeitsstaette"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getSatztabellen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Years */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SatztabelleListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    getSatztabelle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jahr: components["parameters"]["Jahr"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Year with effective domestic rates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Satztabelle"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    patchSatztabelle: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                jahr: components["parameters"]["Jahr"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SatzOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description Year after the override */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Satztabelle"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getAuslandssaetze: {
+        parameters: {
+            query?: {
+                q?: string;
+                land_iso?: string;
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                jahr: components["parameters"]["Jahr"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Abroad rates, effective values */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuslandssatzListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getSatzOverrides: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jahr: components["parameters"]["Jahr"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Override log */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SatzOverrideListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    postSatztabelleImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jahr: components["parameters"]["Jahr"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    datei: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Imported as Entwurf */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SatztabelleImport"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    postSatztabelleAktivieren: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jahr: components["parameters"]["Jahr"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Year is aktiv */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Satztabelle"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getAdminIdentitaeten: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Linked identities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentitaetListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    postAdminIdentitaet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentitaetWrite"];
+            };
+        };
+        responses: {
+            /** @description Linked */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Identitaet"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    deleteAdminIdentitaet: {
+        parameters: {
+            query: {
+                identitaet_id: string;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unlinked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getAdminProtokoll: {
+        parameters: {
+            query?: {
+                objekt_typ?: string;
+                objekt_id?: string;
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Admin audit events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtokollListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
         };
     };
 }

@@ -56,6 +56,20 @@ func (q *Queries) CreateIdentitaet(ctx context.Context, arg CreateIdentitaetPara
 	return i, err
 }
 
+const deleteIdentitaet = `-- name: DeleteIdentitaet :exec
+DELETE FROM nutzer_identitaet WHERE id = ?1 AND nutzer_id = ?2
+`
+
+type DeleteIdentitaetParams struct {
+	ID       string
+	NutzerID string
+}
+
+func (q *Queries) DeleteIdentitaet(ctx context.Context, arg DeleteIdentitaetParams) error {
+	_, err := q.db.ExecContext(ctx, deleteIdentitaet, arg.ID, arg.NutzerID)
+	return err
+}
+
 const getIdentitaet = `-- name: GetIdentitaet :one
 SELECT id, nutzer_id, art, aussteller, subjekt, zuletzt_gesehen, erstellt_am, geaendert_am FROM nutzer_identitaet
 WHERE art = ?1 AND aussteller = ?2 AND subjekt = ?3
@@ -81,6 +95,67 @@ func (q *Queries) GetIdentitaet(ctx context.Context, arg GetIdentitaetParams) (N
 		&i.GeaendertAm,
 	)
 	return i, err
+}
+
+const getIdentitaetByID = `-- name: GetIdentitaetByID :one
+SELECT id, nutzer_id, art, aussteller, subjekt, zuletzt_gesehen, erstellt_am, geaendert_am FROM nutzer_identitaet WHERE id = ?1 AND nutzer_id = ?2
+`
+
+type GetIdentitaetByIDParams struct {
+	ID       string
+	NutzerID string
+}
+
+func (q *Queries) GetIdentitaetByID(ctx context.Context, arg GetIdentitaetByIDParams) (NutzerIdentitaet, error) {
+	row := q.db.QueryRowContext(ctx, getIdentitaetByID, arg.ID, arg.NutzerID)
+	var i NutzerIdentitaet
+	err := row.Scan(
+		&i.ID,
+		&i.NutzerID,
+		&i.Art,
+		&i.Aussteller,
+		&i.Subjekt,
+		&i.ZuletztGesehen,
+		&i.ErstelltAm,
+		&i.GeaendertAm,
+	)
+	return i, err
+}
+
+const listIdentitaetenByNutzer = `-- name: ListIdentitaetenByNutzer :many
+SELECT id, nutzer_id, art, aussteller, subjekt, zuletzt_gesehen, erstellt_am, geaendert_am FROM nutzer_identitaet WHERE nutzer_id = ?1 ORDER BY id
+`
+
+func (q *Queries) ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error) {
+	rows, err := q.db.QueryContext(ctx, listIdentitaetenByNutzer, nutzerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NutzerIdentitaet
+	for rows.Next() {
+		var i NutzerIdentitaet
+		if err := rows.Scan(
+			&i.ID,
+			&i.NutzerID,
+			&i.Art,
+			&i.Aussteller,
+			&i.Subjekt,
+			&i.ZuletztGesehen,
+			&i.ErstelltAm,
+			&i.GeaendertAm,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const touchIdentitaet = `-- name: TouchIdentitaet :exec

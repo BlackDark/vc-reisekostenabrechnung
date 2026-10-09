@@ -22,6 +22,7 @@ var (
 	ErrNotFound  = errors.New("not found")
 	ErrConflict  = errors.New("version conflict")
 	ErrLastAdmin = errors.New("last admin")
+	ErrInvalid   = errors.New("invalid")
 )
 
 // Store is the SQLite repository. Writes use a single connection.
@@ -46,6 +47,10 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	read.SetMaxOpenConns(8)
 	s := &Store{write: write, read: read}
 	if err := s.Migrate(ctx); err != nil {
+		_ = s.Close()
+		return nil, err
+	}
+	if err := s.SeedSatztabellen(ctx); err != nil {
 		_ = s.Close()
 		return nil, err
 	}
