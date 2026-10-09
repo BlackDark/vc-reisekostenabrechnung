@@ -1,7 +1,10 @@
 .git
 node_modules
 **/dist
-docs/research
+# Research notes stay out of the image. The seed CSVs and their embed.go must
+# stay in the context or the Satztabelle package does not compile.
+docs/research/*
+!docs/research/data/
 e2e/*
 !e2e/package.json
 coverage
