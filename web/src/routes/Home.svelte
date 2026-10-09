@@ -6,6 +6,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import * as Empty from "$lib/components/ui/empty";
 	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { formatWhen } from "$lib/dates";
 	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -132,7 +133,7 @@
 									<span class="min-w-0 truncate text-sm font-medium">{trip.anlass}</span>
 									<StatusBadge status={trip.status} />
 								</span>
-								<span class="text-muted-foreground mt-1 block text-xs">{trip.beginn.slice(0, 10)} – {trip.ende.slice(0, 10)}</span>
+								<span class="text-muted-foreground mt-1 block text-xs">{formatWhen(trip.beginn, session.locale, "date")} – {formatWhen(trip.ende, session.locale, "date")}</span>
 							</a>
 						</li>
 					{/each}
@@ -159,7 +160,7 @@
 								href={p("/belege/:id", { params: { id: file.id } })}
 							>
 								<span class="min-w-0 truncate">{file.belegnummer || file.id}</span>
-								<span class="text-muted-foreground shrink-0 text-xs tabular-nums">{file.erstellt_am.slice(0, 10)}</span>
+								<span class="text-muted-foreground shrink-0 text-xs tabular-nums">{formatWhen(file.erstellt_am, session.locale, "date")}</span>
 							</a>
 						</li>
 					{/each}

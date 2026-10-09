@@ -142,7 +142,7 @@ test("inland day shows the meal allowance", async ({ page }) => {
 	await expect(page.getByRole("heading", { name: anlass })).toBeVisible();
 	const day = page.getByRole("article");
 	await expect(day).toHaveCount(1);
-	await expect(day).toContainText("eintaegig");
+	await expect(day).toContainText(/Eintägig|Single day/);
 	await expect(day).toContainText("DE");
 	await expect(day.locator("[data-field=pauschale]")).not.toHaveText(
 		/^\D*0[,.]00\D*$/,

@@ -10,7 +10,7 @@ const fixture = join(here, "../fixtures/receipt.png");
 
 const employerName = "Nordlicht GmbH";
 const tripName = "Kundenbesuch Paris";
-const claimTitle = "Reisekosten September 2026";
+const claimTitle = "Reisekosten November 2026";
 const placeName = "Atelier Leuchtturm";
 
 /** Route patterns must match web/src/router.ts. Concrete URLs are filled after seeding. */
@@ -226,8 +226,10 @@ async function ensureTrip(page: Page): Promise<string> {
 	await page.locator("#reise-ag").selectOption({ label: employerName });
 	await page.locator("#reise-anlass").fill(tripName);
 	await page.locator("#reise-projekt").fill("Leuchtturm");
-	await page.locator("#reise-beginn").fill("2026-09-07T20:00");
-	await page.locator("#reise-ende").fill("2026-09-10T18:00");
+	// November, not the September dates reisen.spec.ts also uses. A later trip on
+	// the same calendar days takes the meal allowance (H-TAG-VERRECHNET).
+	await page.locator("#reise-beginn").fill("2026-11-16T20:00");
+	await page.locator("#reise-ende").fill("2026-11-19T18:00");
 	await page.locator("#reise-zone").fill("Europe/Berlin");
 	await expect
 		.poll(async () => page.locator("#leg-land option").count())
@@ -265,11 +267,12 @@ async function openTrip(page: Page, tripPath: string) {
 
 async function ensureMileage(page: Page, tripPath: string) {
 	await openTrip(page, tripPath);
+	await page.getByRole("tab", { name: /Fahrten|Mileage/ }).click();
 	if ((await page.getByText("Gare du Nord").count()) > 0) return;
 	await page
 		.getByRole("button", { name: /Fahrt erfassen|Add mileage/ })
 		.click();
-	await page.locator("#fahrt-datum").fill("2026-09-08");
+	await page.locator("#fahrt-datum").fill("2026-11-17");
 	await page.locator("#fahrt-start").fill("Gare du Nord");
 	await page.locator("#fahrt-ziel").fill(placeName);
 	await page.locator("#fahrt-km").fill("14");
@@ -283,15 +286,16 @@ async function ensureMileage(page: Page, tripPath: string) {
 
 async function ensureExpense(page: Page, tripPath: string): Promise<string> {
 	await openTrip(page, tripPath);
+	await page.getByRole("tab", { name: /Ausgaben|Expenses/ }).click();
 	const existing = page.getByRole("link", {
-		name: /uebernachtung|Übernachtung|accommodation/i,
+		name: /uebernachtung|Übernachtung|accommodation|lodging/i,
 	});
 	if ((await existing.count()) > 0) {
 		return (await existing.first().getAttribute("href")) ?? "";
 	}
 	await page.getByRole("link", { name: /Ausgabe anlegen|Add expense/ }).click();
 	await page.locator("#ausgabe-kostenart").selectOption("uebernachtung");
-	await page.locator("#ausgabe-datum").fill("2026-09-08");
+	await page.locator("#ausgabe-datum").fill("2026-11-17");
 	await page.locator("#ausgabe-leistender").fill("Hotel Le Marais");
 	await page.locator("#ausgabe-empfaenger").fill(employerName);
 	await page.locator("#ausgabe-betrag").fill("186.00");
@@ -304,7 +308,7 @@ async function ensureAdvance(page: Page) {
 	await openLoaded(page, "/vorschuesse", "/api/v1/vorschuesse");
 	if ((await page.getByText("Abschlag Paris").count()) > 0) return;
 	await page.locator("select").first().selectOption({ label: employerName });
-	await page.getByLabel(/Datum|Date/).fill("2026-09-01");
+	await page.getByLabel(/Datum|Date/).fill("2026-11-01");
 	await page.getByLabel(/Betrag|Amount/).fill("200.00");
 	await page.getByLabel(/Notiz|Note/).fill("Abschlag Paris");
 	await page.getByRole("button", { name: /Anlegen|Create/ }).click();
@@ -336,7 +340,7 @@ async function ensureClaim(page: Page): Promise<string> {
 		.toBeGreaterThan(0);
 	await page.locator("#abrechnung-ag").selectOption({ label: employerName });
 	await page.locator("#abrechnung-art").selectOption("monat");
-	await page.locator("#abrechnung-von").fill("2026-09-01");
+	await page.locator("#abrechnung-von").fill("2026-11-01");
 	await page.locator("#abrechnung-titel").fill(claimTitle);
 	await page.getByTestId("abrechnung-create").click();
 	await expect(page.getByRole("heading", { name: claimTitle })).toBeVisible();
@@ -471,7 +475,7 @@ test("every page loads", async ({ page }, info) => {
 			slug: "reise-detail",
 			url: trip,
 			heading: new RegExp(tripName),
-			ready: "[data-field=pauschale]",
+			ready: "[data-stat=verpflegung]",
 		},
 		{
 			slug: "ausgabe-neu",
@@ -512,6 +516,37 @@ test("every page loads", async ({ page }, info) => {
 			item.heading,
 			item.ready,
 		);
+		if (item.slug === "reise-detail") {
+			// Paris 16–19 Nov 2026: 39 + 58 + 58 + 39 = 194 €. Lodging is provided,
+			// so the day allowance is 0 and the 186 € hotel receipt is the total.
+			await expect(page.locator("[data-stat=verpflegung]")).toContainText(
+				/194[,.]00/,
+			);
+			await expect(
+				page.locator("[data-datum]").first().locator("[data-field=pauschale]"),
+			).toContainText(/39[,.]00/);
+			await expect(page.locator("[data-stat=uebernachtung]")).toContainText(
+				/186[,.]00/,
+			);
+			await expect(
+				page.locator("[data-field=uebernachtung-belege]"),
+			).toContainText(/186[,.]00/);
+			await expect(
+				page
+					.locator("[data-datum]")
+					.first()
+					.locator("[data-field=uebernachtung]"),
+			).toContainText(/0[,.]00/);
+			await expect(page.locator("[data-field=zeitraum]")).toContainText(
+				/16[./]11[./]2026/,
+			);
+			await expect(page.locator("[data-status=in_entwurf]")).toHaveText(
+				/Im Entwurf|In draft/,
+			);
+			await expect(page.getByText("anreisetag", { exact: true })).toHaveCount(
+				0,
+			);
+		}
 	}
 
 	await page.goto("/belege/neu");

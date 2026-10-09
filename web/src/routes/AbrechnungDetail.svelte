@@ -6,6 +6,7 @@
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
+	import { formatWhen } from "$lib/dates";
 	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -237,7 +238,7 @@
 		<div class="min-w-0">
 			<h1 class="truncate text-2xl font-semibold tracking-tight">{row.titel}</h1>
 			<p class="text-muted-foreground mt-1 text-sm">
-				{row.von} – {row.bis}
+				{formatWhen(row.von, session.locale, "date")} – {formatWhen(row.bis, session.locale, "date")}
 				{#if row.abrechnungsnummer} · {row.abrechnungsnummer}{/if}
 				{#if row.aktuelle_export_version > 0} · v{row.aktuelle_export_version}{/if}
 			</p>
@@ -280,7 +281,7 @@
 									selectedAdvances = toggle(selectedAdvances, item.id, on);
 								}}
 							/>
-							<span>{item.datum}</span>
+							<span>{formatWhen(item.datum, session.locale, "date")}</span>
 							<span class="ml-auto tabular-nums">{euroAmount(item.betrag_cent, session.locale)}</span>
 						</label>
 					{/each}

@@ -6,6 +6,7 @@
 	import * as Field from "$lib/components/ui/field";
 	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { statusLabel } from "$lib/labels";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -45,10 +46,10 @@
 		<Field.Label for="beleg-status">{m.beleg_status()}</Field.Label>
 		<NativeSelect id="beleg-status" bind:value={status} class="w-full">
 			<option value=""> </option>
-			<option value="in_aufbereitung">in_aufbereitung</option>
-			<option value="zur_bestaetigung">zur_bestaetigung</option>
-			<option value="bestaetigt">bestaetigt</option>
-			<option value="fehlgeschlagen">fehlgeschlagen</option>
+			<option value="in_aufbereitung">{statusLabel("in_aufbereitung")}</option>
+			<option value="zur_bestaetigung">{statusLabel("zur_bestaetigung")}</option>
+			<option value="bestaetigt">{statusLabel("bestaetigt")}</option>
+			<option value="fehlgeschlagen">{statusLabel("fehlgeschlagen")}</option>
 		</NativeSelect>
 	</Field.Field>
 	<Button type="submit">{m.reise_filter()}</Button>

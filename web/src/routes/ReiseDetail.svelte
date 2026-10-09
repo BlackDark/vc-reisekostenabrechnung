@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
 	import InfoIcon from "@lucide/svelte/icons/info";
 	import { toast } from "svelte-sonner";
 	import { api } from "$lib/api";
@@ -7,11 +8,14 @@
 	import StatCard from "$lib/components/stat-card.svelte";
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
+	import * as Dialog from "$lib/components/ui/dialog";
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
 	import * as Sheet from "$lib/components/ui/sheet";
 	import * as Tabs from "$lib/components/ui/tabs";
 	import * as Tooltip from "$lib/components/ui/tooltip";
+	import { formatWhen } from "$lib/dates";
+	import { dayTypeLabel, kostenartLabel, warningLabel } from "$lib/labels";
 	import { euroAmount } from "$lib/money";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
@@ -41,6 +45,10 @@
 	let fahrtDatum = $state("");
 	let belege = $state<components["schemas"]["Beleg"][]>([]);
 	let tab = $state("days");
+	let confirmOpen = $state(false);
+	let pendingDelete = $state<string | null>(null);
+	const dayGrid =
+		"md:grid-cols-[8.5rem_7.5rem_minmax(0,1.4fr)_repeat(3,5.75rem)] md:items-center md:gap-x-3";
 	let fahrtOpen = $state(false);
 	let vorlageOpen = $state(false);
 
@@ -247,27 +255,49 @@
 		void navigate("/reisen");
 	}
 
+	function askDelete(id: string) {
+		pendingDelete = id;
+		confirmOpen = true;
+	}
+
+	async function confirmDelete() {
+		const target = pendingDelete;
+		confirmOpen = false;
+		pendingDelete = null;
+		if (target === "trip") {
+			await removeTrip();
+			return;
+		}
+		const fahrt = fahrten.find((row) => row.id === target);
+		if (fahrt) await removeFahrt(fahrt);
+	}
+
 	function money(cents: number | undefined): string {
 		return euroAmount(cents ?? 0, session.locale);
 	}
 
 	const ausgabenCent = $derived((calc?.reisenebenkosten_cent ?? 0) + (calc?.bewirtung_cent ?? 0));
+	const overnightOnDays = $derived((calc?.tage ?? []).reduce((sum, tag) => sum + (tag.uebernachtung_cent ?? 0), 0));
+	const overnightReceipts = $derived(Math.max(0, (calc?.uebernachtung_cent ?? 0) - overnightOnDays));
 </script>
 
-<p><a class="text-sm underline" href={p("/reisen")}>{m.back()}</a></p>
+<Button variant="ghost" size="sm" href={p("/reisen")}>
+	<ArrowLeftIcon />
+	{m.back()}
+</Button>
 {#if trip}
 	{#snippet actions(current: Reise)}
 		<Button variant="outline" size="sm" href={`/reisen/${current.id}/ausgaben/neu`}>{m.ausgabe_new()}</Button>
 		<Button variant="outline" size="sm" type="button" onclick={() => (fahrtOpen = true)}>{m.reise_add_fahrt()}</Button>
 		<Button variant="outline" size="sm" type="button" onclick={() => (vorlageOpen = true)}>{m.reise_open_template()}</Button>
-		<Button variant="ghost" size="sm" type="button" onclick={() => void removeTrip()}>{m.reise_delete()}</Button>
+		<Button variant="destructive" size="sm" type="button" onclick={() => askDelete("trip")}>{m.reise_delete()}</Button>
 	{/snippet}
 
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div class="min-w-0">
 			<h1 class="truncate text-2xl font-semibold tracking-tight">{trip.anlass}</h1>
-			<p class="text-muted-foreground mt-1 text-sm">
-				{trip.beginn.slice(0, 16)} – {trip.ende.slice(0, 16)} ({trip.beginn_zone})
+			<p class="text-muted-foreground mt-1 text-sm" data-field="zeitraum">
+				{formatWhen(trip.beginn, session.locale)} – {formatWhen(trip.ende, session.locale)}
 			</p>
 		</div>
 		<div class="flex flex-wrap items-center gap-2">
@@ -287,8 +317,8 @@
 	{#if error}<p class="mt-3 text-sm text-destructive" role="alert">{error}</p>{/if}
 
 	<div class="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-		<StatCard label={m.reise_allowances()} value={money(calc?.verpflegung_cent)} />
-		<StatCard label={m.reise_overnight()} value={money(calc?.uebernachtung_cent)} />
+		<StatCard stat="verpflegung" label={m.reise_allowances()} value={money(calc?.verpflegung_cent)} />
+		<StatCard stat="uebernachtung" label={m.reise_overnight()} value={money(calc?.uebernachtung_cent)} />
 		<StatCard label={m.reise_tab_mileage()} value={money(calc?.fahrtkosten_cent)} />
 		<StatCard label={m.reise_expenses()} value={money(ausgabenCent)} />
 		<StatCard label={m.reise_sum()} value={money(calc?.summe_cent)} />
@@ -307,13 +337,13 @@
 		</div>
 
 		<Tabs.Content value="days" class="mt-3">
-			<div class="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 px-3 text-xs">
+			<div class="text-muted-foreground hidden px-3 text-xs md:grid {dayGrid}">
 				<span>{m.reise_day()}</span>
 				<span>{m.reise_tagesart()}</span>
 				<span>{m.reise_land()}</span>
-				<span>{m.reise_pauschale()}</span>
-				<span>{m.reise_kuerzung()}</span>
-				<span>{m.reise_result()}</span>
+				<span class="text-right">{m.reise_pauschale()}</span>
+				<span class="text-right">{m.reise_kuerzung()}</span>
+				<span class="text-right">{m.reise_result()}</span>
 			</div>
 			<Tooltip.Provider delayDuration={200}>
 				<div class="mt-2 grid gap-2">
@@ -322,9 +352,9 @@
 						<article class="bg-card rounded-xl border" data-datum={day.datum}>
 							<details open={index === 0}>
 								<summary class="cursor-pointer list-none px-3 py-2 marker:content-none [&::-webkit-details-marker]:hidden">
-									<span class="grid gap-1 md:grid-cols-[7.5rem_6.5rem_minmax(0,1.4fr)_repeat(3,minmax(4.5rem,1fr))] md:items-center">
-										<span class="font-medium">{day.datum}</span>
-										<span>{tag?.tagesart ?? ""}</span>
+									<span class="grid grid-cols-2 gap-x-3 gap-y-1 {dayGrid}">
+										<span class="font-medium">{formatWhen(day.datum, session.locale, "date")}</span>
+										<span>{dayTypeLabel(tag?.tagesart)}</span>
 										<span class="min-w-0">{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</span>
 										<span class="text-right tabular-nums" data-field="pauschale">{money(tag?.pauschale_cent)}</span>
 										<span class="text-right tabular-nums" data-field="kuerzung">{money(tag?.kuerzung_cent)}</span>
@@ -407,7 +437,7 @@
 											<Input id={`reason-${day.datum}`} bind:value={day.begruendung} />
 										</label>
 									</div>
-									<p class="text-muted-foreground text-right text-xs tabular-nums">
+									<p class="text-muted-foreground text-right text-xs tabular-nums" data-field="uebernachtung">
 										{m.reise_overnight()}: {money(tag?.uebernachtung_cent)}
 									</p>
 									{#if tag?.warnungen?.includes("W03") && !day.verpflegung_ausgeschlossen}
@@ -424,6 +454,12 @@
 					{/each}
 				</div>
 			</Tooltip.Provider>
+			{#if overnightReceipts > 0}
+				<p class="mt-2 flex items-center justify-between gap-3 px-3 text-sm" data-field="uebernachtung-belege">
+					<span>{m.reise_overnight_receipts()}</span>
+					<span class="tabular-nums">{money(overnightReceipts)}</span>
+				</p>
+			{/if}
 		</Tabs.Content>
 
 		<Tabs.Content value="expenses" class="mt-3">
@@ -434,7 +470,7 @@
 					{#each ausgaben as row (row.id)}
 						<li>
 							<a class="bg-card hover:bg-muted flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm" href={p("/ausgaben/:id", { params: { id: row.id } })}>
-								<span class="min-w-0 truncate">{row.kostenart}{row.waehrung === "EUR" ? "" : ` · ${row.waehrung}`}</span>
+								<span class="min-w-0 truncate">{kostenartLabel(row.kostenart)}{row.waehrung === "EUR" ? "" : ` · ${row.waehrung}`}</span>
 								<span class="shrink-0 tabular-nums">{money(row.betrag_eur_cent)}</span>
 							</a>
 						</li>
@@ -451,7 +487,7 @@
 					{#each fahrten as fahrt (fahrt.id)}
 						<li class="bg-card flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm">
 							<span class="min-w-0">{fahrt.start} – {fahrt.ziel} · {fahrt.km} km · <span class="tabular-nums">{money(fahrt.betrag_cent)}</span></span>
-							<Button variant="link" size="sm" type="button" onclick={() => void removeFahrt(fahrt)}>{m.reise_delete()}</Button>
+							<Button variant="destructive" size="sm" type="button" onclick={() => askDelete(fahrt.id)}>{m.reise_delete()}</Button>
 						</li>
 					{/each}
 				</ul>
@@ -466,7 +502,7 @@
 					{#each belege as beleg (beleg.id)}
 						<li>
 							<a class="bg-card hover:bg-muted block rounded-xl border px-3 py-2 text-sm" href={p("/belege/:id", { params: { id: beleg.id } })}>
-								{beleg.belegnummer || beleg.id} · {beleg.erstellt_am.slice(0, 10)}
+								{beleg.belegnummer || beleg.id} · {formatWhen(beleg.erstellt_am, session.locale, "date")}
 							</a>
 						</li>
 					{/each}
@@ -478,10 +514,10 @@
 			<ul class="grid gap-2 text-sm">
 				<li class="bg-card rounded-xl border px-3 py-2">{m.reise_version()} {trip.version}</li>
 				{#each calc?.blocker ?? [] as code (code)}
-					<li class="bg-card rounded-xl border px-3 py-2">{code}</li>
+					<li class="bg-card rounded-xl border px-3 py-2">{warningLabel(code)}</li>
 				{/each}
 				{#each calc?.warnungen ?? [] as code (code)}
-					<li class="bg-card rounded-xl border px-3 py-2">{code}</li>
+					<li class="bg-card rounded-xl border px-3 py-2">{warningLabel(code)}</li>
 				{/each}
 				{#if (calc?.blocker?.length ?? 0) === 0 && (calc?.warnungen?.length ?? 0) === 0}
 					<li class="text-muted-foreground">{m.reise_no_history()}</li>
@@ -490,6 +526,21 @@
 		</Tabs.Content>
 	</Tabs.Root>
 	<div class="h-28 md:hidden"></div>
+
+	<Dialog.Root bind:open={confirmOpen}>
+		<Dialog.Content>
+			<Dialog.Header>
+				<Dialog.Title>{pendingDelete === "trip" ? m.reise_delete_title() : m.reise_delete()}</Dialog.Title>
+				<Dialog.Description>
+					{pendingDelete === "trip" ? m.reise_delete_body() : m.reise_delete_fahrt()}
+				</Dialog.Description>
+			</Dialog.Header>
+			<Dialog.Footer>
+				<Button variant="outline" type="button" onclick={() => (confirmOpen = false)}>{m.cancel()}</Button>
+				<Button variant="destructive" type="button" onclick={() => void confirmDelete()}>{m.reise_delete()}</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
 
 	<Sheet.Root bind:open={fahrtOpen}>
 		<Sheet.Content class="overflow-y-auto">
