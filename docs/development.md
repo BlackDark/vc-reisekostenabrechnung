@@ -12,7 +12,7 @@ Commits and pull request titles follow [Conventional Commits](https://www.conven
 
 ## End-to-end tests
 
-Playwright runs against the built image. CI starts it with `scripts/e2e-up.sh` and the Playwright container. Projects are desktop (1280×800) and mobile (Pixel 7). On `main` and on release runs, `E2E_WEBKIT=1` adds an iPhone WebKit project.
+Playwright runs against the built image. CI starts it with `scripts/e2e-up.sh` and the Playwright container. Pull requests and `main` run the same projects: desktop (1280×800), mobile (Pixel 7), and mobile-webkit (iPhone, `E2E_WEBKIT=1`). WebKit's screenshot path inserts `<style>body {}</style>`; that exact sheet is allowlisted by hash in `style-src`, and any other inline sheet still fails the tour.
 
 `e2e/tests/00-seiten.spec.ts` opens every route in `web/src/router.ts`, fails on `console.error` or `pageerror`, and checks that a phone-width page does not scroll sideways. Screenshots land in `e2e/screenshots/<viewport>/`. CI uploads them as the `screenshots` artifact, including a Fast 4G LCP sample for the login page (`lcp-fast4g.txt`). The 2 second LCP figure in the specification is a budget, not a failing check.
 

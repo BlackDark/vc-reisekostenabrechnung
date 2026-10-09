@@ -138,9 +138,6 @@ async function shot(
 	await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText(
 		heading,
 	);
-	const errors = (page as Page & { __errors?: string[] }).__errors ?? [];
-	expect(errors, errors.join("\n")).toEqual([]);
-	errors.length = 0;
 	if (project !== "desktop") {
 		const overflow = await page.evaluate(
 			() => document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -150,6 +147,11 @@ async function shot(
 	const dir = join(here, "../screenshots", project);
 	await mkdir(dir, { recursive: true });
 	await page.screenshot({ path: join(dir, `${slug}.png`), fullPage: true });
+	// Console errors can arrive while the screenshot is taken. Check after it,
+	// so the page that logged the error fails instead of the next route.
+	const errors = (page as Page & { __errors?: string[] }).__errors ?? [];
+	expect(errors, errors.join("\n")).toEqual([]);
+	errors.length = 0;
 }
 
 async function openAndShot(

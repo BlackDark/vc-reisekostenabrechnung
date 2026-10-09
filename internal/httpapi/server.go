@@ -168,7 +168,11 @@ func (a *App) allowAPI(r *http.Request) bool {
 }
 
 func (a *App) withSecurity(next http.Handler) http.Handler {
-	csp := "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+	// sha256 of the bytes "body {}". Playwright's WebKit screenshot path inserts
+	// exactly that stylesheet to flush animations. The hash lets that no-op
+	// sheet through. Every other inline stylesheet still violates style-src.
+	const webkitScreenshotStyle = "'sha256-YjaKGiklmzC6wjXA513HAMmzus8VE61XCOT+SmwNZWA='"
+	csp := "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' " + webkitScreenshotStyle + "; style-src-attr 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
 	if a.cfg.OIDC.Enabled && a.cfg.OIDC.IssuerURL != "" {
 		if origin := issuerOrigin(a.cfg.OIDC.IssuerURL); origin != "" {
 			csp += " " + origin
