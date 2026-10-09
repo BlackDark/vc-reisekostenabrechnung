@@ -44,7 +44,7 @@ jobs:
       attestations: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
-      tags: ${{ steps.meta.outputs.tags }}
+      tags: ${{ steps.tags.outputs.tags }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -72,12 +72,26 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ghcr.io/blackdark/vc-reisekostenabrechnung
+          # latest=auto also emits latest on workflow_dispatch from the default
+          # branch, which duplicates type=raw,value=latest.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}},value=${{ env.RELEASE_TAG }}
             type=semver,pattern={{major}}.{{minor}},value=${{ env.RELEASE_TAG }}
             type=semver,pattern={{major}},value=${{ env.RELEASE_TAG }}
             type=raw,value=latest
             type=raw,value=sha-${{ steps.rev.outputs.short }}
+      - id: tags
+        name: Dedupe image tags
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          {
+            echo "tags<<EOF"
+            printf '%s\n' "$TAGS" | awk 'NF && !seen[$0]++'
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - name: Build archive for size and scan
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -115,7 +129,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.tags.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           provenance: mode=max
@@ -160,16 +174,27 @@ jobs:
           TAGS: ${{ needs.publish.outputs.tags }}
         run: |
           tag="${RELEASE_TAG}"
-          gh release view "$tag" --json body --jq .body > /tmp/notes.md
+          repo="${GITHUB_REPOSITORY}"
+          # No checkout in this job: gh runs git to find the repo unless --repo
+          # is set. View by tag includes release-please drafts; GET
+          # /releases/tags/{tag} does not (404 while the release is still a draft).
+          gh release view "$tag" --repo "$repo" --json body --jq .body > /tmp/notes.md
           python3 - << 'PY'
           import os
           import pathlib
           text = pathlib.Path("/tmp/notes.md").read_text()
+          if text.strip() == "null":
+              text = ""
           marker = "## Container image"
           if marker in text:
               text = text[: text.index(marker)].rstrip() + "\n"
           sizes = pathlib.Path("image-size.txt").read_text().strip()
-          tags = os.environ["TAGS"].strip()
+          seen = []
+          for line in os.environ["TAGS"].splitlines():
+              line = line.strip()
+              if line and line not in seen:
+                  seen.append(line)
+          tags = "\n".join(seen)
           digest = os.environ["DIGEST"]
           image = "ghcr.io/blackdark/vc-reisekostenabrechnung"
           verify = (
@@ -208,5 +233,5 @@ jobs:
           ])
           pathlib.Path("/tmp/notes.md").write_text(text.rstrip() + "\n" + block)
           PY
-          gh release upload "$tag" sbom.spdx.json --clobber
-          gh release edit "$tag" --notes-file /tmp/notes.md --draft=false
+          gh release upload "$tag" sbom.spdx.json --repo "$repo" --clobber
+          gh release edit "$tag" --repo "$repo" --notes-file /tmp/notes.md --draft=false
