@@ -72,6 +72,7 @@ type Querier interface {
 	InsertAuslandssatz(ctx context.Context, arg InsertAuslandssatzParams) error
 	InsertBeleg(ctx context.Context, arg InsertBelegParams) (Beleg, error)
 	InsertBelegdatei(ctx context.Context, arg InsertBelegdateiParams) (Belegdatei, error)
+	InsertBelegtext(ctx context.Context, arg InsertBelegtextParams) (Belegtext, error)
 	InsertDatei(ctx context.Context, arg InsertDateiParams) (Datei, error)
 	InsertFahrt(ctx context.Context, arg InsertFahrtParams) (Fahrt, error)
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
@@ -85,6 +86,7 @@ type Querier interface {
 	InsertVorlage(ctx context.Context, arg InsertVorlageParams) (Vorlage, error)
 	InsertVorschuss(ctx context.Context, arg InsertVorschussParams) (Vorschuss, error)
 	LastAuditHash(ctx context.Context) (string, error)
+	LatestJob(ctx context.Context, arg LatestJobParams) (Job, error)
 	ListArbeitgeber(ctx context.Context, arg ListArbeitgeberParams) ([]Arbeitgeber, error)
 	ListAudit(ctx context.Context) ([]AuditEreigni, error)
 	ListAuditFiltered(ctx context.Context, arg ListAuditFilteredParams) ([]AuditEreigni, error)
@@ -94,6 +96,7 @@ type Querier interface {
 	ListBelegdateien(ctx context.Context, belegID string) ([]Belegdatei, error)
 	ListBelege(ctx context.Context, arg ListBelegeParams) ([]Beleg, error)
 	ListBelegeForAusgabe(ctx context.Context, arg ListBelegeForAusgabeParams) ([]ListBelegeForAusgabeRow, error)
+	ListBelegtexte(ctx context.Context, belegID string) ([]Belegtext, error)
 	ListFahrten(ctx context.Context, arg ListFahrtenParams) ([]Fahrt, error)
 	ListFahrtenByNutzer(ctx context.Context, nutzerID string) ([]Fahrt, error)
 	ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error)
@@ -115,6 +118,7 @@ type Querier interface {
 	ListWechselkurse(ctx context.Context, waehrung string) ([]Wechselkur, error)
 	ListWechselkurseAll(ctx context.Context) ([]Wechselkur, error)
 	MarkBelegdateienFest(ctx context.Context, belegID string) error
+	MaxBelegtextVersion(ctx context.Context, belegID string) (int64, error)
 	RescheduleJob(ctx context.Context, arg RescheduleJobParams) error
 	ResumeJobs(ctx context.Context, jetzt time.Time) error
 	SetAdminUeberGruppe(ctx context.Context, arg SetAdminUeberGruppeParams) error

@@ -33,9 +33,56 @@
 	let eigenWer = $state("");
 	let eigenArt = $state("");
 	let saving = $state(false);
+	let empfaenger = $state("");
+	let employerName = $state("");
+	let kiMark = $state(false);
+	let kiText = $state("");
+	let kiLoaded = $state(false);
+
+	const payeeWarn = $derived(
+		empfaenger.trim() !== "" &&
+			employerName.trim() !== "" &&
+			empfaenger.trim().toLocaleLowerCase() !== employerName.trim().toLocaleLowerCase(),
+	);
 
 	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
+	});
+
+	$effect(() => {
+		const trip = reiseId;
+		if (!session.nutzer || !trip) return;
+		void api.GET("/api/v1/reisen/{id}", { params: { path: { id: trip } } }).then(async (res) => {
+			const ag = res.data?.arbeitgeber_id;
+			if (!ag) return;
+			const one = await api.GET("/api/v1/arbeitgeber/{id}", { params: { path: { id: ag } } });
+			if (one.data?.name && trip === reiseId) employerName = one.data.name;
+		});
+	});
+
+	$effect(() => {
+		const beleg = belegFromQuery;
+		if (!session.nutzer || editing || String(route.search.vorschlag ?? "") !== "1" || !beleg || kiLoaded) return;
+		kiLoaded = true;
+		void api.GET("/api/v1/belege/{id}/ki", { params: { path: { id: beleg } } }).then((res) => {
+			const v = res.data?.vorschlag;
+			if (res.data?.status !== "vorschlag" || !v) return;
+			kiMark = true;
+			if (v.leistender) leistender = v.leistender;
+			if (v.datum) datum = v.datum;
+			if (v.waehrung) waehrung = v.waehrung;
+			if (v.betrag_brutto_cent) betrag = (v.betrag_brutto_cent / 100).toFixed(2);
+			if (v.kostenart) kostenart = v.kostenart;
+			if (v.empfaenger_name) empfaenger = v.empfaenger_name;
+			kiText = v.volltext ?? "";
+			if (v.steueranteile && v.steueranteile.length > 0) {
+				anteile = v.steueranteile.map((row) => ({
+					satz: row.satz,
+					steuerland: "DE",
+					brutto: ((row.brutto_cent ?? 0) / 100).toFixed(2),
+				}));
+			}
+		});
 	});
 
 	$effect(() => {
@@ -79,12 +126,39 @@
 	async function save() {
 		saving = true;
 		error = "";
+		if (kiMark && belegFromQuery) {
+			const text = await api.POST("/api/v1/belege/{id}/texte", {
+				params: { path: { id: belegFromQuery } },
+				body: {
+					volltext: kiText,
+					felder: {
+						leistender,
+						datum,
+						waehrung,
+						betrag_brutto_cent: cents(betrag),
+						kostenart,
+						empfaenger_name: empfaenger,
+						volltext: kiText,
+						steueranteile: anteile.map((row) => ({
+							satz: Number(row.satz),
+							brutto_cent: cents(row.brutto || betrag),
+						})),
+					},
+				},
+			});
+			if (!text.response.ok) {
+				error = m.save_failed();
+				saving = false;
+				return;
+			}
+		}
 		const body = {
 			kostenart,
 			datum,
 			waehrung,
 			betrag_cent: cents(betrag),
 			leistender,
+			empfaenger,
 			rechnung_auf_arbeitgeber: aufArbeitgeber,
 			rechnungsart: eigen ? "eigenbeleg" : "kleinbetragsrechnung",
 			tse_beleg: tse,
@@ -141,6 +215,12 @@
 
 <p><a class="text-sm underline" href={p("/reisen")}>{m.back()}</a></p>
 <h1 class="mt-2 text-2xl font-semibold">{m.ausgabe_title()}</h1>
+{#if kiMark}
+	<p class="mt-2 text-sm" data-testid="ki-marke">{m.ki_mark()}: {m.ki_suggestion()}</p>
+{/if}
+{#if payeeWarn}
+	<p class="mt-2 text-sm" role="status" data-testid="warn-w02">{m.warn_W02()}</p>
+{/if}
 
 {#if loaded}
 	<p class="mt-3 text-sm" data-testid="betrag-eur">{m.ausgabe_betrag()}: {money(loaded.betrag_eur_cent)} EUR</p>
@@ -187,6 +267,10 @@
 	<label class="grid gap-1 text-sm">
 		{m.ausgabe_leistender()}
 		<input id="ausgabe-leistender" class="rounded border px-3 py-3" bind:value={leistender} />
+	</label>
+	<label class="grid gap-1 text-sm">
+		{m.ausgabe_empfaenger()}
+		<input id="ausgabe-empfaenger" class="rounded border px-3 py-3" bind:value={empfaenger} />
 	</label>
 	<label class="grid gap-1 text-sm">
 		{m.ausgabe_betrag()}

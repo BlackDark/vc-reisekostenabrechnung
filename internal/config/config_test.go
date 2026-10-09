@@ -68,6 +68,26 @@ func TestLoadOK(t *testing.T) {
 	}
 }
 
+func TestLoadAIRequiresEndpoint(t *testing.T) {
+	t.Setenv("APP_BASE_URL", "https://reisekosten.example")
+	t.Setenv("AI_ENABLED", "true")
+	_, err := Load()
+	if err == nil || !stringsContains(err.Error(), "AI_BASE_URL") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestLoadAIOffWhenUnset(t *testing.T) {
+	t.Setenv("APP_BASE_URL", "https://reisekosten.example")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AI.Enabled || cfg.AI.PublicBaseURL() != "" {
+		t.Fatalf("%+v", cfg.AI)
+	}
+}
+
 func TestParseRate(t *testing.T) {
 	r, err := ParseRate("20/h")
 	if err != nil || r.Count != 20 {

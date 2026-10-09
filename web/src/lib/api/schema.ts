@@ -762,6 +762,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/belege/{id}/ki-auslesen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue a KI suggestion for this Beleg */
+        post: operations["postBelegKi"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/belege/{id}/ki": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current KI suggestion or job status */
+        get: operations["getBelegKi"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/belege/{id}/texte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getBelegTexte"];
+        put?: never;
+        /** Store the confirmed Belegtext version */
+        post: operations["postBelegText"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reisen/{id}/ausgaben": {
         parameters: {
             query?: never;
@@ -948,6 +999,9 @@ export interface components {
             setup_erforderlich: boolean;
             /** @enum {string} */
             default_locale: "de" | "en";
+            ai_aktiviert: boolean;
+            /** @description Public base URL of the KI endpoint. Empty when KI is off. Never includes the API key. */
+            ai_basis_url: string;
         };
         LoginRequest: {
             benutzername: string;
@@ -1415,6 +1469,61 @@ export interface components {
         BelegListe: {
             items: components["schemas"]["Beleg"][];
             next_cursor?: string;
+        };
+        KiAuftrag: {
+            status: string;
+            job_id?: string;
+        };
+        KiAnteil: {
+            satz: number;
+            /** Format: int64 */
+            netto_cent?: number;
+            /** Format: int64 */
+            steuer_cent?: number;
+            /** Format: int64 */
+            brutto_cent: number;
+        };
+        KiVorschlag: {
+            leistender?: string;
+            datum?: string;
+            waehrung?: string;
+            /** Format: int64 */
+            betrag_brutto_cent?: number;
+            steueranteile?: components["schemas"]["KiAnteil"][];
+            rechnungsart?: string;
+            kostenart?: string;
+            empfaenger_name?: string;
+            rechnungsnummer?: string;
+            ust_id_leistender?: string;
+            /** Format: int64 */
+            trinkgeld_cent?: number;
+            volltext?: string;
+            konfidenz?: {
+                [key: string]: number;
+            };
+        };
+        KiStand: {
+            /** @description aus, nicht_erlaubt, keine, laeuft, vorschlag, leer, or nicht_erreichbar */
+            status: string;
+            vorschlag?: components["schemas"]["KiVorschlag"];
+        };
+        Belegtext: {
+            id: string;
+            beleg_id: string;
+            /** Format: int64 */
+            version: number;
+            quelle: string;
+            volltext: string;
+            /** Format: date-time */
+            bestaetigt_am?: string;
+            felder?: components["schemas"]["KiVorschlag"];
+        };
+        BelegtextListe: {
+            items: components["schemas"]["Belegtext"][];
+        };
+        BelegtextWrite: {
+            volltext?: string;
+            felder?: components["schemas"]["KiVorschlag"];
         };
         BelegStorno: {
             grund: string;
@@ -3385,6 +3494,110 @@ export interface operations {
             412: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
             428: components["responses"]["Problem"];
+        };
+    };
+    postBelegKi: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KiAuftrag"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            429: components["responses"]["Problem"];
+        };
+    };
+    getBelegKi: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suggestion status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KiStand"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getBelegTexte: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Belegtext versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BelegtextListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    postBelegText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BelegtextWrite"];
+            };
+        };
+        responses: {
+            /** @description Confirmed version */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Belegtext"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     getAusgaben: {

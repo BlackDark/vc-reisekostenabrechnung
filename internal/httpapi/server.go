@@ -19,6 +19,7 @@ import (
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/auth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/belegpipe"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/config"
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/ki"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/storage"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
@@ -36,6 +37,8 @@ type App struct {
 	sessions  *scs.SessionManager
 	log       *slog.Logger
 	limits    limiter
+	ki        *ki.Client
+	kiGate    *ki.Gate
 	oidcMu    sync.Mutex
 	oidcKey   []byte
 	oidcP     *oidc.Provider
@@ -66,7 +69,15 @@ func New(cfg config.Config, st *store.Store, pw *auth.Passwords, log *slog.Logge
 	if err != nil {
 		return nil, err
 	}
-	return &App{cfg: cfg, store: st, blobs: blobs, passwords: pw, sessions: sm, log: log, oidcKey: key}, nil
+	app := &App{cfg: cfg, store: st, blobs: blobs, passwords: pw, sessions: sm, log: log, oidcKey: key}
+	if cfg.AI.Enabled {
+		app.ki = ki.NewClient(ki.Settings{
+			BaseURL: cfg.AI.BaseURL, APIKey: cfg.AI.APIKey, Model: cfg.AI.Model,
+			Format: cfg.AI.ResponseFormat, Timeout: cfg.AI.Timeout,
+		})
+		app.kiGate = ki.NewGate(cfg.AI.MaxConcurrency)
+	}
+	return app, nil
 }
 
 func openBlobs(cfg config.Config) (storage.Store, error) {

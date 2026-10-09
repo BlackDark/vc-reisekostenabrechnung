@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from "$lib/api";
+	import type { components } from "$lib/api/schema";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p, route } from "../router";
@@ -21,6 +22,8 @@
 	let grund = $state("");
 	let reisen = $state<{ id: string; anlass: string }[]>([]);
 	let reiseId = $state("");
+	let ki = $state<components["schemas"]["KiStand"] | null>(null);
+	let kiBusy = $state(false);
 
 	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
@@ -103,6 +106,50 @@
 	}
 
 	const ready = $derived(beleg && beleg.status !== "in_aufbereitung" && beleg.status !== "hochgeladen");
+	const kiOn = $derived(session.aiAktiv && session.nutzer?.ki_erlaubt === true);
+
+	async function loadKI() {
+		if (!kiOn || !id) return;
+		const res = await api.GET("/api/v1/belege/{id}/ki", { params: { path: { id } } });
+		if (res.data) ki = res.data;
+	}
+
+	async function readKI() {
+		if (!beleg) return;
+		kiBusy = true;
+		error = "";
+		const res = await api.POST("/api/v1/belege/{id}/ki-auslesen", { params: { path: { id: beleg.id } } });
+		if (!res.response.ok) {
+			error = m.ki_unreachable();
+			kiBusy = false;
+			return;
+		}
+		for (let i = 0; i < 20; i++) {
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			const stand = await api.GET("/api/v1/belege/{id}/ki", { params: { path: { id: beleg.id } } });
+			if (stand.data) ki = stand.data;
+			if (ki && ki.status !== "laeuft") break;
+		}
+		kiBusy = false;
+	}
+
+	$effect(() => {
+		if (!ready || !kiOn || !id) return;
+		void loadKI();
+	});
+
+	async function acceptKI() {
+		if (!beleg || !ki?.vorschlag || !reiseId) return;
+		const res = await api.POST("/api/v1/belege/{id}/texte", {
+			params: { path: { id: beleg.id } },
+			body: { volltext: ki.vorschlag.volltext ?? "", felder: ki.vorschlag },
+		});
+		if (!res.response.ok) {
+			error = m.save_failed();
+			return;
+		}
+		window.location.assign(`/reisen/${reiseId}/ausgaben/neu?beleg=${beleg.id}&vorschlag=1`);
+	}
 </script>
 
 {#if beleg}
@@ -119,6 +166,31 @@
 	{/if}
 	{#if ready && beleg.typ !== "e_rechnung_xml"}
 		<img class="mt-4 w-full" data-testid="beleg-preview" src={`/api/v1/belege/${beleg.id}/vorschau`} alt={m.beleg_preview()} />
+	{/if}
+	{#if ready && kiOn && beleg.typ !== "e_rechnung_xml"}
+		<button class="mt-4 rounded border px-3 py-3" type="button" data-testid="ki-auslesen" disabled={kiBusy} onclick={() => void readKI()}>{m.ki_read()}</button>
+		{#if kiBusy || ki?.status === "laeuft"}
+			<p class="mt-2 text-sm">{m.ki_running()}</p>
+		{:else if ki?.status === "nicht_erreichbar"}
+			<p class="mt-2 text-sm" role="alert">{m.ki_unreachable()}</p>
+		{:else if ki?.status === "leer"}
+			<p class="mt-2 text-sm">{m.ki_empty()}</p>
+		{:else if ki?.status === "vorschlag" && ki.vorschlag}
+			<section class="mt-3 grid gap-1 rounded border p-3 text-sm" data-testid="ki-vorschlag">
+				<p class="font-medium">{m.ki_suggestion()}</p>
+				<p>{ki.vorschlag.leistender}</p>
+				<p>{((ki.vorschlag.betrag_brutto_cent ?? 0) / 100).toFixed(2)} {ki.vorschlag.waehrung}</p>
+				{#if ki.vorschlag.konfidenz}
+					<p data-testid="ki-konfidenz">
+						{m.ki_confidence()}:
+						{#each Object.entries(ki.vorschlag.konfidenz) as [key, value] (key)}
+							<span>{key} {Math.round(Number(value) * 100)}%</span>
+						{/each}
+					</p>
+				{/if}
+				<button class="mt-2 rounded border px-3 py-3" type="button" data-testid="ki-verwerfen" onclick={() => { ki = null; }}>{m.ki_discard()}</button>
+			</section>
+		{/if}
 	{/if}
 	<p class="mt-4">
 		<a class="underline" href={`/api/v1/belege/${beleg.id}/original`}>{m.beleg_original()}</a>
@@ -137,6 +209,9 @@
 				</select>
 			</label>
 			<a class="underline" data-testid="ausgabe-anlegen" href={`/reisen/${reiseId}/ausgaben/neu?beleg=${beleg.id}`}>{m.ausgabe_new()}</a>
+			{#if ki?.status === "vorschlag"}
+				<button class="rounded border px-3 py-3 text-left" type="button" data-testid="ki-uebernehmen" onclick={() => void acceptKI()}>{m.ki_accept()}</button>
+			{/if}
 		</div>
 	{/if}
 	<div class="mt-4 grid gap-2">

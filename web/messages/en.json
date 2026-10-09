@@ -230,5 +230,17 @@
 	"warn_W10": "Foreign VAT is not German input VAT",
 	"warn_W11": "Expense date is outside the trip",
 	"warn_W13": "VAT amount differs from the calculated tax",
-	"warn_H_UST_KURS": "German VAT in a foreign currency: reimbursement uses the ECB daily rate; the BMF monthly rate is only a hint"
+	"warn_H_UST_KURS": "German VAT in a foreign currency: reimbursement uses the ECB daily rate; the BMF monthly rate is only a hint",
+	"ki_opt_in": "Read receipts with AI",
+	"ki_privacy": "Receipt images are sent to {url}.",
+	"ki_read": "Read with AI",
+	"ki_suggestion": "AI suggestion",
+	"ki_accept": "Accept",
+	"ki_discard": "Discard",
+	"ki_unreachable": "AI is unreachable",
+	"ki_empty": "No suggestion",
+	"ki_running": "AI is reading the receipt …",
+	"ki_mark": "AI",
+	"ki_confidence": "Confidence",
+	"ausgabe_empfaenger": "Invoice payee"
 }

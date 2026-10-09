@@ -80,6 +80,8 @@ func (a *App) runJob(ctx context.Context, job sqlitedb.Job) error {
 		return a.jobFoto(ctx, job.ID, belegID)
 	case "pdf_vorschau":
 		return a.jobPDF(ctx, job.ID, belegID)
+	case "ki_auslesen":
+		return a.jobKI(ctx, job.ID, belegID)
 	case "erfassung_loeschen":
 		keys, err := a.store.CompleteKarenz(ctx, belegID, job.ID)
 		if err != nil {
