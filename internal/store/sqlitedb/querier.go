@@ -9,29 +9,58 @@ import (
 )
 
 type Querier interface {
+	ClearAndereStandards(ctx context.Context, arg ClearAndereStandardsParams) error
 	CountAktiveAdmins(ctx context.Context) (int64, error)
+	CountAktiveArbeitgeber(ctx context.Context, nutzerID string) (int64, error)
 	CountNutzer(ctx context.Context) (int64, error)
 	CreateIdentitaet(ctx context.Context, arg CreateIdentitaetParams) (NutzerIdentitaet, error)
 	CreateNutzer(ctx context.Context, arg CreateNutzerParams) (Nutzer, error)
+	DeleteAuslandssaetze(ctx context.Context, jahr int64) error
+	DeleteIdentitaet(ctx context.Context, arg DeleteIdentitaetParams) error
+	DeleteSatzOverrides(ctx context.Context, jahr int64) error
 	DeleteSession(ctx context.Context, token string) error
 	DeleteSessionByPublicID(ctx context.Context, arg DeleteSessionByPublicIDParams) error
 	DeleteSessionsForNutzer(ctx context.Context, nutzerID *string) error
+	DeleteTaetigkeitsstaette(ctx context.Context, arg DeleteTaetigkeitsstaetteParams) error
+	FirstOtherAktiverArbeitgeber(ctx context.Context, arg FirstOtherAktiverArbeitgeberParams) (Arbeitgeber, error)
+	GetArbeitgeber(ctx context.Context, arg GetArbeitgeberParams) (Arbeitgeber, error)
+	GetDatei(ctx context.Context, arg GetDateiParams) (Datei, error)
 	GetIdentitaet(ctx context.Context, arg GetIdentitaetParams) (NutzerIdentitaet, error)
+	GetIdentitaetByID(ctx context.Context, arg GetIdentitaetByIDParams) (NutzerIdentitaet, error)
 	GetNutzerByBenutzername(ctx context.Context, benutzername string) (Nutzer, error)
 	GetNutzerByEmail(ctx context.Context, email *string) (Nutzer, error)
 	GetNutzerByID(ctx context.Context, id string) (Nutzer, error)
+	GetSatztabelle(ctx context.Context, jahr int64) (Satztabelle, error)
 	GetSession(ctx context.Context, token string) (Session, error)
+	GetTaetigkeitsstaette(ctx context.Context, arg GetTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
+	InsertArbeitgeber(ctx context.Context, arg InsertArbeitgeberParams) (Arbeitgeber, error)
 	InsertAudit(ctx context.Context, arg InsertAuditParams) error
+	InsertAuslandssatz(ctx context.Context, arg InsertAuslandssatzParams) error
+	InsertDatei(ctx context.Context, arg InsertDateiParams) (Datei, error)
+	InsertSatzOverride(ctx context.Context, arg InsertSatzOverrideParams) (SatzOverride, error)
+	InsertSatztabelle(ctx context.Context, arg InsertSatztabelleParams) (Satztabelle, error)
+	InsertTaetigkeitsstaette(ctx context.Context, arg InsertTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
 	LastAuditHash(ctx context.Context) (string, error)
+	ListArbeitgeber(ctx context.Context, arg ListArbeitgeberParams) ([]Arbeitgeber, error)
 	ListAudit(ctx context.Context) ([]AuditEreigni, error)
+	ListAuditFiltered(ctx context.Context, arg ListAuditFilteredParams) ([]AuditEreigni, error)
+	ListAuslandssaetze(ctx context.Context, jahr int64) ([]Auslandssatz, error)
+	ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error)
+	ListLaender(ctx context.Context, jahr int64) ([]ListLaenderRow, error)
 	ListNutzer(ctx context.Context, arg ListNutzerParams) ([]Nutzer, error)
+	ListSatzOverrides(ctx context.Context, jahr int64) ([]SatzOverride, error)
+	ListSatztabellen(ctx context.Context) ([]Satztabelle, error)
 	ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNutzerParams) ([]Session, error)
+	ListTaetigkeitsstaetten(ctx context.Context, arg ListTaetigkeitsstaettenParams) ([]Taetigkeitsstaette, error)
 	SetAdminUeberGruppe(ctx context.Context, arg SetAdminUeberGruppeParams) error
 	TouchAnmeldung(ctx context.Context, arg TouchAnmeldungParams) error
 	TouchIdentitaet(ctx context.Context, arg TouchIdentitaetParams) error
+	TouchSatztabelle(ctx context.Context, arg TouchSatztabelleParams) (Satztabelle, error)
+	UpdateArbeitgeber(ctx context.Context, arg UpdateArbeitgeberParams) (Arbeitgeber, error)
 	UpdateNutzerAdmin(ctx context.Context, arg UpdateNutzerAdminParams) (Nutzer, error)
 	UpdateNutzerPasswort(ctx context.Context, arg UpdateNutzerPasswortParams) (Nutzer, error)
 	UpdateNutzerProfil(ctx context.Context, arg UpdateNutzerProfilParams) (Nutzer, error)
+	UpdateTaetigkeitsstaette(ctx context.Context, arg UpdateTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
 	UpsertSession(ctx context.Context, arg UpsertSessionParams) error
 }
 

@@ -13,3 +13,10 @@ INSERT INTO audit_ereignis (
 
 -- name: ListAudit :many
 SELECT * FROM audit_ereignis ORDER BY id ASC;
+
+-- name: ListAuditFiltered :many
+SELECT * FROM audit_ereignis
+WHERE (sqlc.narg(objekt_typ) IS NULL OR objekt_typ = sqlc.narg(objekt_typ))
+  AND (sqlc.narg(objekt_id) IS NULL OR objekt_id = sqlc.narg(objekt_id))
+ORDER BY zeitpunkt DESC, id DESC
+LIMIT sqlc.arg(limit_n);

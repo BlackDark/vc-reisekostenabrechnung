@@ -147,7 +147,7 @@ Alle Entitäten haben `id`, `erstellt_am`, `geaendert_am`; veränderbare Entitä
 | `name`, `anschrift` | Text | Pflicht; Briefkopf im Export; Abgleich „Rechnung lautet auf Arbeitgeber“ |
 | `ust_id`, `steuernummer` | Text? | informativ im Export |
 | `logo_datei_id` | FK? | optionales Logo (PNG/JPEG; eigene Tabelle `datei`, kein Beleg im Glossarsinn) |
-| `ist_standard` | Bool | genau ein Standard je Nutzer (Invariante I3) |
+| `ist_standard` | Bool | genau ein Standard unter den nicht archivierten Arbeitgebern (Invariante I3) |
 | `konstellation` | Enum | v1 nur `arbeitgebererstattung`; vorbereitet: `werbungskosten`, `betriebsausgaben` (ADR 0001) |
 | `abrechnungsnummer_praefix` | Text | Default `RK` |
 | `archiviert` | Bool | nicht mehr auswählbar, bleibt für Altbestände |
@@ -287,7 +287,7 @@ Abgeleiteter Status: `offen` (keine Abrechnung), `in_entwurf` (Abrechnung im Sta
 |---|---|
 | I1 | Jede Ausgabe und jede Fahrt gehört zu genau einer Reise (Q10); jede Reise gehört genau einem Nutzer und einem Arbeitgeber dieses Nutzers. |
 | I2 | Ein Nutzer sieht und ändert nur eigene Objekte; jede Store-Abfrage ist mit `nutzer_id` parametrisiert (keine Abfrage ohne Mandantenfilter, per Test erzwungen, 20). |
-| I3 | Genau ein Arbeitgeber je Nutzer ist Standard, sobald mindestens einer existiert. |
+| I3 | Genau ein nicht archivierter Arbeitgeber je Nutzer ist Standard, sobald mindestens ein nicht archivierter existiert. Sind alle archiviert, gibt es keinen Standard. |
 | I4 | Reisetage einer Reise decken lückenlos alle Kalendertage von `beginn` bis `ende` (Ortszeit) ab. |
 | I5 | Σ `steueranteil.brutto` = `ausgabe.betrag` (Belegwährung) und Σ `brutto_eur` = `betrag_eur`. |
 | I6 | Eine Reise steht in höchstens einer Abrechnung; ihr Enddatum liegt in [`von`, `bis`] der Abrechnung (Q11); Arbeitgeber identisch. |
@@ -385,7 +385,7 @@ Danach in dieser Reihenfolge: 4.5 (mehrere Reisen am Tag) → 4.7 (Mahlzeitenkü
 
 ### 4.5 Mehrere Reisen am selben Kalendertag
 
-Je Nutzer und Kalendertag *t* gibt es **höchstens eine** Verpflegungspauschale ([R] 1.2). Betrachtet werden alle Reisen des Nutzers, die *t* berühren (über alle Arbeitgeber, siehe offene Punkte 22).
+Je Nutzer und Kalendertag *t* gibt es **höchstens eine** Verpflegungspauschale ([R] 1.2). Betrachtet werden alle Reisen des Nutzers, die *t* berühren, über alle Arbeitgeber (O2). Der Schalter steht in `internal/berechnung`: `EineVerpflegungspauschaleProKalendertag` ist `true`, `VerpflegungScope()` liefert `nutzer`. `false` würde je Arbeitgeber eine eigene Pauschale am selben Tag zulassen; der Rechenkern ab M3 liest nur diese Stelle.
 
 1. **Kandidaten**: (a) der Tagesbetrag jeder einzelnen Reise nach 4.4; (b) Zusammenrechnung: Summe der Abwesenheiten aller `eintaegig`- und `ueber_nacht`-Anteile an *t*; > 8 h → 8-h-Satz.
 2. **Land** für (b): Ist an *t* irgendeine Reise im Ausland, gilt das Ausland (R 9.6 Abs. 3 S. 3 LStR), und zwar das Land der am spätesten endenden Auslandsreise an *t* (letzter Tätigkeitsort im Ausland).
@@ -1304,7 +1304,7 @@ Testdaten: Belegfotos aus [K] (frei lizenzierte Commons-Bilder + synthetische) a
 | # | Punkt | Vorschlag / nächster Schritt | Wer |
 |---|---|---|---|
 | O1 | **Kürzung bei erstatteter eigener Verpflegung und bei Bewirtung** (4.7) stützt sich auf BMF-RK 2020 Rz. 64/75 aus einer IHK-Zusammenfassung, nicht auf [R] | Recherche [R] 1.4 um Rz. 64–75 und 77–86 (Wortlaut) ergänzen, vor M3 | Recherche |
-| O2 | **Eine Pauschale je Tag über mehrere Arbeitgeber** (4.5): v1 rechnet nutzerweit | Eduard: Gibt es realistisch Reisen für zwei Arbeitgeber am selben Tag? Sonst so lassen | Eduard |
+| O2 | **Eine Pauschale je Tag über mehrere Arbeitgeber** (4.5) | Entschieden in M2: eine Verpflegungspauschale je Kalendertag über alle Arbeitgeber. Schalter `EineVerpflegungspauschaleProKalendertag` in `internal/berechnung` (`true`); `false` stellt auf eine Pauschale je Arbeitgeber um, ohne die Tagesregel zu verteilen | erledigt |
 | O3 | **PDF/A-3b**: Typst 0.15.1 kann in PDF/A-Modi keine PDFs als Bild einbetten → PDF-Belege werden gerastert (300 ppi, JPEG) und das Original als eingebettete Datei (PDF/A-3) mitgeliefert; veraPDF-Validierung noch nicht gelaufen | In M5 mit veraPDF prüfen; Rasterung kostet Vektortext im sichtbaren Teil (Original bleibt eingebettet und im ZIP). Abweichung zu Q22 („Belege als angehängte Seiten“) nur in der Technik, nicht im Ergebnis | Umsetzung |
 | O4 | **release-please `draft` + `force-tag-creation`** (18.7) nicht praktisch geprüft | In M1 mit Test-Release `0.1.0` verifizieren, sonst Fallback aus 18.7 | Umsetzung |
 | O5 | **CodeQL** | Erledigt: das Repo ist öffentlich, `codeql.yml` läuft (go und javascript-typescript) und ist kein Pflicht-Check | erledigt |

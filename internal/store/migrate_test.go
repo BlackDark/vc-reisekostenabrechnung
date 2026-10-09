@@ -12,7 +12,7 @@ func TestMigrateEmptyAndIdempotent(t *testing.T) {
 	ctx := context.Background()
 	s := openTest(t)
 	v, err := s.DBVersion(ctx)
-	if err != nil || v != 1 {
+	if err != nil || v != 2 {
 		t.Fatalf("version %d err %v", v, err)
 	}
 	n, err := s.CreateNutzer(ctx, NewNutzer{
