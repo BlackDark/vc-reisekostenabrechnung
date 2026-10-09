@@ -8,6 +8,41 @@ import (
 	"time"
 )
 
+type Abrechnung struct {
+	ID                    string
+	NutzerID              string
+	ArbeitgeberID         string
+	Abrechnungsnummer     *string
+	ZeitraumArt           string
+	Von                   string
+	Bis                   string
+	Titel                 string
+	Status                string
+	EingereichtAm         *time.Time
+	BezahltAm             *string
+	BezahltVermerk        *string
+	ExportSprache         string
+	AktuelleExportVersion int64
+	EinreichungLaeuft     bool
+	EinreichungFehler     *string
+	QuittierteWarnungen   string
+	ErstelltAm            time.Time
+	GeaendertAm           time.Time
+	Version               int64
+}
+
+type AbrechnungReise struct {
+	AbrechnungID string
+	ReiseID      string
+}
+
+type AbrechnungsnummerFolge struct {
+	NutzerID      string
+	ArbeitgeberID string
+	Jahr          int64
+	Naechste      int64
+}
+
 type Arbeitgeber struct {
 	ID                       string
 	NutzerID                 string
@@ -156,6 +191,23 @@ type Eigenbeleg struct {
 	ErstelltAm         time.Time
 	BestaetigtAm       *time.Time
 	BestaetigtVon      *string
+}
+
+type Export struct {
+	ID                  string
+	AbrechnungID        string
+	NutzerID            string
+	Version             int64
+	Anlass              string
+	ErstelltAm          time.Time
+	PdfSchluessel       *string
+	PdfSha256           *string
+	ZipSchluessel       *string
+	ZipSha256           *string
+	Snapshot            string
+	ErsetztDurchVersion *int64
+	Status              string
+	Fehler              *string
 }
 
 type Fahrt struct {

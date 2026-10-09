@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BlackDark/vc-reisekostenabrechnung/api/schemas/abrechnung-export-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "app_version",
+    "erzeugt_am",
+    "export_sprache",
+    "abrechnung",
+    "nutzer",
+    "arbeitgeber",
+    "satztabellen",
+    "reisen",
+    "belege",
+    "warnungen_quittiert",
+    "protokoll"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "app_version": { "type": "string", "minLength": 1 },
+    "erzeugt_am": { "type": "string", "minLength": 10 },
+    "export_sprache": { "enum": ["de", "en"] },
+    "abrechnung": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nummer", "version", "zeitraum_art", "von", "bis", "titel", "status", "summen", "erstattung_cent", "vorschuesse", "vorschuss_cent", "auszahlung_cent"],
+      "properties": {
+        "nummer": { "type": "string" },
+        "version": { "type": "integer", "minimum": 1 },
+        "zeitraum_art": { "enum": ["tag", "woche", "monat", "quartal", "frei"] },
+        "von": { "type": "string" },
+        "bis": { "type": "string" },
+        "titel": { "type": "string" },
+        "status": { "enum": ["entwurf", "eingereicht", "bezahlt"] },
+        "eingereicht_am": { "type": "string" },
+        "summen": { "type": "object" },
+        "erstattung_cent": { "type": "integer" },
+        "vorschuesse": { "type": "array" },
+        "vorschuss_cent": { "type": "integer" },
+        "auszahlung_cent": { "type": "integer" }
+      }
+    },
+    "nutzer": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "personalnummer": { "type": "string" }
+      }
+    },
+    "arbeitgeber": {
+      "type": "object",
+      "required": ["name", "anschrift"],
+      "properties": {
+        "name": { "type": "string" },
+        "anschrift": { "type": "string" }
+      }
+    },
+    "satztabellen": { "type": "array" },
+    "reisen": { "type": "array" },
+    "belege": { "type": "array" },
+    "warnungen_quittiert": { "type": "array" },
+    "protokoll": { "type": "array" }
+  }
+}

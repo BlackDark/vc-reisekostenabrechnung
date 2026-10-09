@@ -149,6 +149,63 @@ func (e SatztabelleStatus) Valid() bool {
 	}
 }
 
+// Abrechnung defines model for Abrechnung.
+type Abrechnung struct {
+	Abrechnungsnummer     *string    `json:"abrechnungsnummer,omitempty"`
+	AktuelleExportVersion int64      `json:"aktuelle_export_version"`
+	ArbeitgeberId         string     `json:"arbeitgeber_id"`
+	BezahltAm             *string    `json:"bezahlt_am,omitempty"`
+	BezahltVermerk        *string    `json:"bezahlt_vermerk,omitempty"`
+	Bis                   string     `json:"bis"`
+	EingereichtAm         *time.Time `json:"eingereicht_am,omitempty"`
+	EinreichungFehler     *string    `json:"einreichung_fehler,omitempty"`
+	EinreichungLaeuft     bool       `json:"einreichung_laeuft"`
+	ExportSprache         string     `json:"export_sprache"`
+	Id                    string     `json:"id"`
+	ReiseIds              []string   `json:"reise_ids"`
+	Status                string     `json:"status"`
+	Titel                 string     `json:"titel"`
+	Version               int64      `json:"version"`
+	Von                   string     `json:"von"`
+	VorschlaegeReise      []string   `json:"vorschlaege_reise"`
+	VorschlaegeVorschuss  []string   `json:"vorschlaege_vorschuss"`
+	VorschussIds          []string   `json:"vorschuss_ids"`
+	ZeitraumArt           string     `json:"zeitraum_art"`
+}
+
+// AbrechnungKopf defines model for AbrechnungKopf.
+type AbrechnungKopf struct {
+	Sprache string `json:"sprache"`
+	Titel   string `json:"titel"`
+}
+
+// AbrechnungListe defines model for AbrechnungListe.
+type AbrechnungListe struct {
+	Items      []Abrechnung `json:"items"`
+	NextCursor *string      `json:"next_cursor,omitempty"`
+}
+
+// AbrechnungPruefung defines model for AbrechnungPruefung.
+type AbrechnungPruefung struct {
+	AuszahlungCent int64        `json:"auszahlung_cent"`
+	Blocker        []PruefPunkt `json:"blocker"`
+	ErstattungCent int64        `json:"erstattung_cent"`
+	VorschussCent  int64        `json:"vorschuss_cent"`
+	Warnungen      []PruefPunkt `json:"warnungen"`
+}
+
+// AbrechnungWrite defines model for AbrechnungWrite.
+type AbrechnungWrite struct {
+	ArbeitgeberId string    `json:"arbeitgeber_id"`
+	Bis           string    `json:"bis"`
+	ReiseIds      *[]string `json:"reise_ids,omitempty"`
+	Sprache       *string   `json:"sprache,omitempty"`
+	Titel         *string   `json:"titel,omitempty"`
+	Von           string    `json:"von"`
+	VorschussIds  *[]string `json:"vorschuss_ids,omitempty"`
+	ZeitraumArt   string    `json:"zeitraum_art"`
+}
+
 // Arbeitgeber defines model for Arbeitgeber.
 type Arbeitgeber struct {
 	AbrechnungsnummerPraefix string                   `json:"abrechnungsnummer_praefix"`
@@ -388,6 +445,12 @@ type Bewirtung struct {
 	TrinkgeldCent *int64        `json:"trinkgeld_cent,omitempty"`
 }
 
+// Bezahlt defines model for Bezahlt.
+type Bezahlt struct {
+	BezahltAm string  `json:"bezahlt_am"`
+	Vermerk   *string `json:"vermerk,omitempty"`
+}
+
 // Eigenbeleg defines model for Eigenbeleg.
 type Eigenbeleg struct {
 	Art                string  `json:"art"`
@@ -401,6 +464,28 @@ type EigenbelegWrite struct {
 	Art                string `json:"art"`
 	Grund              string `json:"grund"`
 	Zahlungsempfaenger string `json:"zahlungsempfaenger"`
+}
+
+// Einreichen defines model for Einreichen.
+type Einreichen struct {
+	QuittierteWarnungen []Quittung `json:"quittierte_warnungen"`
+}
+
+// Export defines model for Export.
+type Export struct {
+	AbrechnungId        string    `json:"abrechnung_id"`
+	Anlass              string    `json:"anlass"`
+	ErsetztDurchVersion *int64    `json:"ersetzt_durch_version,omitempty"`
+	ErstelltAm          time.Time `json:"erstellt_am"`
+	Fehler              *string   `json:"fehler,omitempty"`
+	Id                  string    `json:"id"`
+	Status              string    `json:"status"`
+	Version             int64     `json:"version"`
+}
+
+// ExportListe defines model for ExportListe.
+type ExportListe struct {
+	Items []Export `json:"items"`
 }
 
 // Fahrt defines model for Fahrt.
@@ -438,6 +523,16 @@ type FahrtWrite struct {
 type FieldError struct {
 	Code    string `json:"code"`
 	Pointer string `json:"pointer"`
+}
+
+// Grund defines model for Grund.
+type Grund struct {
+	Grund string `json:"grund"`
+}
+
+// IdListe defines model for IdListe.
+type IdListe struct {
+	Ids []string `json:"ids"`
 }
 
 // Identitaet defines model for Identitaet.
@@ -644,6 +739,20 @@ type ProtokollEreignis struct {
 // ProtokollListe defines model for ProtokollListe.
 type ProtokollListe struct {
 	Items []ProtokollEreignis `json:"items"`
+}
+
+// PruefPunkt defines model for PruefPunkt.
+type PruefPunkt struct {
+	Anlass   *string `json:"anlass,omitempty"`
+	Code     string  `json:"code"`
+	ObjektId string  `json:"objekt_id"`
+	ReiseId  string  `json:"reise_id"`
+}
+
+// Quittung defines model for Quittung.
+type Quittung struct {
+	Code     string `json:"code"`
+	ObjektId string `json:"objekt_id"`
 }
 
 // Reise defines model for Reise.
@@ -978,6 +1087,47 @@ type Jahr = int
 // Limit defines model for Limit.
 type Limit = int
 
+// GetAbrechnungenParams defines parameters for GetAbrechnungen.
+type GetAbrechnungenParams struct {
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// PatchAbrechnungParams defines parameters for PatchAbrechnung.
+type PatchAbrechnungParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PostAbrechnungBezahltParams defines parameters for PostAbrechnungBezahlt.
+type PostAbrechnungBezahltParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PostAbrechnungBezahltZuruecknehmenParams defines parameters for PostAbrechnungBezahltZuruecknehmen.
+type PostAbrechnungBezahltZuruecknehmenParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PostAbrechnungEinreichenParams defines parameters for PostAbrechnungEinreichen.
+type PostAbrechnungEinreichenParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PostAbrechnungEntsperrenParams defines parameters for PostAbrechnungEntsperren.
+type PostAbrechnungEntsperrenParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PutAbrechnungReisenParams defines parameters for PutAbrechnungReisen.
+type PutAbrechnungReisenParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PutAbrechnungVorschuesseParams defines parameters for PutAbrechnungVorschuesse.
+type PutAbrechnungVorschuesseParams struct {
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
 // GetAdminNutzerParams defines parameters for GetAdminNutzer.
 type GetAdminNutzerParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -1208,6 +1358,30 @@ type GetWechselkursParams struct {
 	Datum    string `form:"datum" json:"datum"`
 }
 
+// PostAbrechnungJSONRequestBody defines body for PostAbrechnung for application/json ContentType.
+type PostAbrechnungJSONRequestBody = AbrechnungWrite
+
+// PatchAbrechnungJSONRequestBody defines body for PatchAbrechnung for application/json ContentType.
+type PatchAbrechnungJSONRequestBody = AbrechnungKopf
+
+// PostAbrechnungBezahltJSONRequestBody defines body for PostAbrechnungBezahlt for application/json ContentType.
+type PostAbrechnungBezahltJSONRequestBody = Bezahlt
+
+// PostAbrechnungBezahltZuruecknehmenJSONRequestBody defines body for PostAbrechnungBezahltZuruecknehmen for application/json ContentType.
+type PostAbrechnungBezahltZuruecknehmenJSONRequestBody = Grund
+
+// PostAbrechnungEinreichenJSONRequestBody defines body for PostAbrechnungEinreichen for application/json ContentType.
+type PostAbrechnungEinreichenJSONRequestBody = Einreichen
+
+// PostAbrechnungEntsperrenJSONRequestBody defines body for PostAbrechnungEntsperren for application/json ContentType.
+type PostAbrechnungEntsperrenJSONRequestBody = Grund
+
+// PutAbrechnungReisenJSONRequestBody defines body for PutAbrechnungReisen for application/json ContentType.
+type PutAbrechnungReisenJSONRequestBody = IdListe
+
+// PutAbrechnungVorschuesseJSONRequestBody defines body for PutAbrechnungVorschuesse for application/json ContentType.
+type PutAbrechnungVorschuesseJSONRequestBody = IdListe
+
 // PostAdminNutzerJSONRequestBody defines body for PostAdminNutzer for application/json ContentType.
 type PostAdminNutzerJSONRequestBody = NutzerCreate
 
@@ -1309,6 +1483,51 @@ type PatchVorschussJSONRequestBody = VorschussWrite
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /api/v1/abrechnungen)
+	GetAbrechnungen(w http.ResponseWriter, r *http.Request, params GetAbrechnungenParams)
+
+	// (POST /api/v1/abrechnungen)
+	PostAbrechnung(w http.ResponseWriter, r *http.Request)
+
+	// (DELETE /api/v1/abrechnungen/{id})
+	DeleteAbrechnung(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (GET /api/v1/abrechnungen/{id})
+	GetAbrechnung(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (PATCH /api/v1/abrechnungen/{id})
+	PatchAbrechnung(w http.ResponseWriter, r *http.Request, id Id, params PatchAbrechnungParams)
+
+	// (POST /api/v1/abrechnungen/{id}/bezahlt)
+	PostAbrechnungBezahlt(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungBezahltParams)
+
+	// (POST /api/v1/abrechnungen/{id}/bezahlt-zuruecknehmen)
+	PostAbrechnungBezahltZuruecknehmen(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungBezahltZuruecknehmenParams)
+
+	// (POST /api/v1/abrechnungen/{id}/einreichen)
+	PostAbrechnungEinreichen(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungEinreichenParams)
+
+	// (POST /api/v1/abrechnungen/{id}/entsperren)
+	PostAbrechnungEntsperren(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungEntsperrenParams)
+
+	// (GET /api/v1/abrechnungen/{id}/exporte)
+	GetAbrechnungExporte(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (GET /api/v1/abrechnungen/{id}/protokoll)
+	GetAbrechnungProtokoll(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (GET /api/v1/abrechnungen/{id}/pruefung)
+	GetAbrechnungPruefung(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (PUT /api/v1/abrechnungen/{id}/reisen)
+	PutAbrechnungReisen(w http.ResponseWriter, r *http.Request, id Id, params PutAbrechnungReisenParams)
+
+	// (GET /api/v1/abrechnungen/{id}/vorschau.pdf)
+	GetAbrechnungVorschau(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (PUT /api/v1/abrechnungen/{id}/vorschuesse)
+	PutAbrechnungVorschuesse(w http.ResponseWriter, r *http.Request, id Id, params PutAbrechnungVorschuesseParams)
 	// GetAdminNutzer List Nutzer
 	// (GET /api/v1/admin/nutzer)
 	GetAdminNutzer(w http.ResponseWriter, r *http.Request, params GetAdminNutzerParams)
@@ -1435,6 +1654,15 @@ type ServerInterface interface {
 
 	// (GET /api/v1/belege/{id}/vorschau)
 	GetBelegVorschau(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (GET /api/v1/exporte/{id})
+	GetExport(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (GET /api/v1/exporte/{id}/pdf)
+	GetExportPdf(w http.ResponseWriter, r *http.Request, id Id)
+
+	// (GET /api/v1/exporte/{id}/zip)
+	GetExportZip(w http.ResponseWriter, r *http.Request, id Id)
 
 	// (DELETE /api/v1/fahrten/{id})
 	DeleteFahrt(w http.ResponseWriter, r *http.Request, id Id)
@@ -1577,6 +1805,572 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetAbrechnungen operation middleware
+func (siw *ServerInterfaceWrapper) GetAbrechnungen(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAbrechnungenParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAbrechnungen(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAbrechnung operation middleware
+func (siw *ServerInterfaceWrapper) PostAbrechnung(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAbrechnung(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteAbrechnung operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAbrechnung(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteAbrechnung(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAbrechnung operation middleware
+func (siw *ServerInterfaceWrapper) GetAbrechnung(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAbrechnung(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchAbrechnung operation middleware
+func (siw *ServerInterfaceWrapper) PatchAbrechnung(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchAbrechnungParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchAbrechnung(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAbrechnungBezahlt operation middleware
+func (siw *ServerInterfaceWrapper) PostAbrechnungBezahlt(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostAbrechnungBezahltParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAbrechnungBezahlt(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAbrechnungBezahltZuruecknehmen operation middleware
+func (siw *ServerInterfaceWrapper) PostAbrechnungBezahltZuruecknehmen(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostAbrechnungBezahltZuruecknehmenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAbrechnungBezahltZuruecknehmen(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAbrechnungEinreichen operation middleware
+func (siw *ServerInterfaceWrapper) PostAbrechnungEinreichen(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostAbrechnungEinreichenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAbrechnungEinreichen(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostAbrechnungEntsperren operation middleware
+func (siw *ServerInterfaceWrapper) PostAbrechnungEntsperren(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostAbrechnungEntsperrenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostAbrechnungEntsperren(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAbrechnungExporte operation middleware
+func (siw *ServerInterfaceWrapper) GetAbrechnungExporte(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAbrechnungExporte(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAbrechnungProtokoll operation middleware
+func (siw *ServerInterfaceWrapper) GetAbrechnungProtokoll(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAbrechnungProtokoll(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAbrechnungPruefung operation middleware
+func (siw *ServerInterfaceWrapper) GetAbrechnungPruefung(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAbrechnungPruefung(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutAbrechnungReisen operation middleware
+func (siw *ServerInterfaceWrapper) PutAbrechnungReisen(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutAbrechnungReisenParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutAbrechnungReisen(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAbrechnungVorschau operation middleware
+func (siw *ServerInterfaceWrapper) GetAbrechnungVorschau(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAbrechnungVorschau(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutAbrechnungVorschuesse operation middleware
+func (siw *ServerInterfaceWrapper) PutAbrechnungVorschuesse(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutAbrechnungVorschuesseParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutAbrechnungVorschuesse(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetAdminNutzer operation middleware
 func (siw *ServerInterfaceWrapper) GetAdminNutzer(w http.ResponseWriter, r *http.Request) {
@@ -3040,6 +3834,84 @@ func (siw *ServerInterfaceWrapper) GetBelegVorschau(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetBelegVorschau(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExport operation middleware
+func (siw *ServerInterfaceWrapper) GetExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExportPdf operation middleware
+func (siw *ServerInterfaceWrapper) GetExportPdf(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExportPdf(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExportZip operation middleware
+func (siw *ServerInterfaceWrapper) GetExportZip(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExportZip(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4761,11 +5633,1047 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/vorschuesse/{id}", wrapper.DeleteVorschuss)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/vorschuesse/{id}", wrapper.PatchVorschuss)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/mwst-helfer", wrapper.PostMwstHelfer)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/abrechnungen", wrapper.GetAbrechnungen)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/abrechnungen", wrapper.PostAbrechnung)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/abrechnungen/{id}", wrapper.DeleteAbrechnung)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/abrechnungen/{id}", wrapper.GetAbrechnung)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/abrechnungen/{id}", wrapper.PatchAbrechnung)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/reisen", wrapper.PutAbrechnungReisen)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/vorschuesse", wrapper.PutAbrechnungVorschuesse)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/pruefung", wrapper.GetAbrechnungPruefung)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/vorschau.pdf", wrapper.GetAbrechnungVorschau)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/einreichen", wrapper.PostAbrechnungEinreichen)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/entsperren", wrapper.PostAbrechnungEntsperren)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/bezahlt", wrapper.PostAbrechnungBezahlt)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/bezahlt-zuruecknehmen", wrapper.PostAbrechnungBezahltZuruecknehmen)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/exporte", wrapper.GetAbrechnungExporte)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/abrechnungen/{id}/protokoll", wrapper.GetAbrechnungProtokoll)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/exporte/{id}", wrapper.GetExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/exporte/{id}/pdf", wrapper.GetExportPdf)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/exporte/{id}/zip", wrapper.GetExportZip)
 
 	return m
 }
 
 type ProblemApplicationProblemPlusJSONResponse Problem
+
+type GetAbrechnungenRequestObject struct {
+	Params GetAbrechnungenParams
+}
+
+type GetAbrechnungenResponseObject interface {
+	VisitGetAbrechnungenResponse(w http.ResponseWriter) error
+}
+
+type GetAbrechnungen200JSONResponse AbrechnungListe
+
+func (response GetAbrechnungen200JSONResponse) VisitGetAbrechnungenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungen401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAbrechnungen401ApplicationProblemPlusJSONResponse) VisitGetAbrechnungenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungRequestObject struct {
+	Body *PostAbrechnungJSONRequestBody
+}
+
+type PostAbrechnungResponseObject interface {
+	VisitPostAbrechnungResponse(w http.ResponseWriter) error
+}
+
+type PostAbrechnung201JSONResponse Abrechnung
+
+func (response PostAbrechnung201JSONResponse) VisitPostAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnung401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostAbrechnung401ApplicationProblemPlusJSONResponse) VisitPostAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnung422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnung422ApplicationProblemPlusJSONResponse) VisitPostAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAbrechnungRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type DeleteAbrechnungResponseObject interface {
+	VisitDeleteAbrechnungResponse(w http.ResponseWriter) error
+}
+
+type DeleteAbrechnung204Response struct {
+}
+
+func (response DeleteAbrechnung204Response) VisitDeleteAbrechnungResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAbrechnung401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteAbrechnung401ApplicationProblemPlusJSONResponse) VisitDeleteAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAbrechnung409ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteAbrechnung409ApplicationProblemPlusJSONResponse) VisitDeleteAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetAbrechnungResponseObject interface {
+	VisitGetAbrechnungResponse(w http.ResponseWriter) error
+}
+
+type GetAbrechnung200JSONResponse Abrechnung
+
+func (response GetAbrechnung200JSONResponse) VisitGetAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnung401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAbrechnung401ApplicationProblemPlusJSONResponse) VisitGetAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnung404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAbrechnung404ApplicationProblemPlusJSONResponse) VisitGetAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAbrechnungRequestObject struct {
+	Id     Id `json:"id"`
+	Params PatchAbrechnungParams
+	Body   *PatchAbrechnungJSONRequestBody
+}
+
+type PatchAbrechnungResponseObject interface {
+	VisitPatchAbrechnungResponse(w http.ResponseWriter) error
+}
+
+type PatchAbrechnung200JSONResponse Abrechnung
+
+func (response PatchAbrechnung200JSONResponse) VisitPatchAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAbrechnung401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PatchAbrechnung401ApplicationProblemPlusJSONResponse) VisitPatchAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAbrechnung412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAbrechnung412ApplicationProblemPlusJSONResponse) VisitPatchAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAbrechnung422ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAbrechnung422ApplicationProblemPlusJSONResponse) VisitPatchAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchAbrechnung428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchAbrechnung428ApplicationProblemPlusJSONResponse) VisitPatchAbrechnungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahltRequestObject struct {
+	Id     Id `json:"id"`
+	Params PostAbrechnungBezahltParams
+	Body   *PostAbrechnungBezahltJSONRequestBody
+}
+
+type PostAbrechnungBezahltResponseObject interface {
+	VisitPostAbrechnungBezahltResponse(w http.ResponseWriter) error
+}
+
+type PostAbrechnungBezahlt200JSONResponse Abrechnung
+
+func (response PostAbrechnungBezahlt200JSONResponse) VisitPostAbrechnungBezahltResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahlt401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostAbrechnungBezahlt401ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahlt409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungBezahlt409ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahlt422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungBezahlt422ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahlt428ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungBezahlt428ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahltZuruecknehmenRequestObject struct {
+	Id     Id `json:"id"`
+	Params PostAbrechnungBezahltZuruecknehmenParams
+	Body   *PostAbrechnungBezahltZuruecknehmenJSONRequestBody
+}
+
+type PostAbrechnungBezahltZuruecknehmenResponseObject interface {
+	VisitPostAbrechnungBezahltZuruecknehmenResponse(w http.ResponseWriter) error
+}
+
+type PostAbrechnungBezahltZuruecknehmen200JSONResponse Abrechnung
+
+func (response PostAbrechnungBezahltZuruecknehmen200JSONResponse) VisitPostAbrechnungBezahltZuruecknehmenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahltZuruecknehmen401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostAbrechnungBezahltZuruecknehmen401ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltZuruecknehmenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahltZuruecknehmen409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungBezahltZuruecknehmen409ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltZuruecknehmenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahltZuruecknehmen422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungBezahltZuruecknehmen422ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltZuruecknehmenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungBezahltZuruecknehmen428ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungBezahltZuruecknehmen428ApplicationProblemPlusJSONResponse) VisitPostAbrechnungBezahltZuruecknehmenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEinreichenRequestObject struct {
+	Id     Id `json:"id"`
+	Params PostAbrechnungEinreichenParams
+	Body   *PostAbrechnungEinreichenJSONRequestBody
+}
+
+type PostAbrechnungEinreichenResponseObject interface {
+	VisitPostAbrechnungEinreichenResponse(w http.ResponseWriter) error
+}
+
+type PostAbrechnungEinreichen202JSONResponse Abrechnung
+
+func (response PostAbrechnungEinreichen202JSONResponse) VisitPostAbrechnungEinreichenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEinreichen401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostAbrechnungEinreichen401ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEinreichenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEinreichen409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungEinreichen409ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEinreichenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEinreichen412ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungEinreichen412ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEinreichenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEinreichen422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungEinreichen422ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEinreichenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEinreichen428ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungEinreichen428ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEinreichenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEntsperrenRequestObject struct {
+	Id     Id `json:"id"`
+	Params PostAbrechnungEntsperrenParams
+	Body   *PostAbrechnungEntsperrenJSONRequestBody
+}
+
+type PostAbrechnungEntsperrenResponseObject interface {
+	VisitPostAbrechnungEntsperrenResponse(w http.ResponseWriter) error
+}
+
+type PostAbrechnungEntsperren200JSONResponse Abrechnung
+
+func (response PostAbrechnungEntsperren200JSONResponse) VisitPostAbrechnungEntsperrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEntsperren401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostAbrechnungEntsperren401ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEntsperrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEntsperren409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungEntsperren409ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEntsperrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEntsperren422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungEntsperren422ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEntsperrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostAbrechnungEntsperren428ApplicationProblemPlusJSONResponse Problem
+
+func (response PostAbrechnungEntsperren428ApplicationProblemPlusJSONResponse) VisitPostAbrechnungEntsperrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungExporteRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetAbrechnungExporteResponseObject interface {
+	VisitGetAbrechnungExporteResponse(w http.ResponseWriter) error
+}
+
+type GetAbrechnungExporte200JSONResponse ExportListe
+
+func (response GetAbrechnungExporte200JSONResponse) VisitGetAbrechnungExporteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungExporte401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAbrechnungExporte401ApplicationProblemPlusJSONResponse) VisitGetAbrechnungExporteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungExporte404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAbrechnungExporte404ApplicationProblemPlusJSONResponse) VisitGetAbrechnungExporteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungProtokollRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetAbrechnungProtokollResponseObject interface {
+	VisitGetAbrechnungProtokollResponse(w http.ResponseWriter) error
+}
+
+type GetAbrechnungProtokoll200JSONResponse ProtokollListe
+
+func (response GetAbrechnungProtokoll200JSONResponse) VisitGetAbrechnungProtokollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungProtokoll401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAbrechnungProtokoll401ApplicationProblemPlusJSONResponse) VisitGetAbrechnungProtokollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungProtokoll404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAbrechnungProtokoll404ApplicationProblemPlusJSONResponse) VisitGetAbrechnungProtokollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungPruefungRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetAbrechnungPruefungResponseObject interface {
+	VisitGetAbrechnungPruefungResponse(w http.ResponseWriter) error
+}
+
+type GetAbrechnungPruefung200JSONResponse AbrechnungPruefung
+
+func (response GetAbrechnungPruefung200JSONResponse) VisitGetAbrechnungPruefungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungPruefung401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAbrechnungPruefung401ApplicationProblemPlusJSONResponse) VisitGetAbrechnungPruefungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungPruefung404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAbrechnungPruefung404ApplicationProblemPlusJSONResponse) VisitGetAbrechnungPruefungResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungReisenRequestObject struct {
+	Id     Id `json:"id"`
+	Params PutAbrechnungReisenParams
+	Body   *PutAbrechnungReisenJSONRequestBody
+}
+
+type PutAbrechnungReisenResponseObject interface {
+	VisitPutAbrechnungReisenResponse(w http.ResponseWriter) error
+}
+
+type PutAbrechnungReisen200JSONResponse Abrechnung
+
+func (response PutAbrechnungReisen200JSONResponse) VisitPutAbrechnungReisenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungReisen401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PutAbrechnungReisen401ApplicationProblemPlusJSONResponse) VisitPutAbrechnungReisenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungReisen409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungReisen409ApplicationProblemPlusJSONResponse) VisitPutAbrechnungReisenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungReisen412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungReisen412ApplicationProblemPlusJSONResponse) VisitPutAbrechnungReisenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungReisen422ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungReisen422ApplicationProblemPlusJSONResponse) VisitPutAbrechnungReisenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungReisen428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungReisen428ApplicationProblemPlusJSONResponse) VisitPutAbrechnungReisenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungVorschauRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetAbrechnungVorschauResponseObject interface {
+	VisitGetAbrechnungVorschauResponse(w http.ResponseWriter) error
+}
+
+type GetAbrechnungVorschau200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetAbrechnungVorschau200ApplicationpdfResponse) VisitGetAbrechnungVorschauResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetAbrechnungVorschau401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAbrechnungVorschau401ApplicationProblemPlusJSONResponse) VisitGetAbrechnungVorschauResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAbrechnungVorschau503ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAbrechnungVorschau503ApplicationProblemPlusJSONResponse) VisitGetAbrechnungVorschauResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungVorschuesseRequestObject struct {
+	Id     Id `json:"id"`
+	Params PutAbrechnungVorschuesseParams
+	Body   *PutAbrechnungVorschuesseJSONRequestBody
+}
+
+type PutAbrechnungVorschuesseResponseObject interface {
+	VisitPutAbrechnungVorschuesseResponse(w http.ResponseWriter) error
+}
+
+type PutAbrechnungVorschuesse200JSONResponse Abrechnung
+
+func (response PutAbrechnungVorschuesse200JSONResponse) VisitPutAbrechnungVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungVorschuesse401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PutAbrechnungVorschuesse401ApplicationProblemPlusJSONResponse) VisitPutAbrechnungVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungVorschuesse409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungVorschuesse409ApplicationProblemPlusJSONResponse) VisitPutAbrechnungVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungVorschuesse412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungVorschuesse412ApplicationProblemPlusJSONResponse) VisitPutAbrechnungVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungVorschuesse422ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungVorschuesse422ApplicationProblemPlusJSONResponse) VisitPutAbrechnungVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAbrechnungVorschuesse428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutAbrechnungVorschuesse428ApplicationProblemPlusJSONResponse) VisitPutAbrechnungVorschuesseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type GetAdminNutzerRequestObject struct {
 	Params GetAdminNutzerParams
@@ -7572,6 +9480,202 @@ func (response GetBelegVorschau404ApplicationProblemPlusJSONResponse) VisitGetBe
 	return err
 }
 
+type GetExportRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetExportResponseObject interface {
+	VisitGetExportResponse(w http.ResponseWriter) error
+}
+
+type GetExport200JSONResponse Export
+
+func (response GetExport200JSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExport401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetExport401ApplicationProblemPlusJSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExport404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetExport404ApplicationProblemPlusJSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExportPdfRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetExportPdfResponseObject interface {
+	VisitGetExportPdfResponse(w http.ResponseWriter) error
+}
+
+type GetExportPdf200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetExportPdf200ApplicationpdfResponse) VisitGetExportPdfResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetExportPdf401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetExportPdf401ApplicationProblemPlusJSONResponse) VisitGetExportPdfResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExportPdf404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetExportPdf404ApplicationProblemPlusJSONResponse) VisitGetExportPdfResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExportPdf409ApplicationProblemPlusJSONResponse Problem
+
+func (response GetExportPdf409ApplicationProblemPlusJSONResponse) VisitGetExportPdfResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExportZipRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetExportZipResponseObject interface {
+	VisitGetExportZipResponse(w http.ResponseWriter) error
+}
+
+type GetExportZip200ApplicationzipResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetExportZip200ApplicationzipResponse) VisitGetExportZipResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/zip")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetExportZip401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetExportZip401ApplicationProblemPlusJSONResponse) VisitGetExportZipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExportZip404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetExportZip404ApplicationProblemPlusJSONResponse) VisitGetExportZipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExportZip409ApplicationProblemPlusJSONResponse Problem
+
+func (response GetExportZip409ApplicationProblemPlusJSONResponse) VisitGetExportZipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeleteFahrtRequestObject struct {
 	Id Id `json:"id"`
 }
@@ -10251,6 +12355,51 @@ func (response GetWechselkurs404ApplicationProblemPlusJSONResponse) VisitGetWech
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+
+	// (GET /api/v1/abrechnungen)
+	GetAbrechnungen(ctx context.Context, request GetAbrechnungenRequestObject) (GetAbrechnungenResponseObject, error)
+
+	// (POST /api/v1/abrechnungen)
+	PostAbrechnung(ctx context.Context, request PostAbrechnungRequestObject) (PostAbrechnungResponseObject, error)
+
+	// (DELETE /api/v1/abrechnungen/{id})
+	DeleteAbrechnung(ctx context.Context, request DeleteAbrechnungRequestObject) (DeleteAbrechnungResponseObject, error)
+
+	// (GET /api/v1/abrechnungen/{id})
+	GetAbrechnung(ctx context.Context, request GetAbrechnungRequestObject) (GetAbrechnungResponseObject, error)
+
+	// (PATCH /api/v1/abrechnungen/{id})
+	PatchAbrechnung(ctx context.Context, request PatchAbrechnungRequestObject) (PatchAbrechnungResponseObject, error)
+
+	// (POST /api/v1/abrechnungen/{id}/bezahlt)
+	PostAbrechnungBezahlt(ctx context.Context, request PostAbrechnungBezahltRequestObject) (PostAbrechnungBezahltResponseObject, error)
+
+	// (POST /api/v1/abrechnungen/{id}/bezahlt-zuruecknehmen)
+	PostAbrechnungBezahltZuruecknehmen(ctx context.Context, request PostAbrechnungBezahltZuruecknehmenRequestObject) (PostAbrechnungBezahltZuruecknehmenResponseObject, error)
+
+	// (POST /api/v1/abrechnungen/{id}/einreichen)
+	PostAbrechnungEinreichen(ctx context.Context, request PostAbrechnungEinreichenRequestObject) (PostAbrechnungEinreichenResponseObject, error)
+
+	// (POST /api/v1/abrechnungen/{id}/entsperren)
+	PostAbrechnungEntsperren(ctx context.Context, request PostAbrechnungEntsperrenRequestObject) (PostAbrechnungEntsperrenResponseObject, error)
+
+	// (GET /api/v1/abrechnungen/{id}/exporte)
+	GetAbrechnungExporte(ctx context.Context, request GetAbrechnungExporteRequestObject) (GetAbrechnungExporteResponseObject, error)
+
+	// (GET /api/v1/abrechnungen/{id}/protokoll)
+	GetAbrechnungProtokoll(ctx context.Context, request GetAbrechnungProtokollRequestObject) (GetAbrechnungProtokollResponseObject, error)
+
+	// (GET /api/v1/abrechnungen/{id}/pruefung)
+	GetAbrechnungPruefung(ctx context.Context, request GetAbrechnungPruefungRequestObject) (GetAbrechnungPruefungResponseObject, error)
+
+	// (PUT /api/v1/abrechnungen/{id}/reisen)
+	PutAbrechnungReisen(ctx context.Context, request PutAbrechnungReisenRequestObject) (PutAbrechnungReisenResponseObject, error)
+
+	// (GET /api/v1/abrechnungen/{id}/vorschau.pdf)
+	GetAbrechnungVorschau(ctx context.Context, request GetAbrechnungVorschauRequestObject) (GetAbrechnungVorschauResponseObject, error)
+
+	// (PUT /api/v1/abrechnungen/{id}/vorschuesse)
+	PutAbrechnungVorschuesse(ctx context.Context, request PutAbrechnungVorschuesseRequestObject) (PutAbrechnungVorschuesseResponseObject, error)
 	// GetAdminNutzer List Nutzer
 	// (GET /api/v1/admin/nutzer)
 	GetAdminNutzer(ctx context.Context, request GetAdminNutzerRequestObject) (GetAdminNutzerResponseObject, error)
@@ -10377,6 +12526,15 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/belege/{id}/vorschau)
 	GetBelegVorschau(ctx context.Context, request GetBelegVorschauRequestObject) (GetBelegVorschauResponseObject, error)
+
+	// (GET /api/v1/exporte/{id})
+	GetExport(ctx context.Context, request GetExportRequestObject) (GetExportResponseObject, error)
+
+	// (GET /api/v1/exporte/{id}/pdf)
+	GetExportPdf(ctx context.Context, request GetExportPdfRequestObject) (GetExportPdfResponseObject, error)
+
+	// (GET /api/v1/exporte/{id}/zip)
+	GetExportZip(ctx context.Context, request GetExportZipRequestObject) (GetExportZipResponseObject, error)
 
 	// (DELETE /api/v1/fahrten/{id})
 	DeleteFahrt(ctx context.Context, request DeleteFahrtRequestObject) (DeleteFahrtResponseObject, error)
@@ -10548,6 +12706,457 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GetAbrechnungen operation middleware
+func (sh *strictHandler) GetAbrechnungen(w http.ResponseWriter, r *http.Request, params GetAbrechnungenParams) {
+	var request GetAbrechnungenRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAbrechnungen(ctx, request.(GetAbrechnungenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAbrechnungen")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAbrechnungenResponseObject); ok {
+		if err := validResponse.VisitGetAbrechnungenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAbrechnung operation middleware
+func (sh *strictHandler) PostAbrechnung(w http.ResponseWriter, r *http.Request) {
+	var request PostAbrechnungRequestObject
+
+	var body PostAbrechnungJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAbrechnung(ctx, request.(PostAbrechnungRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAbrechnung")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAbrechnungResponseObject); ok {
+		if err := validResponse.VisitPostAbrechnungResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteAbrechnung operation middleware
+func (sh *strictHandler) DeleteAbrechnung(w http.ResponseWriter, r *http.Request, id Id) {
+	var request DeleteAbrechnungRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAbrechnung(ctx, request.(DeleteAbrechnungRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAbrechnung")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteAbrechnungResponseObject); ok {
+		if err := validResponse.VisitDeleteAbrechnungResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAbrechnung operation middleware
+func (sh *strictHandler) GetAbrechnung(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetAbrechnungRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAbrechnung(ctx, request.(GetAbrechnungRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAbrechnung")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAbrechnungResponseObject); ok {
+		if err := validResponse.VisitGetAbrechnungResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchAbrechnung operation middleware
+func (sh *strictHandler) PatchAbrechnung(w http.ResponseWriter, r *http.Request, id Id, params PatchAbrechnungParams) {
+	var request PatchAbrechnungRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PatchAbrechnungJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchAbrechnung(ctx, request.(PatchAbrechnungRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchAbrechnung")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchAbrechnungResponseObject); ok {
+		if err := validResponse.VisitPatchAbrechnungResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAbrechnungBezahlt operation middleware
+func (sh *strictHandler) PostAbrechnungBezahlt(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungBezahltParams) {
+	var request PostAbrechnungBezahltRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PostAbrechnungBezahltJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAbrechnungBezahlt(ctx, request.(PostAbrechnungBezahltRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAbrechnungBezahlt")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAbrechnungBezahltResponseObject); ok {
+		if err := validResponse.VisitPostAbrechnungBezahltResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAbrechnungBezahltZuruecknehmen operation middleware
+func (sh *strictHandler) PostAbrechnungBezahltZuruecknehmen(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungBezahltZuruecknehmenParams) {
+	var request PostAbrechnungBezahltZuruecknehmenRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PostAbrechnungBezahltZuruecknehmenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAbrechnungBezahltZuruecknehmen(ctx, request.(PostAbrechnungBezahltZuruecknehmenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAbrechnungBezahltZuruecknehmen")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAbrechnungBezahltZuruecknehmenResponseObject); ok {
+		if err := validResponse.VisitPostAbrechnungBezahltZuruecknehmenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAbrechnungEinreichen operation middleware
+func (sh *strictHandler) PostAbrechnungEinreichen(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungEinreichenParams) {
+	var request PostAbrechnungEinreichenRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PostAbrechnungEinreichenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAbrechnungEinreichen(ctx, request.(PostAbrechnungEinreichenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAbrechnungEinreichen")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAbrechnungEinreichenResponseObject); ok {
+		if err := validResponse.VisitPostAbrechnungEinreichenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostAbrechnungEntsperren operation middleware
+func (sh *strictHandler) PostAbrechnungEntsperren(w http.ResponseWriter, r *http.Request, id Id, params PostAbrechnungEntsperrenParams) {
+	var request PostAbrechnungEntsperrenRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PostAbrechnungEntsperrenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostAbrechnungEntsperren(ctx, request.(PostAbrechnungEntsperrenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostAbrechnungEntsperren")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostAbrechnungEntsperrenResponseObject); ok {
+		if err := validResponse.VisitPostAbrechnungEntsperrenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAbrechnungExporte operation middleware
+func (sh *strictHandler) GetAbrechnungExporte(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetAbrechnungExporteRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAbrechnungExporte(ctx, request.(GetAbrechnungExporteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAbrechnungExporte")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAbrechnungExporteResponseObject); ok {
+		if err := validResponse.VisitGetAbrechnungExporteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAbrechnungProtokoll operation middleware
+func (sh *strictHandler) GetAbrechnungProtokoll(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetAbrechnungProtokollRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAbrechnungProtokoll(ctx, request.(GetAbrechnungProtokollRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAbrechnungProtokoll")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAbrechnungProtokollResponseObject); ok {
+		if err := validResponse.VisitGetAbrechnungProtokollResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAbrechnungPruefung operation middleware
+func (sh *strictHandler) GetAbrechnungPruefung(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetAbrechnungPruefungRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAbrechnungPruefung(ctx, request.(GetAbrechnungPruefungRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAbrechnungPruefung")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAbrechnungPruefungResponseObject); ok {
+		if err := validResponse.VisitGetAbrechnungPruefungResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutAbrechnungReisen operation middleware
+func (sh *strictHandler) PutAbrechnungReisen(w http.ResponseWriter, r *http.Request, id Id, params PutAbrechnungReisenParams) {
+	var request PutAbrechnungReisenRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PutAbrechnungReisenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutAbrechnungReisen(ctx, request.(PutAbrechnungReisenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutAbrechnungReisen")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutAbrechnungReisenResponseObject); ok {
+		if err := validResponse.VisitPutAbrechnungReisenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAbrechnungVorschau operation middleware
+func (sh *strictHandler) GetAbrechnungVorschau(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetAbrechnungVorschauRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAbrechnungVorschau(ctx, request.(GetAbrechnungVorschauRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAbrechnungVorschau")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAbrechnungVorschauResponseObject); ok {
+		if err := validResponse.VisitGetAbrechnungVorschauResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutAbrechnungVorschuesse operation middleware
+func (sh *strictHandler) PutAbrechnungVorschuesse(w http.ResponseWriter, r *http.Request, id Id, params PutAbrechnungVorschuesseParams) {
+	var request PutAbrechnungVorschuesseRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body PutAbrechnungVorschuesseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutAbrechnungVorschuesse(ctx, request.(PutAbrechnungVorschuesseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutAbrechnungVorschuesse")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutAbrechnungVorschuesseResponseObject); ok {
+		if err := validResponse.VisitPutAbrechnungVorschuesseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetAdminNutzer operation middleware
@@ -11743,6 +14352,84 @@ func (sh *strictHandler) GetBelegVorschau(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetBelegVorschauResponseObject); ok {
 		if err := validResponse.VisitGetBelegVorschauResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExport operation middleware
+func (sh *strictHandler) GetExport(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetExportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExport(ctx, request.(GetExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExportResponseObject); ok {
+		if err := validResponse.VisitGetExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExportPdf operation middleware
+func (sh *strictHandler) GetExportPdf(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetExportPdfRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExportPdf(ctx, request.(GetExportPdfRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExportPdf")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExportPdfResponseObject); ok {
+		if err := validResponse.VisitGetExportPdfResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExportZip operation middleware
+func (sh *strictHandler) GetExportZip(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetExportZipRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExportZip(ctx, request.(GetExportZipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExportZip")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExportZipResponseObject); ok {
+		if err := validResponse.VisitGetExportZipResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

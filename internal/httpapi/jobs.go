@@ -63,6 +63,12 @@ func (a *App) ProcessNext(ctx context.Context) (bool, error) {
 	}
 	if err := a.runJob(ctx, job); err != nil {
 		a.log.Error("job failed", "id", job.ID, "art", job.Art, "err", err)
+		if job.Art == "export" {
+			if ferr := a.store.FailExportJob(ctx, job, err); ferr != nil {
+				return true, ferr
+			}
+			return true, nil
+		}
 		if ferr := a.store.FailBelegJob(ctx, job, err); ferr != nil {
 			return true, ferr
 		}
@@ -71,6 +77,12 @@ func (a *App) ProcessNext(ctx context.Context) (bool, error) {
 }
 
 func (a *App) runJob(ctx context.Context, job sqlitedb.Job) error {
+	if job.Art == "export" {
+		if job.Payload == nil || *job.Payload == "" {
+			return errors.New("job without export")
+		}
+		return a.jobExport(ctx, job.ID, *job.Payload)
+	}
 	if job.Payload == nil || *job.Payload == "" {
 		return errors.New("job without beleg")
 	}

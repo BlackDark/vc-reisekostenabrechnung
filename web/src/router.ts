@@ -26,5 +26,7 @@ export const { p, navigate, route } = createRouter({
 	"/belege": () => import("./routes/Belege.svelte"),
 	"/belege/neu": () => import("./routes/BelegNeu.svelte"),
 	"/belege/:id": () => import("./routes/BelegDetail.svelte"),
-	"/abrechnungen": () => import("./routes/Placeholder.svelte"),
+	"/abrechnungen/neu": () => import("./routes/AbrechnungNeu.svelte"),
+	"/abrechnungen/:id": () => import("./routes/AbrechnungDetail.svelte"),
+	"/abrechnungen": () => import("./routes/Abrechnungen.svelte"),
 });

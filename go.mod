@@ -5,10 +5,15 @@ go 1.27.2
 require (
 	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/coreos/go-oidc/v3 v3.21.0
+	github.com/gen2brain/avif v0.6.0
+	github.com/gen2brain/webp v0.6.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/minio/minio-go/v7 v7.3.0
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/pressly/goose/v3 v3.28.0
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	golang.org/x/crypto v0.57.0
+	golang.org/x/image v0.46.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/time v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -38,8 +43,6 @@ require (
 	github.com/elastic/go-sysinfo v1.15.5 // indirect
 	github.com/elastic/go-windows v1.0.2 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
-	github.com/gen2brain/avif v0.6.0 // indirect
-	github.com/gen2brain/webp v0.6.4 // indirect
 	github.com/getkin/kin-openapi v0.142.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.8.0 // indirect
@@ -70,7 +73,6 @@ require (
 	github.com/microsoft/go-mssqldb v1.11.0 // indirect
 	github.com/minio/crc64nvme v1.1.1 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/minio/minio-go/v7 v7.3.0 // indirect
 	github.com/ncruces/go-sqlite3 v0.32.0 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/ncruces/julianday v1.0.0 // indirect
@@ -90,7 +92,6 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/riza-io/grpc-go v0.2.0 // indirect
 	github.com/rs/xid v1.6.0 // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/sethvargo/go-retry v0.4.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
@@ -118,7 +119,6 @@ require (
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
-	golang.org/x/image v0.46.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
