@@ -14,18 +14,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: rp
       - name: Run CI on the release pull request
         if: steps.rp.outputs.pr != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           RP_PR: ${{ steps.rp.outputs.pr }}
         run: |
-          branch=$(printf '%s' "$RP_PR" | jq -r .headBranchName)
-          gh workflow run ci.yml --ref "$branch"
+          branch=$(printf '%s' "$RP_PR" | jq -r '.headBranchName // empty')
+          number=$(printf '%s' "$RP_PR" | jq -r '.number // empty')
+          if [ -z "$branch" ]; then
+            echo "Release Please returned a PR payload without headBranchName; CI was not dispatched."
+            exit 1
+          fi
+          echo "Release PR #${number} (${branch}) was created or updated."
+          bash scripts/dispatch-workflow.sh ci.yml "$branch"
       - name: Publish the tag that release-please created
         if: steps.rp.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run release.yml --ref "${{ steps.rp.outputs.tag_name }}"
+          GH_REPO: ${{ github.repository }}
+        run: bash scripts/dispatch-workflow.sh release.yml "${{ steps.rp.outputs.tag_name }}"

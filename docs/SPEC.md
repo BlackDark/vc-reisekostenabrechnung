@@ -757,7 +757,7 @@ Downloads (Belege, Exporte) liefern `Content-Disposition: attachment` (Ausnahme:
 ### 10.5 CSRF, Header, CSP
 
 - CSRF: `SameSite=Lax` + Go-Standardbibliothek `http.CrossOriginProtection` (Go ≥ 1.25; prüft `Sec-Fetch-Site`/`Origin`) für alle nicht-sicheren Methoden; `APP_BASE_URL` als vertrauenswürdige Origin. Zusätzlich verlangt die API `Content-Type: application/json` bzw. `multipart/form-data`.
-- Response-Header: `Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self' <OIDC-Issuer>; frame-ancestors 'none'` (`wasm-unsafe-eval` nur für einen eventuell nötigen WASM-Eckendetektor, `style-src-attr` für Positionierung von bits-ui/floating-ui); `Strict-Transport-Security` (wenn `APP_BASE_URL` https), `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `Permissions-Policy: camera=(self), geolocation=(), microphone=()`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`.
+- Response-Header: `Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'sha256-YjaKGiklmzC6wjXA513HAMmzus8VE61XCOT+SmwNZWA='; style-src-attr 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self' <OIDC-Issuer>; frame-ancestors 'none'` (`wasm-unsafe-eval` nur für einen eventuell nötigen WASM-Eckendetektor, `style-src-attr` für Positionierung von bits-ui/floating-ui); `Strict-Transport-Security` (wenn `APP_BASE_URL` https), `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `Permissions-Policy: camera=(self), geolocation=(), microphone=()`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`.
 - Original-PDFs werden mit `Content-Disposition: attachment` und `Content-Security-Policy: sandbox` ausgeliefert.
 
 ### 10.6 Ersteinrichtung
@@ -1189,7 +1189,7 @@ Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go` (
 ### 18.4 E2E und Screenshot-Durchlauf
 
 - Umgebung (`e2e/compose.ci.yml`): das geladene Image `vc-reisekosten:ci`, `mock-oauth2-server` (OIDC mit konfigurierbarem `groups`-Claim), MinIO für einen S3-Lauf (eigener Playwright-Projekt-Durchlauf mit `STORAGE_BACKEND=s3`). Playwright läuft im Container `mcr.microsoft.com/playwright:v1.64.0-noble` (Browser vorinstalliert, kein Download).
-- Projekte: `desktop` (Chromium 1280×800) und `mobile` (Chromium, Pixel-7-Emulation 412×915); auf `main`/Release zusätzlich `mobile-webkit` (iPhone-Emulation).
+- Projekte: `desktop` (Chromium 1280×800), `mobile` (Chromium, Pixel-7-Emulation 412×915) und `mobile-webkit` (iPhone-Emulation). Dieselben Projekte und dieselbe Umgebung laufen auf Pull Requests und auf `main`.
 - **Fachliche Flows**: Passwort-Login, OIDC-Login mit Auto-Provisioning und Admin-Gruppe, Header-Auth (nur von vertrauenswürdiger Quelle), Reise anlegen (Inland, Ausland mit Ortswechseln), Beleg hochladen (Fixture-Foto → Ecken → Bestätigen), KI-Vorschlag gegen einen Mock-Endpunkt, Abrechnung anlegen/prüfen/einreichen, PDF/ZIP herunterladen (Inhalt geprüft), Entsperrung mit Grund, als bezahlt markieren, Sprache umschalten, Satztabellen-Override als Admin.
 - **Screenshot-Durchlauf** (`e2e/tests/seiten.spec.ts`): eine Routenliste mit **jeder Seite** der App (inkl. Leer- und gefüllter Zustände über Seed-Daten). Je Route und Viewport (desktop + mobile): Seite öffnen, auf geladene Hauptüberschrift warten (Assertion „Seite lädt“), **keine** `console.error`- oder `pageerror`-Ereignisse (Test schlägt fehl), auf mobile `document.documentElement.scrollWidth <= window.innerWidth` (**kein horizontales Scrollen**), Full-Page-Screenshot nach `screenshots/<viewport>/<route>.png`. Eine Prüfung stellt sicher, dass jede im Router registrierte Route in der Liste steht.
 - Artefakte: `playwright-report`, `screenshots` (immer hochgeladen, `if: always()`), Export-Beispiele. README-Screenshots werden per `pnpm screenshots:readme` aus dem Artefakt nach `docs/assets/screenshots/` übernommen und per normalem PR committet (kein Bot-Push auf `main`).
@@ -1217,9 +1217,11 @@ Squash-Merges mit Conventional Commits auf main
   └─► release-please.yml (push main, GITHUB_TOKEN)
         ├─ öffnet/aktualisiert Release-PR „chore(main): release x.y.z“ (CHANGELOG.md, .release-please-manifest.json, web/package.json)
         │    └─ PRs, die mit GITHUB_TOKEN erstellt/aktualisiert werden, starten KEINE Workflows →
-        │       release-please.yml startet danach explizit `gh workflow run ci.yml --ref <release-PR-Branch>`
+        │       release-please.yml startet danach explizit `gh workflow run ci.yml --repo <repo> --ref <release-PR-Branch>`
         │       (workflow_dispatch ist von der Sperre ausgenommen); die Check-Runs hängen am Head-Commit des PR,
-        │       der Pflicht-Check „CI ok“ wird dadurch erfüllt
+        │       der Pflicht-Check „CI ok“ wird dadurch erfüllt. Der Dispatch läuft nur, wenn das Output `pr`
+        │       gesetzt ist (PR erzeugt oder aktualisiert). `--repo` ist nötig: ohne Checkout ruft `gh`
+        │       vorher `git` auf und stirbt mit `fatal: not a git repository`, bevor die API erreicht wird.
         └─ nach Merge des Release-PR: legt Tag vX.Y.Z und Release als Entwurf an (`draft: true`, `force-tag-creation: true`)
              └─ Tag-Push durch GITHUB_TOKEN startet ebenfalls nichts → `gh workflow run release.yml --ref vX.Y.Z`
 release.yml (workflow_dispatch auf dem Tag; zusätzlich push: tags v* für manuell gesetzte Tags)
