@@ -1,0 +1,44 @@
+id: G18
+reisen:
+  - id: r1
+    anlass: Amsterdam
+    beginn: "2025-12-30T08:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-01-02T18:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2025-12-30T18:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: NL
+        ort: Amsterdam
+        taetigkeit: true
+    tage:
+      "2025-12-30":
+        unterkunft: gestellt
+      "2025-12-31":
+        unterkunft: gestellt
+      "2026-01-01":
+        unterkunft: gestellt
+expect:
+  reisen:
+    - id: r1
+      verpflegung: 17600
+      summe: 17600
+      tage:
+        - datum: "2025-12-30"
+          tagesart: anreisetag
+          land: NL
+          ergebnis: 3200
+        - datum: "2025-12-31"
+          tagesart: zwischentag
+          land: NL
+          ergebnis: 4700
+        - datum: "2026-01-01"
+          tagesart: zwischentag
+          land: NL
+          ergebnis: 5800
+        - datum: "2026-01-02"
+          tagesart: abreisetag
+          land: NL
+          ergebnis: 3900

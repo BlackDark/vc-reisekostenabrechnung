@@ -1,0 +1,39 @@
+id: G09
+reisen:
+  - id: r1
+    anlass: Kopenhagen
+    beginn: "2026-05-18T08:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-05-20T18:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-05-18T12:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: FR
+        ort: Strassburg
+        taetigkeit: true
+      - abfahrt: "2026-05-19T14:00:00"
+        abfahrt_zone: Europe/Berlin
+        ankunft: "2026-05-19T21:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: flug
+        land_iso: DK
+        ort: Kopenhagen
+        taetigkeit: true
+    tage:
+      "2026-05-18":
+        unterkunft: gestellt
+      "2026-05-19":
+        unterkunft: gestellt
+        fruehstueck: true
+expect:
+  reisen:
+    - id: r1
+      tage:
+        - datum: "2026-05-19"
+          tagesart: zwischentag
+          land: DK
+          ergebnis: 6000
+          kuerzung: 1500
+          regeln: [KUERZ-FRUEH]

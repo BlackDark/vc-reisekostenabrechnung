@@ -440,6 +440,183 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reisen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReisen"];
+        put?: never;
+        /** Create a Reise with Ortswechsel */
+        post: operations["postReise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reisen/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReise"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteReise"];
+        options?: never;
+        head?: never;
+        patch: operations["patchReise"];
+        trace?: never;
+    };
+    "/api/v1/reisen/{id}/berechnung": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReiseBerechnung"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reisen/{id}/reisetage/{datum}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["patchReisetag"];
+        trace?: never;
+    };
+    "/api/v1/reisen/{id}/fahrten": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getFahrten"];
+        put?: never;
+        post: operations["postFahrt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fahrten/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteFahrt"];
+        options?: never;
+        head?: never;
+        patch: operations["patchFahrt"];
+        trace?: never;
+    };
+    "/api/v1/vorlagen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getVorlagen"];
+        put?: never;
+        post: operations["postVorlage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vorlagen/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getVorlage"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteVorlage"];
+        options?: never;
+        head?: never;
+        patch: operations["patchVorlage"];
+        trace?: never;
+    };
+    "/api/v1/vorlagen/{id}/anwenden": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postVorlageAnwenden"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projekte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getProjekte"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/warnungen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getWarnungen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -712,6 +889,214 @@ export interface components {
         };
         ProtokollListe: {
             items: components["schemas"]["ProtokollEreignis"][];
+        };
+        Ortswechsel: {
+            id: string;
+            /** Format: int64 */
+            reihenfolge: number;
+            abfahrt?: string;
+            abfahrt_zone?: string;
+            ankunft: string;
+            ankunft_zone: string;
+            verkehrsmittel: string;
+            land_iso: string;
+            satzort?: string;
+            ort?: string;
+            taetigkeitsstaette_id?: string;
+            zwischenlandung_mit_uebernachtung?: boolean;
+        };
+        OrtswechselWrite: {
+            abfahrt?: string;
+            abfahrt_zone?: string;
+            ankunft: string;
+            ankunft_zone: string;
+            verkehrsmittel: string;
+            land_iso: string;
+            satzort?: string;
+            ort?: string;
+            taetigkeitsstaette_id?: string;
+            zwischenlandung_mit_uebernachtung?: boolean;
+        };
+        Reisetag: {
+            id: string;
+            datum: string;
+            land_manuell?: string;
+            satzort_manuell?: string;
+            begruendung?: string;
+            fruehstueck_gestellt: boolean;
+            mittag_gestellt: boolean;
+            abend_gestellt: boolean;
+            /** Format: int64 */
+            zuzahlung_fruehstueck?: number;
+            /** Format: int64 */
+            zuzahlung_mittag?: number;
+            /** Format: int64 */
+            zuzahlung_abend?: number;
+            unterkunft: string;
+            verpflegung_ausgeschlossen?: boolean;
+            ausschluss_grund?: string;
+        };
+        ReisetagPatch: {
+            land_iso?: string;
+            satzort?: string;
+            begruendung?: string;
+            fruehstueck_gestellt: boolean;
+            mittag_gestellt: boolean;
+            abend_gestellt: boolean;
+            /** Format: int64 */
+            zuzahlung_fruehstueck?: number;
+            /** Format: int64 */
+            zuzahlung_mittag?: number;
+            /** Format: int64 */
+            zuzahlung_abend?: number;
+            unterkunft: string;
+            verpflegung_ausgeschlossen?: boolean;
+            ausschluss_grund?: string;
+        };
+        Reise: {
+            id: string;
+            arbeitgeber_id: string;
+            anlass: string;
+            projekt?: string;
+            beginn: string;
+            beginn_zone: string;
+            ende: string;
+            ende_zone: string;
+            notiz?: string;
+            vorlage_id?: string;
+            status: string;
+            /** Format: int64 */
+            version: number;
+            ortswechsel: components["schemas"]["Ortswechsel"][];
+            reisetage: components["schemas"]["Reisetag"][];
+        };
+        ReiseWrite: {
+            arbeitgeber_id: string;
+            anlass: string;
+            projekt?: string;
+            beginn: string;
+            beginn_zone: string;
+            ende: string;
+            ende_zone: string;
+            notiz?: string;
+            unterkunft?: string;
+            ortswechsel: components["schemas"]["OrtswechselWrite"][];
+        };
+        ReiseListe: {
+            items: components["schemas"]["Reise"][];
+            next_cursor?: string;
+        };
+        BerechnungTag: {
+            datum: string;
+            tagesart: string;
+            land_iso: string;
+            satzort?: string;
+            land_regel?: string;
+            abwesenheit_minuten?: number;
+            /** Format: int64 */
+            pauschale_cent: number;
+            /** Format: int64 */
+            kuerzung_cent?: number;
+            /** Format: int64 */
+            ergebnis_cent: number;
+            /** Format: int64 */
+            uebernachtung_cent: number;
+            regel_ids?: string[];
+            hinweise?: string[];
+            warnungen?: string[];
+        };
+        Berechnung: {
+            reise_id: string;
+            tage: components["schemas"]["BerechnungTag"][];
+            /** Format: int64 */
+            fahrtkosten_cent: number;
+            /** Format: int64 */
+            verpflegung_cent: number;
+            /** Format: int64 */
+            uebernachtung_cent: number;
+            /** Format: int64 */
+            reisenebenkosten_cent: number;
+            /** Format: int64 */
+            bewirtung_cent: number;
+            /** Format: int64 */
+            summe_cent: number;
+            blocker?: string[];
+            warnungen?: string[];
+        };
+        Fahrt: {
+            id: string;
+            reise_id: string;
+            datum: string;
+            start: string;
+            ziel: string;
+            zweck?: string;
+            fahrzeugart: string;
+            /** Format: int64 */
+            km: number;
+            hin_und_zurueck: boolean;
+            /** Format: int64 */
+            betrag_cent: number;
+            /** Format: int64 */
+            version: number;
+        };
+        FahrtWrite: {
+            datum: string;
+            start: string;
+            ziel: string;
+            zweck?: string;
+            fahrzeugart: string;
+            /** Format: int64 */
+            km: number;
+            hin_und_zurueck: boolean;
+        };
+        FahrtListe: {
+            items: components["schemas"]["Fahrt"][];
+        };
+        Vorlage: {
+            id: string;
+            name: string;
+            art: string;
+            daten: {
+                [key: string]: unknown;
+            };
+            /** Format: int64 */
+            version: number;
+        };
+        VorlageWrite: {
+            name: string;
+            art: string;
+            daten: {
+                [key: string]: unknown;
+            };
+        };
+        VorlageListe: {
+            items: components["schemas"]["Vorlage"][];
+            next_cursor?: string;
+        };
+        VorlageAnwenden: {
+            reise_id?: string;
+            beginn?: string;
+            beginn_zone?: string;
+            ende?: string;
+            ende_zone?: string;
+            datum?: string;
+        };
+        VorlageAnwendung: {
+            reise?: components["schemas"]["Reise"];
+            fahrt?: components["schemas"]["Fahrt"];
+        };
+        ProjektListe: {
+            items: string[];
+        };
+        Warnung: {
+            code: string;
+            reise_id: string;
+            anlass: string;
+            datum?: string;
+            staette?: string;
+        };
+        WarnungListe: {
+            items: components["schemas"]["Warnung"][];
         };
     };
     responses: {
@@ -1694,6 +2079,514 @@ export interface operations {
             };
             401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
+        };
+    };
+    getReisen: {
+        parameters: {
+            query?: {
+                status?: string;
+                von?: string;
+                bis?: string;
+                arbeitgeber_id?: string;
+                projekt?: string;
+                q?: string;
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reisen of the current Nutzer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReiseListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    postReise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReiseWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reise"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    getReise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reise"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    deleteReise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+        };
+    };
+    patchReise: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReiseWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reise"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getReiseBerechnung: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-side preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Berechnung"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    patchReisetag: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+                datum: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReisetagPatch"];
+            };
+        };
+        responses: {
+            /** @description Updated Reise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reise"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getFahrten: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fahrten of the Reise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FahrtListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    postFahrt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FahrtWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fahrt"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    deleteFahrt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    patchFahrt: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FahrtWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fahrt"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    getVorlagen: {
+        parameters: {
+            query?: {
+                art?: string;
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Vorlagen */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VorlageListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    postVorlage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VorlageWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vorlage"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    getVorlage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Vorlage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vorlage"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    deleteVorlage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    patchVorlage: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VorlageWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vorlage"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+            428: components["responses"]["Problem"];
+        };
+    };
+    postVorlageAnwenden: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VorlageAnwenden"];
+            };
+        };
+        responses: {
+            /** @description Independent copy */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VorlageAnwendung"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    getProjekte: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Distinct project names */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjektListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    getWarnungen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open warnings for the home page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarnungListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
         };
     };
 }

@@ -1,0 +1,27 @@
+id: G12
+reisen:
+  - id: r1
+    anlass: Zuzahlung
+    beginn: "2026-03-10T08:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-03-10T17:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-03-10T09:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: DE
+    tage:
+      "2026-03-10":
+        mittag: true
+        zuzahlung_mittag: 500
+expect:
+  reisen:
+    - id: r1
+      verpflegung: 780
+      summe: 780
+      tage:
+        - datum: "2026-03-10"
+          tagesart: eintaegig
+          ergebnis: 780
+          kuerzung: 620

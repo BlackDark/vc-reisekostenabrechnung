@@ -1,0 +1,58 @@
+id: G15
+reisen:
+  - id: r1
+    anlass: Hotelbeleg
+    beginn: "2026-04-13T18:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-04-14T10:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-04-13T20:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: DE
+    tage:
+      "2026-04-13":
+        unterkunft: beleg
+      "2026-04-14":
+        fruehstueck: true
+    ausgaben:
+      - id: hotel
+        kostenart: uebernachtung
+        datum: "2026-04-13"
+        betrag: 12127
+        waehrung: EUR
+        naechte: ["2026-04-13"]
+        fruehstueck: true
+        anteile:
+          - satz: 700
+            steuerland: DE
+            brutto: 11770
+          - satz: 1900
+            steuerland: DE
+            brutto: 357
+      - id: parken
+        kostenart: reisenebenkosten
+        datum: "2026-04-13"
+        betrag: 1190
+        waehrung: EUR
+        anteile:
+          - satz: 1900
+            steuerland: DE
+            brutto: 1190
+expect:
+  reisen:
+    - id: r1
+      uebernachtung: 12127
+      reisenebenkosten: 1190
+      vorsteuer: 1017
+      anteile:
+        - netto: 11000
+          steuer: 770
+        - netto: 300
+          steuer: 57
+        - netto: 1000
+          steuer: 190
+  vorschlaege:
+    - datum: "2026-04-14"
+      mahlzeit: fruehstueck

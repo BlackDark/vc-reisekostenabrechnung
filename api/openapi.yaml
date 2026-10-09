@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Reisekostenabrechnung API
-  version: 0.2.0
-  description: Arbeitgeber, Tätigkeitsstätten, Satztabellen, and profile API.
+  version: 0.3.0
+  description: Reisen, Pauschalen, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
 servers:
   - url: /
 paths:
@@ -797,6 +797,422 @@ paths:
           $ref: "#/components/responses/Problem"
         "403":
           $ref: "#/components/responses/Problem"
+  /api/v1/reisen:
+    get:
+      operationId: getReisen
+      tags: [reisen]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: von
+          in: query
+          schema:
+            type: string
+        - name: bis
+          in: query
+          schema:
+            type: string
+        - name: arbeitgeber_id
+          in: query
+          schema:
+            type: string
+        - name: projekt
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Reisen of the current Nutzer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReiseListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postReise
+      tags: [reisen]
+      summary: Create a Reise with Ortswechsel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReiseWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reise"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/reisen/{id}:
+    get:
+      operationId: getReise
+      tags: [reisen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Reise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reise"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchReise
+      tags: [reisen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReiseWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reise"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteReise
+      tags: [reisen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+  /api/v1/reisen/{id}/berechnung:
+    get:
+      operationId: getReiseBerechnung
+      tags: [reisen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Server-side preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Berechnung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/reisen/{id}/reisetage/{datum}:
+    patch:
+      operationId: patchReisetag
+      tags: [reisen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - name: datum
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReisetagPatch"
+      responses:
+        "200":
+          description: Updated Reise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reise"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/reisen/{id}/fahrten:
+    get:
+      operationId: getFahrten
+      tags: [fahrten]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Fahrten of the Reise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FahrtListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postFahrt
+      tags: [fahrten]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FahrtWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fahrt"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/fahrten/{id}:
+    patch:
+      operationId: patchFahrt
+      tags: [fahrten]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FahrtWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fahrt"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteFahrt
+      tags: [fahrten]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/vorlagen:
+    get:
+      operationId: getVorlagen
+      tags: [vorlagen]
+      parameters:
+        - name: art
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Vorlagen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VorlageListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postVorlage
+      tags: [vorlagen]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VorlageWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vorlage"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/vorlagen/{id}:
+    get:
+      operationId: getVorlage
+      tags: [vorlagen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Vorlage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vorlage"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchVorlage
+      tags: [vorlagen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VorlageWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vorlage"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteVorlage
+      tags: [vorlagen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/vorlagen/{id}/anwenden:
+    post:
+      operationId: postVorlageAnwenden
+      tags: [vorlagen]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VorlageAnwenden"
+      responses:
+        "201":
+          description: Independent copy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VorlageAnwendung"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/projekte:
+    get:
+      operationId: getProjekte
+      tags: [reisen]
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Distinct project names
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjektListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/warnungen:
+    get:
+      operationId: getWarnungen
+      tags: [reisen]
+      responses:
+        "200":
+          description: Open warnings for the home page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarnungListe"
+        "401":
+          $ref: "#/components/responses/Problem"
 components:
   parameters:
     IfMatch:
@@ -1362,3 +1778,416 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProtokollEreignis"
+    Ortswechsel:
+      type: object
+      required: [id, reihenfolge, ankunft, ankunft_zone, verkehrsmittel, land_iso]
+      properties:
+        id:
+          type: string
+        reihenfolge:
+          type: integer
+          format: int64
+        abfahrt:
+          type: string
+        abfahrt_zone:
+          type: string
+        ankunft:
+          type: string
+        ankunft_zone:
+          type: string
+        verkehrsmittel:
+          type: string
+        land_iso:
+          type: string
+        satzort:
+          type: string
+        ort:
+          type: string
+        taetigkeitsstaette_id:
+          type: string
+        zwischenlandung_mit_uebernachtung:
+          type: boolean
+    OrtswechselWrite:
+      type: object
+      required: [ankunft, ankunft_zone, verkehrsmittel, land_iso]
+      properties:
+        abfahrt:
+          type: string
+        abfahrt_zone:
+          type: string
+        ankunft:
+          type: string
+        ankunft_zone:
+          type: string
+        verkehrsmittel:
+          type: string
+        land_iso:
+          type: string
+        satzort:
+          type: string
+        ort:
+          type: string
+        taetigkeitsstaette_id:
+          type: string
+        zwischenlandung_mit_uebernachtung:
+          type: boolean
+    Reisetag:
+      type: object
+      required: [id, datum, unterkunft, fruehstueck_gestellt, mittag_gestellt, abend_gestellt]
+      properties:
+        id:
+          type: string
+        datum:
+          type: string
+        land_manuell:
+          type: string
+        satzort_manuell:
+          type: string
+        begruendung:
+          type: string
+        fruehstueck_gestellt:
+          type: boolean
+        mittag_gestellt:
+          type: boolean
+        abend_gestellt:
+          type: boolean
+        zuzahlung_fruehstueck:
+          type: integer
+          format: int64
+        zuzahlung_mittag:
+          type: integer
+          format: int64
+        zuzahlung_abend:
+          type: integer
+          format: int64
+        unterkunft:
+          type: string
+        verpflegung_ausgeschlossen:
+          type: boolean
+        ausschluss_grund:
+          type: string
+    ReisetagPatch:
+      type: object
+      required: [unterkunft, fruehstueck_gestellt, mittag_gestellt, abend_gestellt]
+      properties:
+        land_iso:
+          type: string
+        satzort:
+          type: string
+        begruendung:
+          type: string
+        fruehstueck_gestellt:
+          type: boolean
+        mittag_gestellt:
+          type: boolean
+        abend_gestellt:
+          type: boolean
+        zuzahlung_fruehstueck:
+          type: integer
+          format: int64
+        zuzahlung_mittag:
+          type: integer
+          format: int64
+        zuzahlung_abend:
+          type: integer
+          format: int64
+        unterkunft:
+          type: string
+        verpflegung_ausgeschlossen:
+          type: boolean
+        ausschluss_grund:
+          type: string
+    Reise:
+      type: object
+      required: [id, arbeitgeber_id, anlass, beginn, beginn_zone, ende, ende_zone, status, version, ortswechsel, reisetage]
+      properties:
+        id:
+          type: string
+        arbeitgeber_id:
+          type: string
+        anlass:
+          type: string
+        projekt:
+          type: string
+        beginn:
+          type: string
+        beginn_zone:
+          type: string
+        ende:
+          type: string
+        ende_zone:
+          type: string
+        notiz:
+          type: string
+        vorlage_id:
+          type: string
+        status:
+          type: string
+        version:
+          type: integer
+          format: int64
+        ortswechsel:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ortswechsel"
+        reisetage:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reisetag"
+    ReiseWrite:
+      type: object
+      required: [arbeitgeber_id, anlass, beginn, beginn_zone, ende, ende_zone, ortswechsel]
+      properties:
+        arbeitgeber_id:
+          type: string
+        anlass:
+          type: string
+        projekt:
+          type: string
+        beginn:
+          type: string
+        beginn_zone:
+          type: string
+        ende:
+          type: string
+        ende_zone:
+          type: string
+        notiz:
+          type: string
+        unterkunft:
+          type: string
+        ortswechsel:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrtswechselWrite"
+    ReiseListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reise"
+        next_cursor:
+          type: string
+    BerechnungTag:
+      type: object
+      required: [datum, tagesart, land_iso, ergebnis_cent, pauschale_cent, uebernachtung_cent]
+      properties:
+        datum:
+          type: string
+        tagesart:
+          type: string
+        land_iso:
+          type: string
+        satzort:
+          type: string
+        land_regel:
+          type: string
+        abwesenheit_minuten:
+          type: integer
+        pauschale_cent:
+          type: integer
+          format: int64
+        kuerzung_cent:
+          type: integer
+          format: int64
+        ergebnis_cent:
+          type: integer
+          format: int64
+        uebernachtung_cent:
+          type: integer
+          format: int64
+        regel_ids:
+          type: array
+          items:
+            type: string
+        hinweise:
+          type: array
+          items:
+            type: string
+        warnungen:
+          type: array
+          items:
+            type: string
+    Berechnung:
+      type: object
+      required: [reise_id, tage, fahrtkosten_cent, verpflegung_cent, uebernachtung_cent, reisenebenkosten_cent, bewirtung_cent, summe_cent]
+      properties:
+        reise_id:
+          type: string
+        tage:
+          type: array
+          items:
+            $ref: "#/components/schemas/BerechnungTag"
+        fahrtkosten_cent:
+          type: integer
+          format: int64
+        verpflegung_cent:
+          type: integer
+          format: int64
+        uebernachtung_cent:
+          type: integer
+          format: int64
+        reisenebenkosten_cent:
+          type: integer
+          format: int64
+        bewirtung_cent:
+          type: integer
+          format: int64
+        summe_cent:
+          type: integer
+          format: int64
+        blocker:
+          type: array
+          items:
+            type: string
+        warnungen:
+          type: array
+          items:
+            type: string
+    Fahrt:
+      type: object
+      required: [id, reise_id, datum, start, ziel, fahrzeugart, km, hin_und_zurueck, betrag_cent, version]
+      properties:
+        id:
+          type: string
+        reise_id:
+          type: string
+        datum:
+          type: string
+        start:
+          type: string
+        ziel:
+          type: string
+        zweck:
+          type: string
+        fahrzeugart:
+          type: string
+        km:
+          type: integer
+          format: int64
+        hin_und_zurueck:
+          type: boolean
+        betrag_cent:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          format: int64
+    FahrtWrite:
+      type: object
+      required: [datum, start, ziel, fahrzeugart, km, hin_und_zurueck]
+      properties:
+        datum:
+          type: string
+        start:
+          type: string
+        ziel:
+          type: string
+        zweck:
+          type: string
+        fahrzeugart:
+          type: string
+        km:
+          type: integer
+          format: int64
+        hin_und_zurueck:
+          type: boolean
+    FahrtListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fahrt"
+    Vorlage:
+      type: object
+      required: [id, name, art, daten, version]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        art:
+          type: string
+        daten:
+          type: object
+          additionalProperties: true
+        version:
+          type: integer
+          format: int64
+    VorlageWrite:
+      type: object
+      required: [name, art, daten]
+      properties:
+        name:
+          type: string
+        art:
+          type: string
+        daten:
+          type: object
+          additionalProperties: true
+    VorlageListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Vorlage"
+        next_cursor:
+          type: string
+    VorlageAnwenden:
+      type: object
+      properties:
+        reise_id:
+          type: string
+        beginn:
+          type: string
+        beginn_zone:
+          type: string
+        ende:
+          type: string
+        ende_zone:
+          type: string
+        datum:
+          type: string
+    VorlageAnwendung:
+      type: object
+      properties:
+        reise:
+          $ref: "#/components/schemas/Reise"
+        fahrt:
+          $ref: "#/components/schemas/Fahrt"
+    ProjektListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: string
+    Warnung:
+      type: object
+      required: [code, reise_id, anlass]
+      properties:
+        code:
+          type: string
+        reise_id:
+          type: string
+        anlass:
+          type: string
+        datum:
+          type: string
+        staette:
+          type: string
+    WarnungListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warnung"

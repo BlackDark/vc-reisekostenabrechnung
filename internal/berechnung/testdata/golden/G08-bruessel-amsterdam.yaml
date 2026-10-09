@@ -1,0 +1,54 @@
+id: G08
+reisen:
+  - id: r1
+    anlass: Bruessel
+    beginn: "2026-09-07T20:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-09-10T18:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - abfahrt: "2026-09-07T20:00:00"
+        abfahrt_zone: Europe/Berlin
+        ankunft: "2026-09-08T02:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: BE
+        ort: Bruessel
+        taetigkeit: true
+      - abfahrt: "2026-09-09T09:00:00"
+        abfahrt_zone: Europe/Berlin
+        ankunft: "2026-09-09T14:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: NL
+        ort: Amsterdam
+        taetigkeit: true
+    tage:
+      "2026-09-07":
+        unterkunft: gestellt
+      "2026-09-08":
+        unterkunft: gestellt
+      "2026-09-09":
+        unterkunft: gestellt
+expect:
+  reisen:
+    - id: r1
+      verpflegung: 17000
+      summe: 17000
+      tage:
+        - datum: "2026-09-07"
+          tagesart: anreisetag
+          land: DE
+          ergebnis: 1400
+        - datum: "2026-09-08"
+          tagesart: zwischentag
+          land: BE
+          ergebnis: 5900
+        - datum: "2026-09-09"
+          tagesart: zwischentag
+          land: NL
+          ergebnis: 5800
+        - datum: "2026-09-10"
+          tagesart: abreisetag
+          land: NL
+          ergebnis: 3900

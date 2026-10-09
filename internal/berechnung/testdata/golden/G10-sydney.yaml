@@ -1,0 +1,69 @@
+id: G10
+reisen:
+  - id: r1
+    anlass: Sydney
+    beginn: "2026-11-02T21:55:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-11-08T05:30:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - abfahrt: "2026-11-02T21:55:00"
+        abfahrt_zone: Europe/Berlin
+        ankunft: "2026-11-04T06:30:00"
+        ankunft_zone: Australia/Sydney
+        verkehrsmittel: flug
+        land_iso: AU
+        satzort: AU-SYDNEY
+        ort: Sydney
+        taetigkeit: true
+    tage:
+      "2026-11-02":
+        unterkunft: verkehrsmittel
+      "2026-11-03":
+        unterkunft: verkehrsmittel
+      "2026-11-04":
+        unterkunft: gestellt
+      "2026-11-05":
+        unterkunft: gestellt
+      "2026-11-06":
+        unterkunft: gestellt
+      "2026-11-07":
+        unterkunft: verkehrsmittel
+expect:
+  reisen:
+    - id: r1
+      verpflegung: 33000
+      summe: 33000
+      tage:
+        - datum: "2026-11-02"
+          tagesart: anreisetag
+          land: DE
+          ergebnis: 1400
+          regeln: [LAND-GRUND, VMA-ANREISE]
+        - datum: "2026-11-03"
+          tagesart: zwischentag
+          land: AT
+          ergebnis: 5000
+          regeln: [LAND-FLUG-AT, VMA-ZWISCHEN]
+        - datum: "2026-11-04"
+          land: AU
+          satzort: AU-SYDNEY
+          ergebnis: 5700
+        - datum: "2026-11-05"
+          land: AU
+          satzort: AU-SYDNEY
+          ergebnis: 5700
+        - datum: "2026-11-06"
+          land: AU
+          satzort: AU-SYDNEY
+          ergebnis: 5700
+        - datum: "2026-11-07"
+          land: AU
+          satzort: AU-SYDNEY
+          ergebnis: 5700
+        - datum: "2026-11-08"
+          tagesart: abreisetag
+          land: AU
+          satzort: AU-SYDNEY
+          ergebnis: 3800
+          regeln: [VMA-ABREISE]

@@ -63,6 +63,23 @@ type Datei struct {
 	ErstelltAm         time.Time
 }
 
+type Fahrt struct {
+	ID            string
+	ReiseID       string
+	NutzerID      string
+	Datum         string
+	StartOrt      string
+	Ziel          string
+	Zweck         *string
+	Fahrzeugart   string
+	Km            int64
+	HinUndZurueck bool
+	VorlageID     *string
+	ErstelltAm    time.Time
+	GeaendertAm   time.Time
+	Version       int64
+}
+
 type Job struct {
 	ID                 string
 	Art                string
@@ -102,6 +119,59 @@ type NutzerIdentitaet struct {
 	ZuletztGesehen *time.Time
 	ErstelltAm     time.Time
 	GeaendertAm    time.Time
+}
+
+type Ortswechsel struct {
+	ID                              string
+	ReiseID                         string
+	Reihenfolge                     int64
+	Abfahrt                         *time.Time
+	AbfahrtZone                     *string
+	Ankunft                         time.Time
+	AnkunftZone                     string
+	Verkehrsmittel                  string
+	LandIso                         string
+	Satzort                         string
+	Ort                             string
+	TaetigkeitsstaetteID            *string
+	ZwischenlandungMitUebernachtung bool
+}
+
+type Reise struct {
+	ID            string
+	NutzerID      string
+	ArbeitgeberID string
+	Anlass        string
+	Projekt       *string
+	Beginn        time.Time
+	BeginnZone    string
+	Ende          time.Time
+	EndeZone      string
+	Notiz         *string
+	VorlageID     *string
+	Status        string
+	ErstelltAm    time.Time
+	GeaendertAm   time.Time
+	Version       int64
+}
+
+type Reisetag struct {
+	ID                        string
+	ReiseID                   string
+	Datum                     string
+	LandManuell               *string
+	SatzortManuell            *string
+	LandBegruendung           *string
+	FruehstueckGestellt       bool
+	MittagGestellt            bool
+	AbendGestellt             bool
+	ZuzahlungFruehstueck      int64
+	ZuzahlungMittag           int64
+	ZuzahlungAbend            int64
+	MahlzeitQuelle            string
+	Unterkunft                string
+	VerpflegungAusgeschlossen bool
+	AusschlussGrund           *string
 }
 
 type SatzOverride struct {
@@ -163,6 +233,17 @@ type Taetigkeitsstaette struct {
 	LandIso     string
 	Satzort     string
 	Kunde       *string
+	ErstelltAm  time.Time
+	GeaendertAm time.Time
+	Version     int64
+}
+
+type Vorlage struct {
+	ID          string
+	NutzerID    string
+	Name        string
+	Art         string
+	Daten       string
 	ErstelltAm  time.Time
 	GeaendertAm time.Time
 	Version     int64

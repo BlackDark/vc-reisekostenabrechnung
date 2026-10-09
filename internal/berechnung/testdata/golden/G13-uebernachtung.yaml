@@ -1,0 +1,42 @@
+id: G13
+reisen:
+  - id: inland
+    anlass: Inland
+    beginn: "2026-03-16T08:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-03-18T18:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-03-16T10:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: DE
+    tage:
+      "2026-03-16":
+        unterkunft: pauschale
+      "2026-03-17":
+        unterkunft: gestellt
+  - id: belgien
+    anlass: Belgien
+    beginn: "2026-03-23T08:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-03-25T18:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-03-23T12:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: BE
+        ort: Bruessel
+        taetigkeit: true
+    tage:
+      "2026-03-23":
+        unterkunft: pauschale
+      "2026-03-24":
+        unterkunft: keine
+expect:
+  reisen:
+    - id: inland
+      uebernachtung: 2000
+    - id: belgien
+      uebernachtung: 14100

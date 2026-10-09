@@ -12,7 +12,7 @@
 
 Self-hosted web app (PWA) for a German **Reisekostenabrechnung** (travel expense claim): record business trips, capture a **Beleg** (receipt) with the phone camera, calculate the **Verpflegungspauschale** (meal allowance) and **Kilometerpauschale** (mileage allowance), and file a reviewable **Abrechnung** (expense claim) as PDF/A with every receipt. German and English, multiple users, sign-in with a password, OIDC (for example Pocket ID), or reverse-proxy headers.
 
-> **Status:** milestone M2 (Arbeitgeber, Tätigkeitsstätten, Satztabellen). See [milestones](docs/MILESTONES.md). One **Verpflegungspauschale** (meal allowance) per calendar day across every employer; the switch is `EineVerpflegungspauschaleProKalendertag` in `internal/berechnung`.
+> **Status:** milestone M3 (Reisen und Pauschalen). See [milestones](docs/MILESTONES.md). A **Reise** (business trip) is split into **Reisetage** (travel days). The server calculates the **Verpflegungspauschale** (meal allowance), **Übernachtungspauschale** (overnight allowance) and **Kilometerpauschale** (mileage allowance). One meal allowance per calendar day across every employer; the switch is `EineVerpflegungspauschaleProKalendertag` in `internal/berechnung`.
 
 ## Screenshots
 

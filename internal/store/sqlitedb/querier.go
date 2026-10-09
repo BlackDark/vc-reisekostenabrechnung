@@ -16,51 +16,78 @@ type Querier interface {
 	CreateIdentitaet(ctx context.Context, arg CreateIdentitaetParams) (NutzerIdentitaet, error)
 	CreateNutzer(ctx context.Context, arg CreateNutzerParams) (Nutzer, error)
 	DeleteAuslandssaetze(ctx context.Context, jahr int64) error
+	DeleteFahrt(ctx context.Context, arg DeleteFahrtParams) (int64, error)
 	DeleteIdentitaet(ctx context.Context, arg DeleteIdentitaetParams) error
+	DeleteOrtswechsel(ctx context.Context, reiseID string) error
+	DeleteReise(ctx context.Context, arg DeleteReiseParams) (int64, error)
+	DeleteReisetag(ctx context.Context, arg DeleteReisetagParams) error
 	DeleteSatzOverrides(ctx context.Context, jahr int64) error
 	DeleteSession(ctx context.Context, token string) error
 	DeleteSessionByPublicID(ctx context.Context, arg DeleteSessionByPublicIDParams) error
 	DeleteSessionsForNutzer(ctx context.Context, nutzerID *string) error
 	DeleteTaetigkeitsstaette(ctx context.Context, arg DeleteTaetigkeitsstaetteParams) error
+	DeleteVorlage(ctx context.Context, arg DeleteVorlageParams) (int64, error)
 	FirstOtherAktiverArbeitgeber(ctx context.Context, arg FirstOtherAktiverArbeitgeberParams) (Arbeitgeber, error)
 	GetArbeitgeber(ctx context.Context, arg GetArbeitgeberParams) (Arbeitgeber, error)
 	GetDatei(ctx context.Context, arg GetDateiParams) (Datei, error)
+	GetFahrt(ctx context.Context, arg GetFahrtParams) (Fahrt, error)
 	GetIdentitaet(ctx context.Context, arg GetIdentitaetParams) (NutzerIdentitaet, error)
 	GetIdentitaetByID(ctx context.Context, arg GetIdentitaetByIDParams) (NutzerIdentitaet, error)
 	GetNutzerByBenutzername(ctx context.Context, benutzername string) (Nutzer, error)
 	GetNutzerByEmail(ctx context.Context, email *string) (Nutzer, error)
 	GetNutzerByID(ctx context.Context, id string) (Nutzer, error)
+	GetReise(ctx context.Context, arg GetReiseParams) (Reise, error)
+	GetReisetag(ctx context.Context, arg GetReisetagParams) (Reisetag, error)
 	GetSatztabelle(ctx context.Context, jahr int64) (Satztabelle, error)
 	GetSession(ctx context.Context, token string) (Session, error)
 	GetTaetigkeitsstaette(ctx context.Context, arg GetTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
+	GetVorlage(ctx context.Context, arg GetVorlageParams) (Vorlage, error)
 	InsertArbeitgeber(ctx context.Context, arg InsertArbeitgeberParams) (Arbeitgeber, error)
 	InsertAudit(ctx context.Context, arg InsertAuditParams) error
 	InsertAuslandssatz(ctx context.Context, arg InsertAuslandssatzParams) error
 	InsertDatei(ctx context.Context, arg InsertDateiParams) (Datei, error)
+	InsertFahrt(ctx context.Context, arg InsertFahrtParams) (Fahrt, error)
+	InsertOrtswechsel(ctx context.Context, arg InsertOrtswechselParams) (Ortswechsel, error)
+	InsertReise(ctx context.Context, arg InsertReiseParams) (Reise, error)
+	InsertReisetag(ctx context.Context, arg InsertReisetagParams) (Reisetag, error)
 	InsertSatzOverride(ctx context.Context, arg InsertSatzOverrideParams) (SatzOverride, error)
 	InsertSatztabelle(ctx context.Context, arg InsertSatztabelleParams) (Satztabelle, error)
 	InsertTaetigkeitsstaette(ctx context.Context, arg InsertTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
+	InsertVorlage(ctx context.Context, arg InsertVorlageParams) (Vorlage, error)
 	LastAuditHash(ctx context.Context) (string, error)
 	ListArbeitgeber(ctx context.Context, arg ListArbeitgeberParams) ([]Arbeitgeber, error)
 	ListAudit(ctx context.Context) ([]AuditEreigni, error)
 	ListAuditFiltered(ctx context.Context, arg ListAuditFilteredParams) ([]AuditEreigni, error)
 	ListAuslandssaetze(ctx context.Context, jahr int64) ([]Auslandssatz, error)
+	ListFahrten(ctx context.Context, arg ListFahrtenParams) ([]Fahrt, error)
+	ListFahrtenByNutzer(ctx context.Context, nutzerID string) ([]Fahrt, error)
 	ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error)
 	ListLaender(ctx context.Context, jahr int64) ([]ListLaenderRow, error)
 	ListNutzer(ctx context.Context, arg ListNutzerParams) ([]Nutzer, error)
+	ListOrtswechsel(ctx context.Context, reiseID string) ([]Ortswechsel, error)
+	ListProjekte(ctx context.Context, arg ListProjekteParams) ([]ListProjekteRow, error)
+	ListReisen(ctx context.Context, arg ListReisenParams) ([]Reise, error)
+	ListReisenAll(ctx context.Context, nutzerID string) ([]Reise, error)
+	ListReisetage(ctx context.Context, reiseID string) ([]Reisetag, error)
 	ListSatzOverrides(ctx context.Context, jahr int64) ([]SatzOverride, error)
 	ListSatztabellen(ctx context.Context) ([]Satztabelle, error)
 	ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNutzerParams) ([]Session, error)
 	ListTaetigkeitsstaetten(ctx context.Context, arg ListTaetigkeitsstaettenParams) ([]Taetigkeitsstaette, error)
+	ListVorlagen(ctx context.Context, arg ListVorlagenParams) ([]Vorlage, error)
 	SetAdminUeberGruppe(ctx context.Context, arg SetAdminUeberGruppeParams) error
 	TouchAnmeldung(ctx context.Context, arg TouchAnmeldungParams) error
 	TouchIdentitaet(ctx context.Context, arg TouchIdentitaetParams) error
+	TouchReise(ctx context.Context, arg TouchReiseParams) (Reise, error)
 	TouchSatztabelle(ctx context.Context, arg TouchSatztabelleParams) (Satztabelle, error)
 	UpdateArbeitgeber(ctx context.Context, arg UpdateArbeitgeberParams) (Arbeitgeber, error)
+	UpdateFahrt(ctx context.Context, arg UpdateFahrtParams) (Fahrt, error)
 	UpdateNutzerAdmin(ctx context.Context, arg UpdateNutzerAdminParams) (Nutzer, error)
 	UpdateNutzerPasswort(ctx context.Context, arg UpdateNutzerPasswortParams) (Nutzer, error)
 	UpdateNutzerProfil(ctx context.Context, arg UpdateNutzerProfilParams) (Nutzer, error)
+	UpdateReise(ctx context.Context, arg UpdateReiseParams) (Reise, error)
+	UpdateReisetag(ctx context.Context, arg UpdateReisetagParams) (Reisetag, error)
 	UpdateTaetigkeitsstaette(ctx context.Context, arg UpdateTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
+	UpdateVorlage(ctx context.Context, arg UpdateVorlageParams) (Vorlage, error)
 	UpsertSession(ctx context.Context, arg UpsertSessionParams) error
 }
 

@@ -17,7 +17,9 @@ export const { p, navigate, route } = createRouter({
 	"/satztabellen": () => import("./routes/Satztabellen.svelte"),
 	"/satztabellen/:jahr": () => import("./routes/SatztabelleJahr.svelte"),
 	"/about": () => import("./routes/About.svelte"),
+	"/reisen": () => import("./routes/Reisen.svelte"),
+	"/reisen/neu": () => import("./routes/ReiseNeu.svelte"),
+	"/reisen/:id": () => import("./routes/ReiseDetail.svelte"),
 	"/belege/neu": () => import("./routes/Placeholder.svelte"),
-	"/reisen/neu": () => import("./routes/Placeholder.svelte"),
 	"/abrechnungen": () => import("./routes/Placeholder.svelte"),
 });
