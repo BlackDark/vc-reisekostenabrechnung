@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Reisekostenabrechnung API
-  version: 0.4.0
-  description: Reisen, Pauschalen, Belege, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
+  version: 0.5.0
+  description: Reisen, Pauschalen, Ausgaben, Belege, Fremdwährung, Bewirtung, Vorschüsse, Fahrten, Vorlagen, Arbeitgeber, Tätigkeitsstätten, and Satztabellen.
 servers:
   - url: /
 paths:
@@ -1480,6 +1480,364 @@ paths:
           $ref: "#/components/responses/Problem"
         "428":
           $ref: "#/components/responses/Problem"
+  /api/v1/reisen/{id}/ausgaben:
+    get:
+      operationId: getAusgaben
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Ausgaben of the Reise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AusgabeListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postAusgabe
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AusgabeWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ausgabe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/ausgaben/{id}:
+    get:
+      operationId: getAusgabe
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Ausgabe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ausgabe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: patchAusgabe
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AusgabeWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ausgabe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteAusgabe
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/ausgaben/{id}/belege:
+    put:
+      operationId: putAusgabeBelege
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BelegZuordnung"
+      responses:
+        "200":
+          description: Links replaced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ausgabe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/ausgaben/{id}/eigenbeleg:
+    put:
+      operationId: putEigenbeleg
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EigenbelegWrite"
+      responses:
+        "200":
+          description: Eigenbeleg stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ausgabe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/ausgaben/{id}/bewirtung/bestaetigen:
+    post:
+      operationId: postBewirtungBestaetigen
+      tags: [ausgaben]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Bewirtung confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ausgabe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/wechselkurse:
+    get:
+      operationId: getWechselkurs
+      tags: [wechselkurse]
+      parameters:
+        - name: waehrung
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: datum
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ECB rate with weekend fallback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wechselkurs"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/ust-kurse:
+    get:
+      operationId: getUstKurs
+      tags: [wechselkurse]
+      parameters:
+        - name: waehrung
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: jahr
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: monat
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: BMF monthly VAT rate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UstKurs"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+  /api/v1/vorschuesse:
+    get:
+      operationId: getVorschuesse
+      tags: [vorschuesse]
+      responses:
+        "200":
+          description: Advances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VorschussListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postVorschuss
+      tags: [vorschuesse]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VorschussWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vorschuss"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/vorschuesse/{id}:
+    patch:
+      operationId: patchVorschuss
+      tags: [vorschuesse]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VorschussWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vorschuss"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "412":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteVorschuss
+      tags: [vorschuesse]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "428":
+          $ref: "#/components/responses/Problem"
+  /api/v1/mwst-helfer:
+    post:
+      operationId: postMwstHelfer
+      tags: [ausgaben]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MwstHelfer"
+      responses:
+        "200":
+          description: Prefill only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MwstHelferAntwort"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
 components:
   parameters:
     IfMatch:
@@ -2305,6 +2663,15 @@ components:
         summe_cent:
           type: integer
           format: int64
+        vorsteuer_cent:
+          type: integer
+          format: int64
+        bewirtung_abziehbar_cent:
+          type: integer
+          format: int64
+        bewirtung_nicht_abziehbar_cent:
+          type: integer
+          format: int64
         blocker:
           type: array
           items:
@@ -2477,6 +2844,328 @@ components:
       properties:
         grund:
           type: string
+    Steueranteil:
+      type: object
+      required: [satz, steuerland, brutto_cent, netto_cent, steuer_cent, brutto_eur_cent, netto_eur_cent, steuer_eur_cent]
+      properties:
+        satz:
+          type: integer
+          format: int64
+        steuerland:
+          type: string
+        brutto_cent:
+          type: integer
+          format: int64
+        netto_cent:
+          type: integer
+          format: int64
+        steuer_cent:
+          type: integer
+          format: int64
+        brutto_eur_cent:
+          type: integer
+          format: int64
+        netto_eur_cent:
+          type: integer
+          format: int64
+        steuer_eur_cent:
+          type: integer
+          format: int64
+        vorsteuer:
+          type: boolean
+    SteueranteilWrite:
+      type: object
+      required: [satz, steuerland, brutto_cent]
+      properties:
+        satz:
+          type: integer
+          format: int64
+        steuerland:
+          type: string
+        brutto_cent:
+          type: integer
+          format: int64
+        netto_cent:
+          type: integer
+          format: int64
+        steuer_cent:
+          type: integer
+          format: int64
+    Teilnehmer:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        firma:
+          type: string
+    Bewirtung:
+      type: object
+      properties:
+        anlass:
+          type: string
+        ort:
+          type: string
+        bewirtender:
+          type: string
+        trinkgeld_cent:
+          type: integer
+          format: int64
+        teilnehmer:
+          type: array
+          items:
+            $ref: "#/components/schemas/Teilnehmer"
+        bestaetigt_am:
+          type: string
+    Eigenbeleg:
+      type: object
+      required: [grund, zahlungsempfaenger, art]
+      properties:
+        grund:
+          type: string
+        zahlungsempfaenger:
+          type: string
+        art:
+          type: string
+        bestaetigt_am:
+          type: string
+    EigenbelegWrite:
+      type: object
+      required: [grund, zahlungsempfaenger, art]
+      properties:
+        grund:
+          type: string
+        zahlungsempfaenger:
+          type: string
+        art:
+          type: string
+    Ausgabe:
+      type: object
+      required: [id, reise_id, kostenart, datum, waehrung, betrag_cent, betrag_eur_cent, rechnungsart, rechnung_auf_arbeitgeber, version, anteile, beleg_ids]
+      properties:
+        id:
+          type: string
+        reise_id:
+          type: string
+        kostenart:
+          type: string
+        datum:
+          type: string
+        leistender:
+          type: string
+        beschreibung:
+          type: string
+        waehrung:
+          type: string
+        betrag_cent:
+          type: integer
+          format: int64
+        betrag_eur_cent:
+          type: integer
+          format: int64
+        kurs:
+          type: string
+        kurs_quelle:
+          type: string
+        kurs_datum:
+          type: string
+        kurs_grund:
+          type: string
+        ust_kurs:
+          type: string
+        rechnungsart:
+          type: string
+        rechnung_auf_arbeitgeber:
+          type: boolean
+        empfaenger:
+          type: string
+        verkehrsmittel:
+          type: string
+        uebernachtung_naechte:
+          type: array
+          items:
+            type: string
+        fruehstueck_enthalten:
+          type: boolean
+        mahlzeit:
+          type: string
+        tse_beleg:
+          type: boolean
+        bewirtung:
+          $ref: "#/components/schemas/Bewirtung"
+        eigenbeleg:
+          $ref: "#/components/schemas/Eigenbeleg"
+        anteile:
+          type: array
+          items:
+            $ref: "#/components/schemas/Steueranteil"
+        beleg_ids:
+          type: array
+          items:
+            type: string
+        warnungen:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+          format: int64
+    AusgabeWrite:
+      type: object
+      required: [kostenart, datum, waehrung, betrag_cent]
+      properties:
+        kostenart:
+          type: string
+        datum:
+          type: string
+        leistender:
+          type: string
+        beschreibung:
+          type: string
+        waehrung:
+          type: string
+        betrag_cent:
+          type: integer
+          format: int64
+        betrag_eur_cent:
+          type: integer
+          format: int64
+        kurs:
+          type: string
+        kurs_quelle:
+          type: string
+        kurs_grund:
+          type: string
+        rechnungsart:
+          type: string
+        rechnung_auf_arbeitgeber:
+          type: boolean
+        empfaenger:
+          type: string
+        verkehrsmittel:
+          type: string
+        uebernachtung_naechte:
+          type: array
+          items:
+            type: string
+        fruehstueck_enthalten:
+          type: boolean
+        mahlzeit:
+          type: string
+        tse_beleg:
+          type: boolean
+        bewirtung:
+          $ref: "#/components/schemas/Bewirtung"
+        anteile:
+          type: array
+          items:
+            $ref: "#/components/schemas/SteueranteilWrite"
+        beleg_ids:
+          type: array
+          items:
+            type: string
+    AusgabeListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ausgabe"
+    BelegZuordnung:
+      type: object
+      required: [beleg_ids]
+      properties:
+        beleg_ids:
+          type: array
+          items:
+            type: string
+    Wechselkurs:
+      type: object
+      required: [waehrung, datum, kurs, kurs_datum, quelle]
+      properties:
+        waehrung:
+          type: string
+        datum:
+          type: string
+        kurs:
+          type: string
+        kurs_datum:
+          type: string
+        quelle:
+          type: string
+    UstKurs:
+      type: object
+      required: [waehrung, jahr, monat, kurs]
+      properties:
+        waehrung:
+          type: string
+        jahr:
+          type: integer
+        monat:
+          type: integer
+        kurs:
+          type: string
+    Vorschuss:
+      type: object
+      required: [id, arbeitgeber_id, datum, betrag_cent, version]
+      properties:
+        id:
+          type: string
+        arbeitgeber_id:
+          type: string
+        datum:
+          type: string
+        betrag_cent:
+          type: integer
+          format: int64
+        notiz:
+          type: string
+        verrechnet:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    VorschussWrite:
+      type: object
+      required: [arbeitgeber_id, datum, betrag_cent]
+      properties:
+        arbeitgeber_id:
+          type: string
+        datum:
+          type: string
+        betrag_cent:
+          type: integer
+          format: int64
+        notiz:
+          type: string
+    VorschussListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Vorschuss"
+    MwstHelfer:
+      type: object
+      required: [art, betrag_cent]
+      properties:
+        art:
+          type: string
+        betrag_cent:
+          type: integer
+          format: int64
+        jahr:
+          type: integer
+    MwstHelferAntwort:
+      type: object
+      required: [anteile]
+      properties:
+        anteile:
+          type: array
+          items:
+            $ref: "#/components/schemas/SteueranteilWrite"
     Warnung:
       type: object
       required: [code, reise_id, anlass]
@@ -2492,6 +3181,8 @@ components:
         staette:
           type: string
         beleg_id:
+          type: string
+        ausgabe_id:
           type: string
     WarnungListe:
       type: object

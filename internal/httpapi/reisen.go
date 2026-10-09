@@ -404,10 +404,14 @@ func (a *App) warnings(r *http.Request, nutzerID string) ([]api.Warnung, error) 
 	for _, b := range bundles {
 		re := result[b.Reise.ID]
 		seen := map[string]bool{}
-		for _, code := range re.Warnungen {
-			if code != "W12" && code != "W14" && code != "W03" {
-				continue
+		for _, line := range re.Ausgaben {
+			id := line.ID
+			for _, code := range line.Warnungen {
+				items = append(items, api.Warnung{Code: code, ReiseId: b.Reise.ID, Anlass: b.Reise.Anlass, AusgabeId: &id})
+				seen[code] = true
 			}
+		}
+		for _, code := range append(append([]string{}, re.Warnungen...), re.Blocker...) {
 			if seen[code] {
 				continue
 			}
@@ -438,6 +442,7 @@ func (a *App) warnings(r *http.Request, nutzerID string) ([]api.Warnung, error) 
 		existing := *d.DuplikatVon
 		items = append(items, api.Warnung{Code: "W04", ReiseId: "", Anlass: d.ID, BelegId: &existing})
 	}
+	items = append(items, fuzzyAusgaben(bundles)...)
 	if items == nil {
 		items = []api.Warnung{}
 	}
@@ -468,6 +473,8 @@ func (a *App) preview(r *http.Request, nutzerID, reiseID string) (api.Berechnung
 		ReiseId: reiseID, FahrtkostenCent: re.Fahrtkosten, VerpflegungCent: re.Verpflegung,
 		UebernachtungCent: re.Uebernachtung, ReisenebenkostenCent: re.Reisenebenkosten,
 		BewirtungCent: re.Bewirtung, SummeCent: re.Summe,
+		VorsteuerCent: &re.Vorsteuer, BewirtungAbziehbarCent: &re.BewirtungAbziehbar,
+		BewirtungNichtAbziehbarCent: &re.BewirtungNichtAbziehbar,
 	}
 	if len(re.Blocker) > 0 {
 		view.Blocker = &re.Blocker
@@ -544,23 +551,26 @@ func (a *App) calculate(r *http.Request, bundles []store.ReiseBundle) (map[strin
 			years[y] = loaded
 		}
 		for _, f := range b.Fahrten {
-			y := yearOf(f.Datum)
-			if _, ok := years[y]; ok || y == 0 {
-				continue
-			}
-			loaded, err := a.store.EffectiveYear(r.Context(), y)
-			if errors.Is(err, store.ErrNotFound) {
-				continue
-			}
-			if err != nil {
+			if err := a.ensureYear(r, years, yearOf(f.Datum)); err != nil {
 				return nil, nil, nil, err
 			}
-			years[y] = loaded
+		}
+		for _, item := range b.Ausgaben {
+			if err := a.ensureYear(r, years, yearOf(item.Row.Datum)); err != nil {
+				return nil, nil, nil, err
+			}
 		}
 		if err := a.rememberStaetten(r, b, names); err != nil {
 			return nil, nil, nil, err
 		}
 		visits = append(visits, stays(b, names)...)
+	}
+	nutzerID := ""
+	if len(bundles) > 0 {
+		nutzerID = bundles[0].Reise.NutzerID
+	}
+	if err := a.attachMoney(r, nutzerID, &in); err != nil {
+		return nil, nil, nil, err
 	}
 	got, err := berechnung.Berechne(in)
 	if err != nil {
@@ -657,51 +667,7 @@ func nextCivil(s string) string {
 }
 
 func bundleToCalc(b store.ReiseBundle) berechnung.Reise {
-	trip := berechnung.Reise{
-		ID: b.Reise.ID, Anlass: b.Reise.Anlass, ArbeitgeberID: b.Reise.ArbeitgeberID,
-		Konstellation: "arbeitgebererstattung", Status: b.Reise.Status,
-		Beginn: berechnung.Zeitpunkt{Lokal: localStamp(b.Reise.Beginn, b.Reise.BeginnZone), Zone: b.Reise.BeginnZone},
-		Ende:   berechnung.Zeitpunkt{Lokal: localStamp(b.Reise.Ende, b.Reise.EndeZone), Zone: b.Reise.EndeZone},
-		Tage:   map[string]berechnung.TagEingabe{},
-	}
-	for _, leg := range b.Legs {
-		o := berechnung.Ortswechsel{
-			Ankunft:        berechnung.Zeitpunkt{Lokal: localStamp(leg.Ankunft, leg.AnkunftZone), Zone: leg.AnkunftZone},
-			Verkehrsmittel: leg.Verkehrsmittel, LandISO: leg.LandIso, Satzort: leg.Satzort, Ort: leg.Ort,
-			ZwischenlandungMitUebernachtung: leg.ZwischenlandungMitUebernachtung,
-		}
-		if leg.Abfahrt != nil && leg.AbfahrtZone != nil {
-			o.Abfahrt = &berechnung.Zeitpunkt{Lokal: localStamp(*leg.Abfahrt, *leg.AbfahrtZone), Zone: *leg.AbfahrtZone}
-		}
-		if leg.TaetigkeitsstaetteID != nil {
-			o.TaetigkeitsstaetteID = *leg.TaetigkeitsstaetteID
-			o.Taetigkeit = true
-		}
-		trip.Ortswechsel = append(trip.Ortswechsel, o)
-	}
-	for _, day := range b.Tage {
-		in := berechnung.TagEingabe{
-			Fruehstueck: day.FruehstueckGestellt, Mittag: day.MittagGestellt, Abend: day.AbendGestellt,
-			ZuzahlungFruehstueck: day.ZuzahlungFruehstueck, ZuzahlungMittag: day.ZuzahlungMittag, ZuzahlungAbend: day.ZuzahlungAbend,
-			Unterkunft: day.Unterkunft, VerpflegungAusgeschlossen: day.VerpflegungAusgeschlossen,
-		}
-		if day.LandManuell != nil {
-			in.LandManuell = *day.LandManuell
-		}
-		if day.SatzortManuell != nil {
-			in.SatzortManuell = *day.SatzortManuell
-		}
-		if day.LandBegruendung != nil {
-			in.Begruendung = *day.LandBegruendung
-		}
-		trip.Tage[day.Datum] = in
-	}
-	for _, f := range b.Fahrten {
-		trip.Fahrten = append(trip.Fahrten, berechnung.Fahrt{
-			ID: f.ID, Datum: f.Datum, Fahrzeugart: f.Fahrzeugart, Km: f.Km, HinUndZurueck: f.HinUndZurueck,
-		})
-	}
-	return trip
+	return store.CalcReise(b)
 }
 
 func (a *App) applyFahrt(r *http.Request, n sqlitedb.Nutzer, vorlageID string, daten map[string]any, body api.VorlageAnwenden) (sqlitedb.Fahrt, error) {
@@ -866,7 +832,7 @@ func writeStoreErr(w http.ResponseWriter, err error) bool {
 	var code *store.CodeError
 	if errors.As(err, &code) {
 		status := http.StatusUnprocessableEntity
-		if code.Code == "reise_gesperrt" || code.Code == "beleg_fest" {
+		if code.Code == "reise_gesperrt" || code.Code == "beleg_fest" || code.Code == "vorschuss_verrechnet" {
 			status = http.StatusConflict
 		}
 		writeProblem(w, status, code.Code, "Check the input", "")
@@ -914,6 +880,24 @@ func mustLoc(zone string) *time.Location {
 		return time.UTC
 	}
 	return loc
+}
+
+func (a *App) ensureYear(r *http.Request, years map[int]*satz.Year, y int) error {
+	if y == 0 {
+		return nil
+	}
+	if _, ok := years[y]; ok {
+		return nil
+	}
+	loaded, err := a.store.EffectiveYear(r.Context(), y)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	years[y] = loaded
+	return nil
 }
 
 func yearOf(datum string) int {

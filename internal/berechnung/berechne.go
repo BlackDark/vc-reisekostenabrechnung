@@ -3,6 +3,7 @@ package berechnung
 import (
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/satz"
@@ -305,6 +306,7 @@ func applyOvernight(in *Eingabe, p *prep) {
 		case "pauschale":
 			if covered(*p.reise, dc.datum.String()) > 0 {
 				p.blocker = appendUnique(p.blocker, "uebernachtung_doppelt")
+				p.blocker = appendUnique(p.blocker, "B06")
 			}
 			dc.ueb = p.days[i].sleepHit.Uebernachtung
 			dc.regeln = append(dc.regeln, "UEB-PAUSCHALE")
@@ -733,8 +735,57 @@ func convertAusgabe(in *Eingabe, r Reise, a Ausgabe) (AusgabeErgebnis, []string,
 	if outsideTrip(r, d) {
 		warns = append(warns, "W11")
 	}
+	if a.PruefeBeleg {
+		if a.BelegAnzahl == 0 && !a.Eigenbeleg && a.Rechnungsart != "eigenbeleg" {
+			warns = append(warns, "W01")
+		}
+		if a.BelegOffen {
+			warns = append(warns, "B01")
+		}
+		if a.Eigenbeleg || a.Rechnungsart == "eigenbeleg" {
+			warns = appendUnique(warns, "W05")
+		}
+	}
+	if a.Kostenart == "bewirtung" && a.Bewirtung != nil {
+		if bewirtungMissing(a, eur, klein) {
+			warns = append(warns, "B03")
+		}
+		if !a.TSE {
+			warns = append(warns, "W06")
+		}
+	}
+	if a.Empfaenger != "" && r.ArbeitgeberName != "" && !strings.EqualFold(strings.TrimSpace(a.Empfaenger), strings.TrimSpace(r.ArbeitgeberName)) {
+		warns = appendUnique(warns, "W02")
+	}
+	if a.Waehrung != "" && a.Waehrung != "EUR" && a.Monatskurs != "" && deTax(shares) {
+		warns = appendUnique(warns, "H-UST-KURS")
+		ae.Monatskurs = a.Monatskurs
+	}
 	ae.Warnungen = warns
 	return ae, warns, block
+}
+
+func deTax(shares []SteuerErgebnis) bool {
+	for _, sh := range shares {
+		if sh.Steuerland == "DE" && sh.Satz > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func bewirtungMissing(a Ausgabe, eur, klein int64) bool {
+	b := a.Bewirtung
+	if b == nil {
+		return false
+	}
+	if strings.TrimSpace(b.Anlass) == "" || b.Teilnehmer < 1 || strings.TrimSpace(b.Ort) == "" || !b.Bestaetigt {
+		return true
+	}
+	if eur > klein && strings.TrimSpace(b.Bewirtender) == "" {
+		return true
+	}
+	return false
 }
 
 func moneyEUR(in *Eingabe, a Ausgabe) (eur int64, kurs, kursDatum, block string) {
@@ -845,6 +896,11 @@ func rollup(in *Eingabe, p *prep) ReiseErgebnis {
 			AbwesenheitMin: dc.absence, Pauschale: dc.pauschale, Kuerzungen: dc.kuerz,
 			Ergebnis: dc.ergebnis, Uebernachtung: dc.ueb, RegelIDs: uniqueStrings(dc.regeln),
 			Hinweise: dc.hinweise, Warnungen: uniqueStrings(dc.warnungen),
+		}
+		for _, h := range dc.hinweise {
+			if h.Code == "H-SACHBEZUG" {
+				te.Warnungen = append(te.Warnungen, "W07")
+			}
 		}
 		if te.LandISO == "" {
 			te.LandISO = "DE"

@@ -16,6 +16,7 @@
 	let trip = $state<Reise | null>(null);
 	let calc = $state<components["schemas"]["Berechnung"] | null>(null);
 	let fahrten = $state<Fahrt[]>([]);
+	let ausgaben = $state<components["schemas"]["Ausgabe"][]>([]);
 	let lands = $state<Land[]>([]);
 	let places = $state<Record<string, Place[]>>({});
 	let error = $state("");
@@ -57,10 +58,11 @@
 	}
 
 	async function load(current: string) {
-		const [tripRes, calcRes, fahrtRes] = await Promise.all([
+		const [tripRes, calcRes, fahrtRes, ausgabeRes] = await Promise.all([
 			api.GET("/api/v1/reisen/{id}", { params: { path: { id: current } } }),
 			api.GET("/api/v1/reisen/{id}/berechnung", { params: { path: { id: current } } }),
 			api.GET("/api/v1/reisen/{id}/fahrten", { params: { path: { id: current } } }),
+			api.GET("/api/v1/reisen/{id}/ausgaben", { params: { path: { id: current } } }),
 		]);
 		if (!tripRes.data) {
 			error = m.save_failed();
@@ -70,6 +72,7 @@
 		trip = tripRes.data;
 		calc = calcRes.data ?? null;
 		fahrten = fahrtRes.data?.items ?? [];
+		ausgaben = ausgabeRes.data?.items ?? [];
 		if (!fahrtDatum && trip.reisetage[0]) fahrtDatum = trip.reisetage[0].datum;
 		await loadLands(Number(trip.beginn.slice(0, 4)) || 2026);
 	}
@@ -226,6 +229,27 @@
 	<p class="mt-1 text-sm">{trip.beginn.slice(0, 16)} – {trip.ende.slice(0, 16)} ({trip.beginn_zone})</p>
 	{#if calc?.blocker && calc.blocker.length > 0}
 		<p class="mt-3 text-sm" role="alert">{m.reise_blocker()}: {calc.blocker.join(", ")}</p>
+	{/if}
+	<p class="mt-3">
+		<a class="underline" href={`/reisen/${trip.id}/ausgaben/neu`}>{m.ausgabe_new()}</a>
+	</p>
+	{#if ausgaben.length > 0}
+		<ul class="mt-2 grid gap-2">
+			{#each ausgaben as row (row.id)}
+				<li>
+					<a class="block rounded border px-3 py-3 text-sm" href={p("/ausgaben/:id", { params: { id: row.id } })}>
+						{row.kostenart} · {money(row.betrag_eur_cent)} {row.waehrung === "EUR" ? "" : row.waehrung}
+					</a>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+	{#if calc?.warnungen}
+		<ul class="mt-2 grid gap-1 text-sm">
+			{#each calc.warnungen as code (code)}
+				<li role="status">{code}</li>
+			{/each}
+		</ul>
 	{/if}
 	{#if calc}
 		<p class="mt-3 text-sm">
