@@ -1,0 +1,27 @@
+id: G14
+reisen:
+  - id: r1
+    anlass: Fahrten
+    beginn: "2026-03-10T09:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-03-10T12:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-03-10T10:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: pkw
+        land_iso: DE
+    fahrten:
+      - datum: "2026-03-10"
+        fahrzeugart: kraftwagen
+        km: 142
+        hin_und_zurueck: true
+      - datum: "2026-03-10"
+        fahrzeugart: anderes_motorfahrzeug
+        km: 38
+expect:
+  reisen:
+    - id: r1
+      fahrtkosten: 9280
+      verpflegung: 0
+      summe: 9280

@@ -1,0 +1,57 @@
+id: G03
+reisen:
+  - id: r1
+    anlass: Hotel
+    beginn: "2026-04-13T08:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-04-15T18:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-04-13T10:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: DE
+        ort: Hamburg
+    tage:
+      "2026-04-13":
+        unterkunft: beleg
+      "2026-04-14":
+        unterkunft: beleg
+        fruehstueck: true
+      "2026-04-15":
+        fruehstueck: true
+    ausgaben:
+      - id: hotel
+        kostenart: uebernachtung
+        datum: "2026-04-13"
+        betrag: 17800
+        waehrung: EUR
+        naechte: ["2026-04-13", "2026-04-14"]
+        fruehstueck: true
+        anteile:
+          - satz: 700
+            steuerland: DE
+            brutto: 17800
+expect:
+  reisen:
+    - id: r1
+      verpflegung: 4480
+      uebernachtung: 17800
+      summe: 22280
+      tage:
+        - datum: "2026-04-13"
+          tagesart: anreisetag
+          ergebnis: 1400
+        - datum: "2026-04-14"
+          tagesart: zwischentag
+          ergebnis: 2240
+          kuerzung: 560
+        - datum: "2026-04-15"
+          tagesart: abreisetag
+          ergebnis: 840
+          kuerzung: 560
+  vorschlaege:
+    - datum: "2026-04-14"
+      mahlzeit: fruehstueck
+    - datum: "2026-04-15"
+      mahlzeit: fruehstueck

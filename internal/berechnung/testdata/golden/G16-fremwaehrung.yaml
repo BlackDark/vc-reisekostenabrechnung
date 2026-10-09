@@ -1,0 +1,57 @@
+id: G16
+kurse:
+  - waehrung: USD
+    datum: "2026-09-11"
+    kurs: "1.1650"
+reisen:
+  - id: ezb
+    anlass: Taxi
+    beginn: "2026-09-12T10:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-09-12T11:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-09-12T10:15:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: sonstiges
+        land_iso: DE
+    ausgaben:
+      - id: taxi
+        kostenart: fahrtkosten
+        datum: "2026-09-12"
+        waehrung: USD
+        betrag: 4850
+  - id: belastung
+    anlass: Taxi belastet
+    beginn: "2026-09-13T10:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-09-13T11:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-09-13T10:15:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: sonstiges
+        land_iso: DE
+    ausgaben:
+      - id: taxi2
+        kostenart: fahrtkosten
+        datum: "2026-09-12"
+        waehrung: USD
+        betrag: 4850
+        kurs_quelle: belastung
+        betrag_eur: 4237
+expect:
+  reisen:
+    - id: ezb
+      fahrtkosten: 4163
+      ausgaben:
+        - id: taxi
+          betrag_eur: 4163
+          kurs_datum: "2026-09-11"
+          kurs: "1.1650"
+    - id: belastung
+      fahrtkosten: 4237
+      ausgaben:
+        - id: taxi2
+          betrag_eur: 4237
+          kurs: "1.144678"

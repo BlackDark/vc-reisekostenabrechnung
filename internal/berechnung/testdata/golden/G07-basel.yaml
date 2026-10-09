@@ -1,0 +1,30 @@
+id: G07
+reisen:
+  - id: r1
+    anlass: Basel
+    beginn: "2026-07-07T06:00:00"
+    beginn_zone: Europe/Berlin
+    ende: "2026-07-07T20:00:00"
+    ende_zone: Europe/Berlin
+    ortswechsel:
+      - ankunft: "2026-07-07T08:00:00"
+        ankunft_zone: Europe/Berlin
+        verkehrsmittel: bahn
+        land_iso: CH
+        ort: Basel
+        taetigkeit: true
+    tage:
+      "2026-07-07":
+        mittag: true
+expect:
+  reisen:
+    - id: r1
+      verpflegung: 1900
+      summe: 1900
+      tage:
+        - datum: "2026-07-07"
+          tagesart: eintaegig
+          land: CH
+          satzort: ""
+          ergebnis: 1900
+          kuerzung: 2800

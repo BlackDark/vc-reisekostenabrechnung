@@ -1,0 +1,8 @@
+id: G19
+auszahlung:
+  - erstattung: 41240
+    vorschuesse: [30000]
+    auszahlung: 11240
+  - erstattung: 41240
+    vorschuesse: [50000]
+    auszahlung: -8760
