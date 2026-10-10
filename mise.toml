@@ -1,0 +1,7 @@
+# Tool versions for local development. CI reads go.mod, .node-version and the
+# pnpm version from package.json, so keep them in sync with this file.
+[tools]
+go = "1.27"
+node = "24"
+pnpm = "12.10.1"
+golangci-lint = "2.14.0"
