@@ -4,6 +4,7 @@
 	import { toast } from "svelte-sonner";
 	import { api } from "$lib/api";
 	import type { components } from "$lib/api/schema";
+	import AusgabeEditor from "$lib/components/ausgabe-editor.svelte";
 	import DateField from "$lib/components/date-field.svelte";
 	import StatCard from "$lib/components/stat-card.svelte";
 	import StatusBadge from "$lib/components/status-badge.svelte";
@@ -51,6 +52,7 @@
 		"grid-cols-[8.5rem_7.5rem_minmax(9rem,1.4fr)_repeat(3,5.75rem)] items-center gap-x-3";
 	let fahrtOpen = $state(false);
 	let vorlageOpen = $state(false);
+	let ausgabeOpen = $state(false);
 
 	const id = $derived(route.params.id ?? "");
 	const lastDatum = $derived(trip?.reisetage.at(-1)?.datum ?? "");
@@ -287,7 +289,19 @@
 </Button>
 {#if trip}
 	{#snippet actions(current: Reise)}
-		<Button variant="outline" size="sm" href={`/reisen/${current.id}/ausgaben/neu`}>{m.ausgabe_new()}</Button>
+		<Button
+			variant="outline"
+			size="sm"
+			href={`/reisen/${current.id}/ausgaben/neu`}
+			onclick={(event) => {
+				// The href keeps the standalone form reachable (deep links, non-JS); the
+				// click upgrades it to the side panel below.
+				event.preventDefault();
+				ausgabeOpen = true;
+			}}
+		>
+			{m.ausgabe_new()}
+		</Button>
 		<Button variant="outline" size="sm" type="button" onclick={() => (fahrtOpen = true)}>{m.reise_add_fahrt()}</Button>
 		<Button variant="outline" size="sm" type="button" onclick={() => (vorlageOpen = true)}>{m.reise_open_template()}</Button>
 		<Button variant="destructive" size="sm" type="button" onclick={() => askDelete("trip")}>{m.reise_delete()}</Button>
@@ -545,6 +559,20 @@
 			</Dialog.Footer>
 		</Dialog.Content>
 	</Dialog.Root>
+
+	<Sheet.Root bind:open={ausgabeOpen}>
+		<Sheet.Content class="overflow-y-auto">
+			<Sheet.Header>
+				<Sheet.Title>{m.ausgabe_title()}</Sheet.Title>
+			</Sheet.Header>
+			<div class="px-4 pb-4">
+				<AusgabeEditor
+					reiseId={trip.id}
+					onsaved={(row) => void navigate("/ausgaben/:id", { params: { id: row.id } })}
+				/>
+			</div>
+		</Sheet.Content>
+	</Sheet.Root>
 
 	<Sheet.Root bind:open={fahrtOpen}>
 		<Sheet.Content class="overflow-y-auto">

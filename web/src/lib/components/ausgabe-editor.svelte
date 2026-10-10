@@ -1,0 +1,375 @@
+<script lang="ts">
+	import { api } from "$lib/api";
+	import type { components } from "$lib/api/schema";
+	import DateField from "$lib/components/date-field.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
+	import { formatWhen } from "$lib/dates";
+	import { euro, parseEuroToCents } from "$lib/money";
+	import { m } from "$lib/paraglide/messages.js";
+	import { session } from "$lib/session.svelte";
+
+	type Ausgabe = components["schemas"]["Ausgabe"];
+	type Share = { satz: number; steuerland: string; brutto: string };
+
+	let {
+		reiseId = "",
+		ausgabeId = "",
+		belegId = "",
+		kiVorschlag = false,
+		onsaved,
+	}: {
+		/** Set when creating; empty while editing an existing expense. */
+		reiseId?: string;
+		/** Set while editing; empty when creating a new expense. */
+		ausgabeId?: string;
+		belegId?: string;
+		/** Fill the fields from the AI reading of the attached receipt. */
+		kiVorschlag?: boolean;
+		onsaved: (ausgabe: Ausgabe) => void;
+	} = $props();
+
+	const editing = $derived(Boolean(ausgabeId));
+
+	let loaded = $state<Ausgabe | null>(null);
+	let error = $state("");
+	let kostenart = $state("fahrtkosten");
+	let datum = $state("");
+	let leistender = $state("");
+	let betrag = $state("");
+	let waehrung = $state("EUR");
+	let aufArbeitgeber = $state(false);
+	let anteile = $state<Share[]>([{ satz: 1900, steuerland: "DE", brutto: "" }]);
+	let anlass = $state("");
+	let ort = $state("");
+	let bewirtender = $state("");
+	let teilnehmer = $state<{ name: string; firma: string }[]>([{ name: "", firma: "" }]);
+	let tse = $state(false);
+	let eigen = $state(false);
+	let eigenGrund = $state("");
+	let eigenWer = $state("");
+	let eigenArt = $state("");
+	let saving = $state(false);
+	let empfaenger = $state("");
+	let employerName = $state("");
+	let kiMark = $state(false);
+	let kiText = $state("");
+	let kiLoaded = $state(false);
+
+	const payeeWarn = $derived(
+		empfaenger.trim() !== "" &&
+			employerName.trim() !== "" &&
+			empfaenger.trim().toLocaleLowerCase() !== employerName.trim().toLocaleLowerCase(),
+	);
+
+	$effect(() => {
+		const trip = reiseId;
+		if (!session.nutzer || !trip) return;
+		void api.GET("/api/v1/reisen/{id}", { params: { path: { id: trip } } }).then(async (res) => {
+			const ag = res.data?.arbeitgeber_id;
+			if (!ag) return;
+			const one = await api.GET("/api/v1/arbeitgeber/{id}", { params: { path: { id: ag } } });
+			if (one.data?.name && trip === reiseId) employerName = one.data.name;
+		});
+	});
+
+	$effect(() => {
+		const beleg = belegId;
+		if (!session.nutzer || editing || !kiVorschlag || !beleg || kiLoaded) return;
+		kiLoaded = true;
+		void api.GET("/api/v1/belege/{id}/ki", { params: { path: { id: beleg } } }).then((res) => {
+			const v = res.data?.vorschlag;
+			if (res.data?.status !== "vorschlag" || !v) return;
+			kiMark = true;
+			if (v.leistender) leistender = v.leistender;
+			if (v.datum) datum = v.datum;
+			if (v.waehrung) waehrung = v.waehrung;
+			if (v.betrag_brutto_cent) betrag = (v.betrag_brutto_cent / 100).toFixed(2);
+			if (v.kostenart) kostenart = v.kostenart;
+			if (v.empfaenger_name) empfaenger = v.empfaenger_name;
+			kiText = v.volltext ?? "";
+			if (v.steueranteile && v.steueranteile.length > 0) {
+				anteile = v.steueranteile.map((row) => ({
+					satz: row.satz,
+					steuerland: "DE",
+					brutto: ((row.brutto_cent ?? 0) / 100).toFixed(2),
+				}));
+			}
+		});
+	});
+
+	$effect(() => {
+		if (!session.nutzer || !editing) return;
+		void api.GET("/api/v1/ausgaben/{id}", { params: { path: { id: ausgabeId } } }).then((res) => {
+			if (!res.data) {
+				error = m.save_failed();
+				return;
+			}
+			loaded = res.data;
+		});
+	});
+
+	function yearOf(value: string): number {
+		const y = Number(value.slice(0, 4));
+		return Number.isFinite(y) && y > 0 ? y : new Date().getFullYear();
+	}
+
+	async function applyHelper(art: "gastronomie" | "hotel") {
+		const res = await api.POST("/api/v1/mwst-helfer", {
+			body: { art, betrag_cent: parseEuroToCents(betrag), jahr: yearOf(datum) },
+		});
+		const rows = res.data?.anteile ?? [];
+		if (rows.length === 0) {
+			error = m.save_failed();
+			return;
+		}
+		anteile = rows.map((row) => ({
+			satz: row.satz,
+			steuerland: row.steuerland,
+			brutto: (row.brutto_cent / 100).toFixed(2),
+		}));
+	}
+
+	async function save() {
+		saving = true;
+		error = "";
+		if (kiMark && belegId) {
+			const text = await api.POST("/api/v1/belege/{id}/texte", {
+				params: { path: { id: belegId } },
+				body: {
+					volltext: kiText,
+					felder: {
+						leistender,
+						datum,
+						waehrung,
+						betrag_brutto_cent: parseEuroToCents(betrag),
+						kostenart,
+						empfaenger_name: empfaenger,
+						volltext: kiText,
+						steueranteile: anteile.map((row) => ({
+							satz: Number(row.satz),
+							brutto_cent: parseEuroToCents(row.brutto || betrag),
+						})),
+					},
+				},
+			});
+			if (!text.response.ok) {
+				error = m.save_failed();
+				saving = false;
+				return;
+			}
+		}
+		const body = {
+			kostenart,
+			datum,
+			waehrung,
+			betrag_cent: parseEuroToCents(betrag),
+			leistender,
+			empfaenger,
+			rechnung_auf_arbeitgeber: aufArbeitgeber,
+			rechnungsart: eigen ? "eigenbeleg" : "kleinbetragsrechnung",
+			tse_beleg: tse,
+			anteile: anteile.map((row) => ({
+				satz: Number(row.satz),
+				steuerland: row.steuerland || "DE",
+				brutto_cent: parseEuroToCents(row.brutto || betrag),
+			})),
+			beleg_ids: belegId ? [belegId] : loaded?.beleg_ids ?? [],
+			bewirtung:
+				kostenart === "bewirtung"
+					? {
+							anlass,
+							ort,
+							bewirtender,
+							teilnehmer: teilnehmer.filter((row) => row.name.trim()),
+						}
+					: undefined,
+		};
+		const res = editing
+			? await api.PATCH("/api/v1/ausgaben/{id}", {
+					params: { path: { id: ausgabeId }, header: { "If-Match": String(loaded?.version ?? "") } },
+					body,
+				})
+			: await api.POST("/api/v1/reisen/{id}/ausgaben", { params: { path: { id: reiseId } }, body });
+		if (!res.data) {
+			error = m.save_failed();
+			saving = false;
+			return;
+		}
+		if (eigen) {
+			await api.PUT("/api/v1/ausgaben/{id}/eigenbeleg", {
+				params: { path: { id: res.data.id }, header: { "If-Match": String(res.data.version) } },
+				body: { grund: eigenGrund, zahlungsempfaenger: eigenWer, art: eigenArt },
+			});
+		}
+		saving = false;
+		onsaved(res.data);
+	}
+
+	async function confirmBewirtung() {
+		if (!loaded) return;
+		const res = await api.POST("/api/v1/ausgaben/{id}/bewirtung/bestaetigen", {
+			params: { path: { id: loaded.id }, header: { "If-Match": String(loaded.version) } },
+		});
+		if (res.data) loaded = res.data;
+		else error = m.save_failed();
+	}
+
+	function money(centsValue: number | undefined): string {
+		return euro(centsValue ?? 0, session.locale);
+	}
+</script>
+
+{#if kiMark}
+	<p class="mt-2 text-sm" data-testid="ki-marke">{m.ki_mark()}: {m.ki_suggestion()}</p>
+{/if}
+{#if payeeWarn}
+	<p class="mt-2 text-sm" role="status" data-testid="warn-w02">{m.warn_W02()}</p>
+{/if}
+{#if loaded}
+	<p class="mt-3 text-sm" data-testid="betrag-eur">{m.ausgabe_betrag()}: {money(loaded.betrag_eur_cent)} EUR</p>
+	{#if loaded.kurs}
+		<p class="text-sm">{loaded.waehrung} {loaded.kurs} ({formatWhen(loaded.kurs_datum ?? "", session.locale, "date")})</p>
+	{/if}
+	{#if loaded.ust_kurs}
+		<p class="text-sm">{m.ausgabe_ust_kurs()}: {loaded.ust_kurs}</p>
+	{/if}
+	<ul class="mt-2 grid gap-1 text-sm">
+		{#each loaded.anteile as share, i (i)}
+			<li data-testid="steuer-anteil">
+				{share.satz / 100}% {share.steuerland} {money(share.brutto_eur_cent)} / {money(share.steuer_eur_cent)}
+			</li>
+		{/each}
+	</ul>
+	{#if loaded.warnungen}
+		<ul class="mt-2 grid gap-1 text-sm">
+			{#each loaded.warnungen as code (code)}
+				<li role="status">{code}</li>
+			{/each}
+		</ul>
+	{/if}
+	{#if loaded.kostenart === "bewirtung" && !loaded.bewirtung?.bestaetigt_am}
+		<Button variant="outline" class="mt-3" type="button" onclick={() => void confirmBewirtung()}>{m.ausgabe_confirm()}</Button>
+	{/if}
+{/if}
+
+<form class="mt-4 grid gap-3" onsubmit={(event) => { event.preventDefault(); void save(); }}>
+	<fieldset class="grid gap-3" disabled={!session.online}>
+		<label class="grid gap-1 text-sm" for="ausgabe-kostenart">
+			{m.ausgabe_kostenart()}
+			<NativeSelect class="w-full" id="ausgabe-kostenart" bind:value={kostenart}>
+				<option value="fahrtkosten">{m.kostenart_fahrtkosten()}</option>
+				<option value="verpflegung">{m.kostenart_verpflegung()}</option>
+				<option value="uebernachtung">{m.kostenart_uebernachtung()}</option>
+				<option value="reisenebenkosten">{m.kostenart_reisenebenkosten()}</option>
+				<option value="bewirtung">{m.kostenart_bewirtung()}</option>
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="ausgabe-datum">
+			{m.ausgabe_datum()}
+			<DateField id="ausgabe-datum" type="date" bind:value={datum} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="ausgabe-leistender">
+			{m.ausgabe_leistender()}
+			<Input id="ausgabe-leistender" bind:value={leistender}  />
+		</label>
+		<label class="grid gap-1 text-sm" for="ausgabe-empfaenger">
+			{m.ausgabe_empfaenger()}
+			<Input id="ausgabe-empfaenger" bind:value={empfaenger}  />
+		</label>
+		<label class="grid gap-1 text-sm" for="ausgabe-betrag">
+			{m.ausgabe_betrag()}
+			<Input id="ausgabe-betrag" inputmode="decimal" bind:value={betrag} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="ausgabe-waehrung">
+			{m.ausgabe_waehrung()}
+			<NativeSelect class="w-full" id="ausgabe-waehrung" bind:value={waehrung}>
+				<option>EUR</option>
+				<option>USD</option>
+				<option>GBP</option>
+				<option>CHF</option>
+			</NativeSelect>
+		</label>
+		<label class="flex items-center gap-2 text-sm">
+			<input type="checkbox" bind:checked={aufArbeitgeber} />
+			{m.ausgabe_employer()}
+		</label>
+		{#if kostenart === "reisenebenkosten"}
+			<p class="text-sm">{m.ausgabe_neben_hint()}</p>
+		{/if}
+		{#if kostenart === "bewirtung"}
+			<p class="text-sm">{m.ausgabe_privat_hint()}</p>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-1">
+				{m.ausgabe_bewirtung_anlass()}
+				<Input id="f-ausgabeform-1" bind:value={anlass}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-2">
+				{m.ausgabe_bewirtung_ort()}
+				<Input id="f-ausgabeform-2" bind:value={ort}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-3">
+				{m.ausgabe_bewirtung_wer()}
+				<Input id="f-ausgabeform-3" bind:value={bewirtender}  />
+			</label>
+			<p class="text-sm font-medium">{m.ausgabe_teilnehmer()}</p>
+			{#each teilnehmer as person, i (i)}
+				<div class="grid gap-2 sm:grid-cols-2">
+					<Input placeholder={m.ausgabe_teilnehmer_name()} bind:value={person.name}  />
+					<Input placeholder={m.ausgabe_teilnehmer_firma()} bind:value={person.firma}  />
+				</div>
+			{/each}
+			<Button variant="outline" type="button" onclick={() => { teilnehmer = [...teilnehmer, { name: "", firma: "" }]; }}>{m.ausgabe_teilnehmer_add()}</Button>
+			<label class="flex items-center gap-2 text-sm">
+				<input type="checkbox" bind:checked={tse} />
+				{m.ausgabe_tse()}
+			</label>
+		{/if}
+		<fieldset class="grid gap-2">
+			<legend class="text-sm font-medium">{m.ausgabe_vat()}</legend>
+			{#each anteile as share, i (i)}
+				<div class="grid gap-2 sm:grid-cols-3">
+					<label class="grid gap-1 text-sm" for="f-ausgabeform-4">
+						{m.ausgabe_satz()}
+						<Input id="f-ausgabeform-4" type="number" bind:value={share.satz}  />
+					</label>
+					<label class="grid gap-1 text-sm" for="f-ausgabeform-5">
+						{m.ausgabe_betrag()}
+						<Input id="f-ausgabeform-5" inputmode="decimal" bind:value={share.brutto}  />
+					</label>
+					<label class="grid gap-1 text-sm" for="f-ausgabeform-6">
+						Land
+						<Input id="f-ausgabeform-6" bind:value={share.steuerland}  />
+					</label>
+				</div>
+			{/each}
+			<div class="flex flex-wrap gap-2">
+				<Button variant="outline" type="button" onclick={() => { anteile = [...anteile, { satz: 700, steuerland: "DE", brutto: "" }]; }}>{m.ausgabe_add_vat()}</Button>
+				<Button variant="outline" type="button" onclick={() => void applyHelper("gastronomie")}>{m.ausgabe_gastro()}</Button>
+				<Button variant="outline" type="button" onclick={() => void applyHelper("hotel")}>{m.ausgabe_hotel()}</Button>
+			</div>
+		</fieldset>
+		<label class="flex items-center gap-2 text-sm">
+			<input type="checkbox" bind:checked={eigen} />
+			{m.ausgabe_eigenbeleg()}
+		</label>
+		{#if eigen}
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-7">
+				{m.ausgabe_eigen_grund()}
+				<Input id="f-ausgabeform-7" bind:value={eigenGrund}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-8">
+				{m.ausgabe_eigen_wer()}
+				<Input id="f-ausgabeform-8" bind:value={eigenWer}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-9">
+				{m.ausgabe_eigen_art()}
+				<Input id="f-ausgabeform-9" bind:value={eigenArt}  />
+			</label>
+		{/if}
+		{#if error}
+			<p class="text-sm" role="alert">{error}</p>
+		{/if}
+		<Button id="ausgabe-save" type="submit" disabled={saving}>{m.create()}</Button>
+	</fieldset>
+</form>
