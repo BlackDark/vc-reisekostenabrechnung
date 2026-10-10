@@ -14,9 +14,16 @@ if [ "$status" -ne 0 ]; then
   echo "$out" >&2
   exit "$status"
 fi
-env -u APP_BASE_URL APP_BASE_URL= docker compose --env-file /dev/null -f docker-compose.yml config >/tmp/compose-missing.out 2>&1 || true
-if ! grep -q "fehlt" /tmp/compose-missing.out; then
-  echo "expected a missing APP_BASE_URL to fail with 'fehlt'" >&2
+# A missing APP_BASE_URL must fail the render. Assert the exit status, not the
+# wording: Compose localises its error message and the hint text is ours, not
+# the tool's.
+set +e
+env -u APP_BASE_URL APP_BASE_URL= docker compose --env-file /dev/null \
+  -f docker-compose.yml config >/tmp/compose-missing.out 2>&1
+status=$?
+set -e
+if [ "$status" -eq 0 ]; then
+  echo "expected a missing APP_BASE_URL to fail the render" >&2
   cat /tmp/compose-missing.out >&2
   exit 1
 fi

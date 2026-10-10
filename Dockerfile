@@ -44,6 +44,9 @@ USER 65532:65532
 ENV DATA_DIR=/data TYPST_PATH=/usr/local/bin/typst HOME=/tmp
 VOLUME ["/data"]
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s --start-period=20s CMD ["/usr/local/bin/reisekosten", "healthcheck"]
+# The app answers in milliseconds, so a 30s probe only burns a process per
+# container per half minute for nothing. 60s with a 30s start period still lets
+# scripts/smoke.sh see the container turn healthy well inside its budget.
+HEALTHCHECK --interval=60s --timeout=5s --start-period=30s CMD ["/usr/local/bin/reisekosten", "healthcheck"]
 ENTRYPOINT ["/usr/local/bin/reisekosten"]
 CMD ["serve"]

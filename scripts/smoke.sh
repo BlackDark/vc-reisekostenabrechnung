@@ -57,8 +57,9 @@ fi
 docker exec "$name" /usr/local/bin/reisekosten export-sample --out /data/sample.pdf || fail "export-sample"
 docker cp "$name":/data/sample.pdf /tmp/sample.pdf || fail "pdf copy"
 head -c 5 /tmp/sample.pdf | grep -q '%PDF' || fail "pdf magic"
+# The image probes every 60s, so allow two probe intervals before giving up.
 healthy=0
-for i in $(seq 1 20); do
+for i in $(seq 1 40); do
   status=$(docker inspect --format '{{.State.Health.Status}}' "$name" 2>/dev/null || true)
   if [ "$status" = "healthy" ]; then
     healthy=1
