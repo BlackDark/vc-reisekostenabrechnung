@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.1.0](https://github.com/BlackDark/vc-reisekostenabrechnung/compare/v1.0.0...v1.1.0) (2026-10-10)
+
+
+### Features
+
+* **web:** add PWA install affordance and disable all forms while offline ([53cd3f3](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/53cd3f3b287d087e813cbed58583a0896da01b0f))
+* **web:** create expenses in a side panel on the trip page ([eedb351](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/eedb3510e26ac4a5328a0ed659b6fead39ae785b))
+
+
+### Bug Fixes
+
+* **belege:** raise the archive quality and serve a readable full-size image ([82f00fe](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/82f00fe0af782c35f84bdd39568adfda16722b0e))
+* grant called workflow permissions so a release can start ([#22](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/22)) ([95e560c](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/95e560c4a00743f70a9e97713252d386867cf756))
+* pass --repo so release notes publish without a checkout ([#24](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/24)) ([30767b1](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/30767b1c351a071c4728b4c2bf6322deb436e1d3))
+
+
+### Documentation
+
+* add roadmap, docs index and email receipt intake design ([#30](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/30)) ([534fdd6](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/534fdd60f1b1331a410b00611762f30a81dd7efd))
+* record spec audit gaps in roadmap ([#36](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/36)) ([19bf1ff](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/19bf1ff37466aa9da72ceadbd10ef33dcfc0994d))
+
+
+### Miscellaneous
+
+* **web:** regenerate the OpenAPI client for the Beleg image endpoint ([5fa9492](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/5fa94929cd59576730249a28eb2cc9e09062b546))
+
 ## 1.0.0 (2026-10-09)
 
 
