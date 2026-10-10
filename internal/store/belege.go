@@ -22,6 +22,18 @@ type DateiIn struct {
 	SHA256   string
 }
 
+// ableitungen are the variants the pipeline derives and a reprocess replaces.
+var ableitungen = []string{"archiv", "vorschau", "bild", "export_jpeg"}
+
+func isAbleitung(variante string) bool {
+	for _, v := range ableitungen {
+		if v == variante {
+			return true
+		}
+	}
+	return false
+}
+
 // NewBeleg is an upload that already has its bytes in storage.
 type NewBeleg struct {
 	ID          string
@@ -284,14 +296,14 @@ func (s *Store) ReprocessBeleg(ctx context.Context, nutzerID, belegID string, ve
 			return err
 		}
 		for _, f := range files {
-			if f.Variante == "archiv" || f.Variante == "vorschau" || f.Variante == "export_jpeg" {
+			if isAbleitung(f.Variante) {
 				if f.Unveraenderbar {
 					return &CodeError{Code: "beleg_fest"}
 				}
 				keys = append(keys, f.SpeicherSchluessel)
 			}
 		}
-		for _, variante := range []string{"archiv", "vorschau", "export_jpeg"} {
+		for _, variante := range ableitungen {
 			if err := q.DeleteBelegdateiVariante(ctx, sqlitedb.DeleteBelegdateiVarianteParams{BelegID: belegID, Variante: variante}); err != nil {
 				return err
 			}
@@ -345,7 +357,7 @@ func (s *Store) ReplaceCapture(ctx context.Context, nutzerID, belegID string, ve
 			}
 			keys = append(keys, f.SpeicherSchluessel)
 		}
-		for _, variante := range []string{"erfassung", "archiv", "vorschau", "export_jpeg", "original"} {
+		for _, variante := range append([]string{"erfassung", "original"}, ableitungen...) {
 			if err := q.DeleteBelegdateiVariante(ctx, sqlitedb.DeleteBelegdateiVarianteParams{BelegID: belegID, Variante: variante}); err != nil {
 				return err
 			}
@@ -386,7 +398,7 @@ func (s *Store) CompleteBeleg(ctx context.Context, belegID, jobID, pipelineVersi
 		if cur.Status == "zur_bestaetigung" || cur.Status == "bestaetigt" || cur.Status == "storniert" {
 			return q.FinishJob(ctx, sqlitedb.FinishJobParams{Jetzt: now, ID: jobID})
 		}
-		for _, variante := range []string{"archiv", "vorschau", "export_jpeg"} {
+		for _, variante := range ableitungen {
 			if err := q.DeleteBelegdateiVariante(ctx, sqlitedb.DeleteBelegdateiVarianteParams{BelegID: belegID, Variante: variante}); err != nil {
 				return err
 			}

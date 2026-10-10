@@ -254,6 +254,31 @@ func (a *App) GetBelegVorschau(w http.ResponseWriter, r *http.Request, id api.Id
 	a.serveDatei(w, r, id, "vorschau", 1, true)
 }
 
+// GetBelegBild serves the display rendition. Belege archived before pipeline 2026.2
+// have none, so the archive master stands in until they are processed again.
+func (a *App) GetBelegBild(w http.ResponseWriter, r *http.Request, id api.Id) {
+	user, ok := a.requireUser(w, r)
+	if !ok {
+		return
+	}
+	if _, err := a.store.GetBeleg(r.Context(), user.ID, id); writeStoreErr(w, err) {
+		return
+	}
+	files, err := a.store.ListBelegdateien(r.Context(), id)
+	if writeStoreErr(w, err) {
+		return
+	}
+	if f, ok := findDatei(files, "bild", 1); ok {
+		a.writeBlob(w, r, f, true)
+		return
+	}
+	if f, ok := findDatei(files, "archiv", 1); ok {
+		a.writeBlob(w, r, f, true)
+		return
+	}
+	writeProblem(w, http.StatusNotFound, "nicht_gefunden", "Not found", "")
+}
+
 func (a *App) GetBelegSeite(w http.ResponseWriter, r *http.Request, id api.Id, n int) {
 	if n < 1 {
 		writeProblem(w, http.StatusNotFound, "nicht_gefunden", "Not found", "")

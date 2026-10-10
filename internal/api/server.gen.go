@@ -1684,6 +1684,9 @@ type ServerInterface interface {
 
 	// (POST /api/v1/belege/{id}/bestaetigen)
 	PostBelegBestaetigen(w http.ResponseWriter, r *http.Request, id Id, params PostBelegBestaetigenParams)
+
+	// (GET /api/v1/belege/{id}/bild)
+	GetBelegBild(w http.ResponseWriter, r *http.Request, id Id)
 	// GetBelegKi Current KI suggestion or job status
 	// (GET /api/v1/belege/{id}/ki)
 	GetBelegKi(w http.ResponseWriter, r *http.Request, id Id)
@@ -3628,6 +3631,32 @@ func (siw *ServerInterfaceWrapper) PostBelegBestaetigen(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostBelegBestaetigen(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBelegBild operation middleware
+func (siw *ServerInterfaceWrapper) GetBelegBild(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBelegBild(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5696,6 +5725,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.DeleteBeleg)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.GetBeleg)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/vorschau", wrapper.GetBelegVorschau)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/bild", wrapper.GetBelegBild)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/seiten/{n}", wrapper.GetBelegSeite)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/original", wrapper.GetBelegOriginal)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/neu-aufbereiten", wrapper.PostBelegNeuAufbereiten)
@@ -9062,6 +9092,84 @@ func (response PostBelegBestaetigen428ApplicationProblemPlusJSONResponse) VisitP
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegBildRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetBelegBildResponseObject interface {
+	VisitGetBelegBildResponse(w http.ResponseWriter) error
+}
+
+type GetBelegBild200ImageavifResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetBelegBild200ImageavifResponse) VisitGetBelegBildResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "image/avif")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetBelegBild200ImagewebpResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetBelegBild200ImagewebpResponse) VisitGetBelegBildResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "image/webp")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetBelegBild401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetBelegBild401ApplicationProblemPlusJSONResponse) VisitGetBelegBildResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegBild404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetBelegBild404ApplicationProblemPlusJSONResponse) VisitGetBelegBildResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -12723,6 +12831,9 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/belege/{id}/bestaetigen)
 	PostBelegBestaetigen(ctx context.Context, request PostBelegBestaetigenRequestObject) (PostBelegBestaetigenResponseObject, error)
+
+	// (GET /api/v1/belege/{id}/bild)
+	GetBelegBild(ctx context.Context, request GetBelegBildRequestObject) (GetBelegBildResponseObject, error)
 	// GetBelegKi Current KI suggestion or job status
 	// (GET /api/v1/belege/{id}/ki)
 	GetBelegKi(ctx context.Context, request GetBelegKiRequestObject) (GetBelegKiResponseObject, error)
@@ -14373,6 +14484,32 @@ func (sh *strictHandler) PostBelegBestaetigen(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostBelegBestaetigenResponseObject); ok {
 		if err := validResponse.VisitPostBelegBestaetigenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBelegBild operation middleware
+func (sh *strictHandler) GetBelegBild(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetBelegBildRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBelegBild(ctx, request.(GetBelegBildRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBelegBild")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBelegBildResponseObject); ok {
+		if err := validResponse.VisitGetBelegBildResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

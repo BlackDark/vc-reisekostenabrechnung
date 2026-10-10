@@ -195,6 +195,7 @@ func (a *App) jobFoto(ctx context.Context, jobID, belegID string) error {
 		}{
 			{"archiv", photo.ArchivExt, photo.ArchivMIME, photo.Archiv},
 			{"vorschau", "webp", "image/webp", photo.Preview},
+			{"bild", "webp", "image/webp", photo.Bild},
 			{"export_jpeg", "jpg", "image/jpeg", photo.ExportJPEG},
 		}
 		for _, p := range parts {
@@ -260,7 +261,7 @@ func (a *App) jobPDF(ctx context.Context, jobID, belegID string) error {
 			if err != nil {
 				return err
 			}
-			preview, jpg, err := belegpipe.EncodePreviewJPEG(img, settings.JPEGQuality, settings.PreviewWebP)
+			preview, bild, jpg, err := belegpipe.EncodePreviewJPEG(img, settings.JPEGQuality, settings.PreviewWebP)
 			if err != nil {
 				return err
 			}
@@ -270,6 +271,7 @@ func (a *App) jobPDF(ctx context.Context, jobID, belegID string) error {
 				body                []byte
 			}{
 				{"vorschau", "webp", "image/webp", preview},
+				{"bild", "webp", "image/webp", bild},
 				{"export_jpeg", "jpg", "image/jpeg", jpg},
 			} {
 				key := blobKey(row.NutzerID, belegID, p.variante, seite, p.ext)

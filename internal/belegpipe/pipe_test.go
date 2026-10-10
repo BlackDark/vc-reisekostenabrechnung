@@ -64,12 +64,78 @@ func TestProcessTinyAVIF(t *testing.T) {
 	if !bytes.HasPrefix(photo.Preview, []byte("RIFF")) || !bytes.HasPrefix(photo.ExportJPEG, []byte{0xFF, 0xD8}) {
 		t.Fatal("derivatives")
 	}
+	if !bytes.HasPrefix(photo.Bild, []byte("RIFF")) || bytes.Equal(photo.Bild, photo.Preview) {
+		t.Fatalf("bild %d bytes", len(photo.Bild))
+	}
 	again, err := Process(src, Settings{Format: "avif", AVIFQuality: 40, AVIFSpeed: 10, JPEGQuality: 70, PreviewWebP: 55})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(photo.Archiv, again.Archiv) {
-		t.Fatal("avif encode is not deterministic")
+	if !bytes.Equal(photo.Archiv, again.Archiv) || !bytes.Equal(photo.Bild, again.Bild) {
+		t.Fatal("encode is not deterministic")
+	}
+}
+
+func TestNormalizeSettingsDefaults(t *testing.T) {
+	s := NormalizeSettings(Settings{})
+	if s.AVIFQuality != 70 || s.AVIFSpeed != 8 || s.Format != "avif" {
+		t.Fatalf("defaults %+v", s)
+	}
+	if s.JPEGQuality != 70 || s.PreviewWebP != 55 || s.WebPQuality != 55 {
+		t.Fatalf("derivatives %+v", s)
+	}
+}
+
+func TestEncodePreviewJPEGUsesConfigQuality(t *testing.T) {
+	src := image.NewNRGBA(image.Rect(0, 0, 200, 300))
+	for i := 0; i < len(src.Pix); i += 4 {
+		src.Pix[i] = 250
+		src.Pix[i+1] = 248
+		src.Pix[i+2] = 240
+		src.Pix[i+3] = 255
+	}
+	preview, bild, export, err := EncodePreviewJPEG(src, 30, 40)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.HasPrefix(preview, []byte("RIFF")) || !bytes.HasPrefix(bild, []byte("RIFF")) {
+		t.Fatal("webp derivatives")
+	}
+	if !bytes.HasPrefix(export, []byte{0xFF, 0xD8}) {
+		t.Fatal("jpeg export")
+	}
+	// BELEG_JPEG_QUALITY must win over the default 70 in the PDF path too.
+	_, _, lowJPG, err := EncodePreviewJPEG(src, 20, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lowJPG) >= len(export) {
+		t.Fatalf("jpeg quality ignored %d >= %d", len(lowJPG), len(export))
+	}
+	lowerPreview, _, _, err := EncodePreviewJPEG(src, 30, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(lowerPreview, preview) {
+		t.Fatal("preview quality ignored")
+	}
+}
+
+func TestNormalizeDeterministic(t *testing.T) {
+	src := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+	for y := 0; y < 64; y++ {
+		for x := 0; x < 64; x++ {
+			i := src.PixOffset(x, y)
+			src.Pix[i] = byte(150 + x%37 + y%11)
+			src.Pix[i+1] = byte(140 + y%23)
+			src.Pix[i+2] = byte(120 + (x*y)%19)
+			src.Pix[i+3] = 255
+		}
+	}
+	first := Normalize(src)
+	second := Normalize(src)
+	if !bytes.Equal(first.Pix, second.Pix) {
+		t.Fatal("normalize is not deterministic")
 	}
 }
 
