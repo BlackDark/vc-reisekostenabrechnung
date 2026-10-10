@@ -68,10 +68,10 @@ Invalid combinations stop the process with a clear error (every login method off
 | **Receipts** | | |
 | `UPLOAD_MAX_BYTES` | `26214400` | 25 MiB |
 | `BELEG_FORMAT` | `avif` | `avif` or `webp` |
-| `BELEG_AVIF_QUALITY` | `40` | 1–100 |
-| `BELEG_AVIF_SPEED` | `6` | 0 is slow, 10 is fast |
+| `BELEG_AVIF_QUALITY` | `70` | 1–100. 70 keeps a clean scan above 0.95 SSIM, lower values blur small print |
+| `BELEG_AVIF_SPEED` | `8` | 0 is slow, 10 is fast. 8 encodes all-intra about four times faster than 6 |
 | `BELEG_WEBP_QUALITY` | `55` | When `BELEG_FORMAT=webp` |
-| `BELEG_JPEG_QUALITY` | `70` | JPEG derivative of a photo receipt. A PDF-source receipt embedded in the export still uses quality 70 |
+| `BELEG_JPEG_QUALITY` | `70` | JPEG derivative of a photo receipt and of a PDF page. A PDF-source receipt embedded in the export still uses quality 70 |
 | `BELEG_ERFASSUNG_KARENZ` | `720h` | How long the capture JPEG is kept after confirmation |
 | **Optional receipt reading** | | |
 | `AI_ENABLED` | `false` | Suggestions only, and only after the user opts in |

@@ -118,32 +118,36 @@ func main() {
 
 func candidates() []candidate {
 	out := []candidate{}
-	for _, q := range []int{40, 55, 70} {
-		q := q
-		for _, speed := range []int{6, 8} {
-			speed := speed
-			out = append(out, candidate{
-				name: fmt.Sprintf("avif q%d s%d", q, speed),
-				enc: func(src image.Image) ([]byte, error) {
-					var buf bytes.Buffer
-					err := avif.Encode(&buf, src, avif.Options{Quality: q, Speed: speed})
-					return buf.Bytes(), err
-				},
-			})
-		}
-	}
-	for _, q := range []int{75, 88} {
-		q := q
+	for _, c := range []struct {
+		name  string
+		q     int
+		speed int
+	}{
+		// the default of pipeline 2026.1, kept as the size and encode time reference
+		{"avif q40 s6", 40, 6},
+		{"avif q55 s8", 55, 8},
+		{"avif q70 s8", 70, 8},
+	} {
+		q, speed := c.q, c.speed
 		out = append(out, candidate{
-			name: fmt.Sprintf("jpeg q%d", q),
+			name: c.name,
 			enc: func(src image.Image) ([]byte, error) {
 				var buf bytes.Buffer
-				err := jpeg.Encode(&buf, src, &jpeg.Options{Quality: q})
+				err := avif.Encode(&buf, src, avif.Options{Quality: q, Speed: speed})
 				return buf.Bytes(), err
 			},
 		})
 	}
-	for _, q := range []int{75, 90} {
+	out = append(out, candidate{
+		name: "jpeg q75",
+		enc: func(src image.Image) ([]byte, error) {
+			var buf bytes.Buffer
+			err := jpeg.Encode(&buf, src, &jpeg.Options{Quality: 75})
+			return buf.Bytes(), err
+		},
+	})
+	// webp q85 is the display rendition (bild) of pipeline 2026.2 at upload width
+	for _, q := range []int{75, 85, 90} {
 		q := q
 		out = append(out, candidate{
 			name: fmt.Sprintf("webp q%d", q),

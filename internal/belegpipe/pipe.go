@@ -16,13 +16,22 @@ import (
 )
 
 // Version is the pipeline revision recorded in Beleg metadata.
-const Version = "2026.1"
+const Version = "2026.2"
 
 // MaxPixels rejects decompression bombs (SPEC 10.8).
 const MaxPixels = 40_000_000
 
 // PreviewLongest is the thumbnail's longest side in pixels.
 const PreviewLongest = 320
+
+// BildWidth is the display rendition's width in pixels, the dimension that decides
+// how small the print reads. A receipt keeps its 945 px upload width; an A4 page is
+// reduced from 2480 px. Nothing is ever scaled up.
+const BildWidth = 1600
+
+// BildQuality is the display rendition's WebP quality. It is a legibility floor for
+// small print and therefore not configurable; the list thumbnail keeps its own knob.
+const BildQuality = 85
 
 // Settings are the encoder knobs. Zero values are filled from the product defaults.
 type Settings struct {
@@ -40,19 +49,22 @@ type Photo struct {
 	ArchivMIME string
 	ArchivExt  string
 	Preview    []byte
+	Bild       []byte
 	ExportJPEG []byte
 }
 
 // NormalizeSettings fills empty fields with the ADR 0005 defaults.
+// Quality 70 keeps a clean scan above 0.95 SSIM; speed 8 keeps the WASM encoder
+// at ~4x the speed of speed 6 for ~0.004 SSIM (docs/research/beleg-kompression.md).
 func NormalizeSettings(s Settings) Settings {
 	if s.Format == "" {
 		s.Format = "avif"
 	}
 	if s.AVIFQuality == 0 {
-		s.AVIFQuality = 40
+		s.AVIFQuality = 70
 	}
 	if s.AVIFSpeed == 0 {
-		s.AVIFSpeed = 6
+		s.AVIFSpeed = 8
 	}
 	if s.WebPQuality == 0 {
 		s.WebPQuality = 55
@@ -102,7 +114,8 @@ func DecodeLimited(r io.Reader, maxPixels int) (image.Image, string, error) {
 	return img, kind, nil
 }
 
-// Process normalises src and encodes the archive copy, the WebP preview and the JPEG export.
+// Process normalises src and encodes the archive copy, the WebP preview, the WebP
+// display rendition and the JPEG export.
 func Process(src image.Image, s Settings) (Photo, error) {
 	s = NormalizeSettings(s)
 	norm := Normalize(src)
@@ -129,6 +142,11 @@ func Process(src image.Image, s Settings) (Photo, error) {
 		return Photo{}, err
 	}
 	photo.Preview = preview.Bytes()
+	bild, err := EncodeDisplay(norm, BildQuality)
+	if err != nil {
+		return Photo{}, err
+	}
+	photo.Bild = bild
 	var jpg bytes.Buffer
 	if err := jpeg.Encode(&jpg, norm, &jpeg.Options{Quality: s.JPEGQuality}); err != nil {
 		return Photo{}, err
@@ -137,23 +155,50 @@ func Process(src image.Image, s Settings) (Photo, error) {
 	return photo, nil
 }
 
-// EncodePreviewJPEG encodes a raster (a PDF page) as a WebP thumbnail and a JPEG export copy.
-func EncodePreviewJPEG(src image.Image, jpegQuality, previewQuality int) (preview, exportJPEG []byte, err error) {
-	if jpegQuality == 0 {
-		jpegQuality = 70
+// EncodeDisplay encodes the display rendition: WebP at BildWidth px.
+func EncodeDisplay(src image.Image, quality int) ([]byte, error) {
+	if quality == 0 {
+		quality = BildQuality
 	}
-	if previewQuality == 0 {
-		previewQuality = 55
+	var buf bytes.Buffer
+	if err := webp.Encode(&buf, fitWidth(src, BildWidth), webp.Options{Quality: quality, Method: 4}); err != nil {
+		return nil, err
 	}
+	return buf.Bytes(), nil
+}
+
+// EncodePreviewJPEG encodes a raster (a PDF page) as a WebP thumbnail, a WebP
+// display rendition and a JPEG export copy.
+func EncodePreviewJPEG(src image.Image, jpegQuality, previewQuality int) (preview, bild, exportJPEG []byte, err error) {
+	s := NormalizeSettings(Settings{JPEGQuality: jpegQuality, PreviewWebP: previewQuality})
 	prev := fitLongest(src, PreviewLongest)
 	var pb, jb bytes.Buffer
-	if err = webp.Encode(&pb, prev, webp.Options{Quality: previewQuality, Method: 4}); err != nil {
-		return nil, nil, err
+	if err = webp.Encode(&pb, prev, webp.Options{Quality: s.PreviewWebP, Method: 4}); err != nil {
+		return nil, nil, nil, err
 	}
-	if err = jpeg.Encode(&jb, src, &jpeg.Options{Quality: jpegQuality}); err != nil {
-		return nil, nil, err
+	if bild, err = EncodeDisplay(src, BildQuality); err != nil {
+		return nil, nil, nil, err
 	}
-	return pb.Bytes(), jb.Bytes(), nil
+	if err = jpeg.Encode(&jb, src, &jpeg.Options{Quality: s.JPEGQuality}); err != nil {
+		return nil, nil, nil, err
+	}
+	return pb.Bytes(), bild, jb.Bytes(), nil
+}
+
+// fitWidth scales an image down to the given width, keeping the aspect ratio.
+func fitWidth(src image.Image, width int) image.Image {
+	b := src.Bounds()
+	w, h := b.Dx(), b.Dy()
+	if w <= 0 || h <= 0 || w <= width {
+		return src
+	}
+	nh := h * width / w
+	if nh < 1 {
+		nh = 1
+	}
+	dst := image.NewNRGBA(image.Rect(0, 0, width, nh))
+	draw.BiLinear.Scale(dst, dst.Bounds(), src, b, draw.Src, nil)
+	return dst
 }
 
 func fitLongest(src image.Image, longest int) image.Image {

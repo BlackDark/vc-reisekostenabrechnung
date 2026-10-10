@@ -12,13 +12,14 @@ Vor oder nach der Ausgabe. Die Bestätigung (Sichtkontrolle) vergibt die Belegnu
 
 ## Pipeline
 
-Version `2026.1` (`internal/belegpipe`).
+Version `2026.2` (`internal/belegpipe`).
 
 1. Browser: Ecken erkennen, Nutzer korrigiert, entzerren, Profil Bon (945 px) oder A4 (2480 px), JPEG-Qualität 90.
-2. Server: Hintergrund normalisieren (Closing etwa 1/25 der Breite, Weichzeichnen, Division, Streckung 2–98 %).
-3. Archivbeleg: Farbe, AVIF, Qualität und Geschwindigkeit aus `BELEG_AVIF_QUALITY` (40) und `BELEG_AVIF_SPEED` (6). Alternative `BELEG_FORMAT=webp`.
-4. Vorschau WebP, längste Kante 320 px. Export-JPEG Qualität `BELEG_JPEG_QUALITY` (70).
-5. PDF und XML werden unverändert als Empfangsformat gespeichert.
+2. Server: Hintergrund normalisieren (Closing etwa 1/25 der Breite, Weichzeichnen, Division, Streckung 2–98 %), danach Median 3×3 auf den Farbversatz je Pixel; Farbversätze über 16 (roter Minusbetrag, blauer Stempel) bleiben unverändert.
+3. Archivbeleg: Farbe, AVIF, Qualität und Geschwindigkeit aus `BELEG_AVIF_QUALITY` (70) und `BELEG_AVIF_SPEED` (8). Alternative `BELEG_FORMAT=webp`.
+4. Ableitungen je Seite: Vorschau WebP, längste Kante 320 px; Anzeigebild `bild` WebP, 1600 px breit (Bon behält seine 945 px), Qualität 85; Export-JPEG Qualität `BELEG_JPEG_QUALITY` (70).
+5. Belege aus Pipeline `2026.1` haben kein Anzeigebild. `GET /api/v1/belege/{id}/bild` liefert für sie den Archivbeleg; nach einer Neuaufbereitung entsteht das Anzeigebild.
+6. PDF und XML werden unverändert als Empfangsformat gespeichert; von einer PDF-Seite werden Vorschau, Anzeigebild und Export-JPEG wie bei einem Foto erzeugt.
 
 Ecken, Profil, Codec und Qualität stehen in `pipeline_parameter`. SHA-256 am Archivbeleg. Nach der Bestätigung ist die Datei unveränderbar.
 

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"image"
 	"image/jpeg"
@@ -41,12 +42,23 @@ func TestBelegPhotoLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := getBeleg(t, h, cookie, id)
-	if got["status"] != "zur_bestaetigung" || got["pipeline_version"] != "2026.1" {
+	if got["status"] != "zur_bestaetigung" || got["pipeline_version"] != "2026.2" {
 		t.Fatalf("%v", got)
+	}
+	param := ""
+	if row, err := app.store.GetBelegByID(t.Context(), id); err == nil {
+		param = row.PipelineParameter
+	}
+	if !strings.Contains(param, `"avif_quality":40`) || !strings.Contains(param, `"avif_speed":10`) {
+		t.Fatalf("settings not from config: %s", param)
 	}
 	prev := authed(t, h, cookie, http.MethodGet, "/api/v1/belege/"+id+"/vorschau", nil, "")
 	if prev.Code != http.StatusOK || !bytes.HasPrefix(prev.Body.Bytes(), []byte("RIFF")) {
 		t.Fatalf("preview %d %x", prev.Code, prev.Body.Bytes())
+	}
+	bild := authed(t, h, cookie, http.MethodGet, "/api/v1/belege/"+id+"/bild", nil, "")
+	if bild.Code != http.StatusOK || !bytes.HasPrefix(bild.Body.Bytes(), []byte("RIFF")) {
+		t.Fatalf("bild %d %x", bild.Code, bild.Body.Bytes())
 	}
 	orig := authed(t, h, cookie, http.MethodGet, "/api/v1/belege/"+id+"/original", nil, "")
 	if orig.Code != http.StatusOK || !bytes.HasPrefix(orig.Body.Bytes(), []byte{0xFF, 0xD8}) {
@@ -132,6 +144,66 @@ func TestBelegPDFAndXMLUnchanged(t *testing.T) {
 	bad := uploadBeleg(t, h, cookie, []byte("hello"), "note.txt", "text/plain", false)
 	if bad.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("text %d %s", bad.Code, bad.Body)
+	}
+}
+
+func TestBelegBildFallbackOhneBilddatei(t *testing.T) {
+	app := newTestApp(t, func(cfg *config.Config) {
+		cfg.BelegFormat = "avif"
+		cfg.BelegAVIFSpeed = 10
+	})
+	seedUser(t, app, "ada", "correct-horse-1", true)
+	h := app.Handler()
+	cookie := loginCookie(t, h)
+	res := uploadBeleg(t, h, cookie, jpegBytes(t, 16, 8), "seite.jpg", "image/jpeg", false)
+	if res.Code != http.StatusAccepted {
+		t.Fatalf("upload %d %s", res.Code, res.Body)
+	}
+	var doc map[string]any
+	_ = json.Unmarshal(res.Body.Bytes(), &doc)
+	id, _ := doc["id"].(string)
+	if _, err := app.ProcessNext(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	// Belege archived with pipeline 2026.1 have no display rendition.
+	db, err := sql.Open("sqlite", app.cfg.DBPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.ExecContext(t.Context(),
+		"DELETE FROM belegdatei WHERE variante = 'bild'"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(t.Context(),
+		"UPDATE beleg SET pipeline_version = '2026.1'"); err != nil {
+		t.Fatal(err)
+	}
+	bild := authed(t, h, cookie, http.MethodGet, "/api/v1/belege/"+id+"/bild", nil, "")
+	if bild.Code != http.StatusOK {
+		t.Fatalf("bild %d %s", bild.Code, bild.Body)
+	}
+	if bild.Header().Get("Content-Type") != "image/avif" || !bytes.Contains(bild.Body.Bytes(), []byte("ftyp")) {
+		t.Fatalf("no archiv fallback: %s %x", bild.Header().Get("Content-Type"), bild.Body.Bytes()[:8])
+	}
+	seite := authed(t, h, cookie, http.MethodGet, "/api/v1/belege/"+id+"/seiten/9", nil, "")
+	if seite.Code != http.StatusNotFound {
+		t.Fatalf("unknown page %d", seite.Code)
+	}
+}
+
+func TestBelegBildOhneAbleitung404(t *testing.T) {
+	app := newTestApp(t, nil)
+	seedUser(t, app, "ada", "correct-horse-1", true)
+	h := app.Handler()
+	cookie := loginCookie(t, h)
+	res := uploadBeleg(t, h, cookie, jpegBytes(t, 16, 8), "seite.jpg", "image/jpeg", false)
+	var doc map[string]any
+	_ = json.Unmarshal(res.Body.Bytes(), &doc)
+	id, _ := doc["id"].(string)
+	bild := authed(t, h, cookie, http.MethodGet, "/api/v1/belege/"+id+"/bild", nil, "")
+	if bild.Code != http.StatusNotFound {
+		t.Fatalf("bild without derivatives %d %s", bild.Code, bild.Body)
 	}
 }
 
