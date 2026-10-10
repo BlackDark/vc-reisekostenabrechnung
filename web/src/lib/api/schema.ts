@@ -716,6 +716,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/belege/{id}/bild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getBelegBild"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/belege/{id}/seiten/{n}": {
         parameters: {
             query?: never;
@@ -3779,6 +3795,31 @@ export interface operations {
                 };
                 content: {
                     "image/webp": string;
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getBelegBild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description WebP display rendition, longest side 1600 px. Receipts archived before pipeline 2026.2 have no display rendition; the archive master is served instead, as image/avif or image/webp. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": string;
+                    "image/avif": string;
                 };
             };
             401: components["responses"]["Problem"];
