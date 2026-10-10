@@ -1,14 +1,19 @@
 .git
-node_modules
+.github
+**/node_modules
 **/dist
 # Research notes stay out of the image. The seed CSVs and their embed.go must
-# stay in the context or the Satztabelle package does not compile.
+# stay in the context or the Satztabelle and Auslandspauschale packages do not compile.
+docs/*
+!docs/research/
 docs/research/*
 !docs/research/data/
 !docs/research/data/**
 e2e/*
 !e2e/package.json
 docs/assets/screenshots
+deploy
+scripts
 coverage
 playwright-report
 test-results

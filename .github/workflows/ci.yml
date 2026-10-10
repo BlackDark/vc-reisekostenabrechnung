@@ -17,12 +17,14 @@ permissions:
 
 concurrency:
   group: ci-${{ inputs.caller || github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && inputs.caller == '' }}
+  # A newer push to main supersedes the previous run; a called workflow never
+  # cancels its caller.
+  cancel-in-progress: ${{ inputs.caller == '' }}
 
 jobs:
   changes:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     outputs:
       go: ${{ steps.out.outputs.go }}
       web: ${{ steps.out.outputs.web }}
@@ -41,6 +43,8 @@ jobs:
               - 'db/**'
               - 'api/**'
               - 'internal/**'
+              - 'satztabellen/**'
+              - 'docs/research/data/**'
               - '.golangci.yml'
             web:
               - 'web/**'
@@ -57,6 +61,8 @@ jobs:
               - 'db/**'
               - 'api/**'
               - 'internal/**'
+              - 'satztabellen/**'
+              - 'docs/research/data/**'
               - 'web/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -83,7 +89,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
 
-  go:
+  go-lint:
     needs: changes
     if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
@@ -97,13 +103,31 @@ jobs:
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.14.0
+
+  go-test:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
       - name: Typst and poppler
         run: |
           sudo apt-get update
           sudo apt-get install -y poppler-utils
-          curl -fsSL -o /tmp/typst.tar.xz https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz
-          tar -C /tmp -xJf /tmp/typst.tar.xz
-          echo "TYPST_PATH=/tmp/typst-x86_64-unknown-linux-musl/typst" >> "$GITHUB_ENV"
+          # Take the Typst binary out of the digest-pinned image the Dockerfile
+          # already trusts, instead of downloading an unverified tarball.
+          typst=ghcr.io/typst/typst:0.15.1@sha256:032e292249bcd378480cc7c142cfa324b63ef8aadeb88d7e7230320c4c9c422f
+          docker create --name rk-typst "$typst"
+          docker cp rk-typst:/bin/typst /tmp/typst
+          docker rm rk-typst
+          chmod +x /tmp/typst
+          /tmp/typst --version
+          echo "TYPST_PATH=/tmp/typst" >> "$GITHUB_ENV"
       - name: MinIO
         # minio/minio is gone from Docker Hub, and quay.io rejects anonymous pulls.
         run: |
@@ -127,15 +151,50 @@ jobs:
           S3_TEST_BUCKET: rk-test
           S3_TEST_ACCESS_KEY: minioadmin
           S3_TEST_SECRET_KEY: minioadmin
-      - run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
-      - run: govulncheck ./...
+
+  go-vuln:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: govulncheck
+        with:
+          path: ~/go/bin/govulncheck
+          key: govulncheck-1.8.0-${{ runner.os }}
+      - name: govulncheck
+        run: |
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          if [ "${{ steps.govulncheck.outputs.cache-hit }}" != "true" ]; then
+            go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+          fi
+          govulncheck -version
+          govulncheck ./...
+
+  go-crossbuild:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
       - run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags nodynamic -o /tmp/reisekosten-arm64 ./cmd/reisekosten
 
   codegen:
     needs: changes
     if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -157,7 +216,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -178,45 +237,56 @@ jobs:
     needs: changes
     if: needs.changes.outputs.image == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        id: buildx
         with:
           driver: docker-container
+      # type=gha does not carry the contents of RUN --mount=type=cache, so the
+      # dance is what makes the pnpm store and the Go caches survive a run.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: cache-mount
         with:
           path: cache-mount
-          key: buildkit-${{ hashFiles('pnpm-lock.yaml', 'go.sum') }}
+          key: buildkit-${{ hashFiles('Dockerfile', 'pnpm-lock.yaml', 'go.sum') }}
+          restore-keys: |
+            buildkit-${{ hashFiles('pnpm-lock.yaml', 'go.sum') }}-
+            buildkit-
       - uses: reproducible-containers/buildkit-cache-dance@5422eac04292c961a382e0f584ea0f03ad9da723 # v3.4.0
         with:
-          cache-map: |
-            {
-              "pnpm-store": "cache-mount/pnpm-store",
-              "go-mod": "cache-mount/go-mod",
-              "go-build": "cache-mount/go-build"
-            }
-          skip-extraction: false
+          builder: ${{ steps.buildx.outputs.name }}
+          # Auto-discovery maps every RUN --mount=type=cache id onto cache-mount/<id>,
+          # which is exactly what the actions/cache path above stores.
+          cache-dir: cache-mount
+          skip-extraction: ${{ steps.cache-mount.outputs.cache-hit }}
       - run: bash scripts/compose-check.sh
+      # One multi-platform build. The amd64 image is extracted from the OCI
+      # archive for the jobs below, so nothing is compiled twice.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           outputs: type=oci,dest=/tmp/image.oci.tar
+          build-args: |
+            VERSION=ci-${{ github.run_id }}
+            COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
           sbom: false
       - run: python3 scripts/oci-size.py /tmp/image.oci.tar
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          platforms: linux/amd64
-          load: true
-          tags: vc-reisekosten:ci
-          cache-from: type=gha
-          provenance: false
-          sbom: false
+      - name: Load linux/amd64 from the OCI archive
+        run: |
+          skopeo copy --override-arch amd64 --override-os linux \
+            oci-archive:/tmp/image.oci.tar docker-daemon:vc-reisekosten:ci
+          docker image inspect vc-reisekosten:ci >/dev/null
+      - name: The image reports the commit it was built from
+        run: |
+          reported=$(docker run --rm vc-reisekosten:ci version)
+          printf '%s\n' "$reported"
+          test "$reported" = "ci-${{ github.run_id }} ${{ github.sha }}"
       - run: docker save vc-reisekosten:ci | zstd -T0 -o image-amd64.tar.zst
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -228,7 +298,7 @@ jobs:
     needs: image
     if: needs.image.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -241,7 +311,14 @@ jobs:
     needs: image
     if: needs.image.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
+    strategy:
+      # Each shard gets its own runner, its own containers and its own SQLite
+      # file, so shards cannot interfere. fail-fast keeps a single browser from
+      # hiding the result of the other two.
+      fail-fast: false
+      matrix:
+        project: [desktop, mobile, mobile-webkit]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -260,7 +337,9 @@ jobs:
             -e E2E_WEBKIT=1 \
             -v "$PWD":/work -w /work \
             mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f \
-            bash -lc 'npm install -g pnpm@12.10.1 && pnpm install --frozen-lockfile && pnpm --filter e2e test'
+            bash -lc 'npm install -g pnpm@12.10.1 \
+              && pnpm install --frozen-lockfile --filter e2e \
+              && pnpm --filter e2e exec playwright test --project=${{ matrix.project }}'
       - name: Container logs
         if: always()
         run: |
@@ -269,7 +348,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: |
             e2e/playwright-report
             e2e/test-results
@@ -278,7 +357,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: screenshots
+          name: screenshots-${{ matrix.project }}
           path: e2e/screenshots
           retention-days: 7
           if-no-files-found: ignore
@@ -287,31 +366,16 @@ jobs:
     needs: image
     if: needs.image.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+    env:
+      # Pinned by digest, the same way scripts/litestream-smoke.sh pins Litestream.
+      VERAPDF_IMAGE: verapdf/cli:v1.30.2@sha256:d5ee329657cf9bc4b2400392dd54c7d0a0ce9980ff6fa2da5590eebeec007cdb
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: image-amd64
       - run: zstd -d image-amd64.tar.zst -c | docker load
-      - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /tmp/verapdf-1.30.2.zip
-          key: verapdf-1.30.2
-      - name: Install veraPDF 1.30.2
-        run: |
-          if [ ! -s /tmp/verapdf-1.30.2.zip ]; then
-            curl -fsSL -o /tmp/verapdf-1.30.2.zip https://software.verapdf.org/releases/1.30/verapdf-greenfield-1.30.2-installer.zip
-          fi
-          rm -rf /tmp/verapdf-src
-          unzip -q /tmp/verapdf-1.30.2.zip -d /tmp/verapdf-src
-          cd /tmp/verapdf-src/verapdf-greenfield-1.30.2
-          printf '1\n%s/verapdf\nO\n1\nN\nY\nN\nN\n1\nN\n' "$HOME" | java -jar verapdf-izpack-installer-1.30.2.jar -console
-          test -x "$HOME/verapdf/verapdf"
       - name: Sample exports
         run: |
           rm -rf out
@@ -327,24 +391,28 @@ jobs:
           docker run --rm --user 65532:65532 \
             -v "$PWD/out":/out:ro \
             vc-reisekosten:ci export-check --dir /out
+      # One JVM boot per sample: the XML report carries the verdict
+      # (<isCompliant>) and the exit code carries the same verdict.
       - name: Validate PDF/A-3b
         run: |
           mkdir -p reports
           fail=0
           for pdf in out/*/abrechnung.pdf; do
             name=$(basename "$(dirname "$pdf")")
-            if ! "$HOME/verapdf/verapdf" --flavour 3b --format text "$pdf"; then
+            if ! docker run --rm --network none -v "$PWD/out:/out:ro" \
+              "$VERAPDF_IMAGE" --flavour 3b --format xml "/out/$name/abrechnung.pdf" \
+              > "reports/verapdf-${name}.xml"; then
+              echo "veraPDF did not accept out/$name/abrechnung.pdf as PDF/A-3b" >&2
               fail=1
             fi
-            "$HOME/verapdf/verapdf" --flavour 3b --format xml "$pdf" > "reports/verapdf-${name}.xml" || fail=1
-            "$HOME/verapdf/verapdf" --flavour 3b --format html "$pdf" > "reports/verapdf-${name}.html" || true
           done
           exit "$fail"
       - name: Reject a file that is not PDF/A-3b
         run: |
           printf '%s\n' '%PDF-1.1' '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj' '2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj' 'trailer<</Root 1 0 R>>' '%%EOF' > /tmp/broken.pdf
           set +e
-          out=$("$HOME/verapdf/verapdf" --flavour 3b --format text /tmp/broken.pdf)
+          out=$(docker run --rm --network none -v /tmp/broken.pdf:/tmp/broken.pdf:ro \
+            "$VERAPDF_IMAGE" --flavour 3b --format text /tmp/broken.pdf 2>&1)
           code=$?
           set -e
           printf '%s\n' "$out"
@@ -377,7 +445,7 @@ jobs:
     needs: image
     if: needs.image.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
       security-events: write
@@ -397,7 +465,17 @@ jobs:
           limit-severities-for-sarif: true
           ignore-unfixed: true
           exit-code: "1"
-      - if: always() && hashFiles('trivy-results.sarif') != ''
+      - name: Report a skipped SARIF upload
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+        run: |
+          echo "::notice::security-events: write is not grantable for a fork pull" \
+            "request, so the SARIF upload is skipped. The Trivy step above still ran" \
+            "and still fails the job on a CRITICAL or HIGH finding."
+      # Fork pull requests run with a read-only GITHUB_TOKEN, so the upload
+      # cannot succeed there. The Trivy step above still gates the build.
+      - if: >-
+          always() && hashFiles('trivy-results.sarif') != ''
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true)
         uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           sarif_file: trivy-results.sarif
@@ -406,7 +484,7 @@ jobs:
   pr-titel:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Conventional commit title
         env:
@@ -416,7 +494,7 @@ jobs:
 
   actionlint:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -432,15 +510,35 @@ jobs:
           go test ./scripts/workflowperm ./scripts/ghrepo
 
   ci-ok:
-    needs: [changes, go, codegen, web, image, smoke, e2e, pdfa, backup, scan, pr-titel, actionlint]
+    needs:
+      [
+        changes,
+        go-lint,
+        go-test,
+        go-vuln,
+        go-crossbuild,
+        codegen,
+        web,
+        image,
+        smoke,
+        e2e,
+        pdfa,
+        backup,
+        scan,
+        pr-titel,
+        actionlint,
+      ]
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Aggregate
         env:
           CHANGES: ${{ needs.changes.result }}
-          GO: ${{ needs.go.result }}
+          GO_LINT: ${{ needs.go-lint.result }}
+          GO_TEST: ${{ needs.go-test.result }}
+          GO_VULN: ${{ needs.go-vuln.result }}
+          GO_CROSSBUILD: ${{ needs.go-crossbuild.result }}
           CODEGEN: ${{ needs.codegen.result }}
           WEB: ${{ needs.web.result }}
           IMAGE: ${{ needs.image.result }}
@@ -454,7 +552,11 @@ jobs:
         run: |
           python3 - << 'PY'
           import os, sys
-          names = ["CHANGES", "GO", "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "SCAN", "TITLE", "ACTIONLINT"]
+          names = [
+              "CHANGES", "GO_LINT", "GO_TEST", "GO_VULN", "GO_CROSSBUILD", "CODEGEN",
+              "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "SCAN", "TITLE",
+              "ACTIONLINT",
+          ]
           bad = [name for name in names if os.environ[name] not in ("success", "skipped")]
           print({name: os.environ[name] for name in names})
           sys.exit(1 if bad else 0)
@@ -464,7 +566,7 @@ jobs:
     needs: ci-ok
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
       packages: write
@@ -495,6 +597,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=edge
+            COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: mode=max

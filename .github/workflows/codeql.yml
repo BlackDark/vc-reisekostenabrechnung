@@ -24,9 +24,21 @@ jobs:
       matrix:
         language: [go, javascript-typescript]
     steps:
+      # A pull request from a fork gets a read-only GITHUB_TOKEN, so the
+      # SARIF upload cannot succeed and would fail the run for no finding.
+      # The build and the analysis still run; only the upload is skipped.
+      - name: Report a skipped upload
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+        run: |
+          echo "::notice::security-events: write is not grantable for a fork pull" \
+            "request, so the CodeQL SARIF upload is skipped for this run."
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true
       - uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true
         with:
           languages: ${{ matrix.language }}
       - uses: github/codeql-action/autobuild@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true
       - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork != true
