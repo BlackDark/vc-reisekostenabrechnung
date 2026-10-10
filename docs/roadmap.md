@@ -44,10 +44,18 @@ Resolved open points (history in SPEC §22): O2 (decided, see below), O3 veraPDF
 | Fail startup when a boolean env var is not a boolean | [#21](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/21) |
 | Measure AVIF encode time in the container, then accept ADR 0005 or switch to WebP | O7, [#29](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/29) |
 | Track JStG 2026 and ship the 2027 Satztabelle when the BMF letter is out (expected Nov/Dec 2026) | O12, [#28](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/28) |
-| Second design pass leftover: Ausgabe and Beleg forms still open as separate pages, not in a side panel like the Fahrt form | – |
+| Second design pass leftover: Ausgabe and Beleg forms in a side panel like the Fahrt form | [#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35) |
+| Read `FX_ECB_URL`, `FX_TIMEOUT`, `EXPORT_PDF_STANDARD` (SPEC §11; today compiled in) | [#31](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/31) |
+| Own audit log endpoint `GET /api/v1/protokoll` (SPEC §2, §9) | [#32](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/32) |
+| Admin system status `GET /api/v1/admin/system` (SPEC §2, §9) | [#33](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/33) |
+| PWA install button and iOS hint; disable all forms while offline (SPEC §13) | [#34](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/34) |
 | Research: add BMF-RK 2020 Rz. 64–86 wording to the tax research | O1 |
 
 Watch only, no action planned: O10 Dreimonatsfrist heuristic, O11 German VAT in foreign currency, O13 Frühstück herausrechnen, O14 erste Tätigkeitsstätte not modelled.
+
+### Spec audit (10 October 2026)
+
+Every decision in SPEC §0 (Q1–Q35), the calculation rules with golden tests G01–G20, the API, auth, ENV, CI, Renovate, ADRs 0001–0005 and MILESTONES was checked against the code. Everything is implemented except the code tasks above ([#31](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/31)–[#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35)) and ADR 0005, which stays `proposed` until [#29](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/29) is done.
 
 ## Possible features
 
