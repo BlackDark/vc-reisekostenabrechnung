@@ -104,10 +104,12 @@ func main() {
 	}
 	rows := make([]row, len(cands))
 	for i, c := range cands {
-		rows[i] = row{c.name,
-			float64(sums[i].size) / 1024 / float64(len(paths)),
-			float64(sums[i].ms) / float64(len(paths)),
-			sums[i].ssim / float64(len(paths))}
+		rows[i] = row{
+			name: c.name,
+			kb:   float64(sums[i].size) / 1024 / float64(len(paths)),
+			ms:   float64(sums[i].ms) / float64(len(paths)),
+			ssim: sums[i].ssim / float64(len(paths)),
+		}
 	}
 	sort.SliceStable(rows, func(a, b int) bool { return rows[a].kb < rows[b].kb })
 	for _, r := range rows {
