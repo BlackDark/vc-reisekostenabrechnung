@@ -92,15 +92,17 @@
 		{/each}
 	</ul>
 	<form class="mt-4 grid max-w-lg gap-3" onsubmit={purge}>
-		<label class="flex items-start gap-2 text-sm">
-			<input type="checkbox" bind:checked={ack} data-testid="aufbewahrung-ack" />
-			<span>{m.aufbewahrung_ack()}</span>
-		</label>
-		<label class="grid gap-1 text-sm" for="aufbewahrung-grund">
-			{m.abrechnung_reason()}
-			<Textarea id="aufbewahrung-grund" bind:value={grund} required></Textarea>
-		</label>
-		<Button type="submit" data-testid="aufbewahrung-purge">{m.aufbewahrung_delete()}</Button>
+		<fieldset class="grid gap-3" disabled={!session.online}>
+			<label class="flex items-start gap-2 text-sm">
+				<input type="checkbox" bind:checked={ack} data-testid="aufbewahrung-ack" />
+				<span>{m.aufbewahrung_ack()}</span>
+			</label>
+			<label class="grid gap-1 text-sm" for="aufbewahrung-grund">
+				{m.abrechnung_reason()}
+				<Textarea id="aufbewahrung-grund" bind:value={grund} required></Textarea>
+			</label>
+			<Button type="submit" data-testid="aufbewahrung-purge">{m.aufbewahrung_delete()}</Button>
+		</fieldset>
 	</form>
 {/if}
 {#if error}<p class="mt-3 text-sm text-destructive" role="alert">{error}</p>{/if}

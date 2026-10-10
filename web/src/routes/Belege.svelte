@@ -42,17 +42,19 @@
 		void load();
 	}}
 >
-	<Field.Field class="min-w-48">
-		<Field.Label for="beleg-status">{m.beleg_status()}</Field.Label>
-		<NativeSelect id="beleg-status" bind:value={status} class="w-full">
-			<option value=""> </option>
-			<option value="in_aufbereitung">{statusLabel("in_aufbereitung")}</option>
-			<option value="zur_bestaetigung">{statusLabel("zur_bestaetigung")}</option>
-			<option value="bestaetigt">{statusLabel("bestaetigt")}</option>
-			<option value="fehlgeschlagen">{statusLabel("fehlgeschlagen")}</option>
-		</NativeSelect>
-	</Field.Field>
-	<Button type="submit">{m.reise_filter()}</Button>
+	<fieldset class="flex flex-wrap items-end gap-3" disabled={!session.online}>
+		<Field.Field class="min-w-48">
+			<Field.Label for="beleg-status">{m.beleg_status()}</Field.Label>
+			<NativeSelect id="beleg-status" bind:value={status} class="w-full">
+				<option value=""> </option>
+				<option value="in_aufbereitung">{statusLabel("in_aufbereitung")}</option>
+				<option value="zur_bestaetigung">{statusLabel("zur_bestaetigung")}</option>
+				<option value="bestaetigt">{statusLabel("bestaetigt")}</option>
+				<option value="fehlgeschlagen">{statusLabel("fehlgeschlagen")}</option>
+			</NativeSelect>
+		</Field.Field>
+		<Button type="submit">{m.reise_filter()}</Button>
+	</fieldset>
 </form>
 {#if items === null}
 	<div class="mt-4 grid gap-2">

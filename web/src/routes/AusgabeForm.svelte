@@ -249,119 +249,121 @@
 {/if}
 
 <form class="mt-4 grid gap-3" onsubmit={(event) => { event.preventDefault(); void save(); }}>
-	<label class="grid gap-1 text-sm" for="ausgabe-kostenart">
-		{m.ausgabe_kostenart()}
-		<NativeSelect class="w-full" id="ausgabe-kostenart" bind:value={kostenart}>
-			<option value="fahrtkosten">{m.kostenart_fahrtkosten()}</option>
-			<option value="verpflegung">{m.kostenart_verpflegung()}</option>
-			<option value="uebernachtung">{m.kostenart_uebernachtung()}</option>
-			<option value="reisenebenkosten">{m.kostenart_reisenebenkosten()}</option>
-			<option value="bewirtung">{m.kostenart_bewirtung()}</option>
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="ausgabe-datum">
-		{m.ausgabe_datum()}
-		<DateField id="ausgabe-datum" type="date" bind:value={datum} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="ausgabe-leistender">
-		{m.ausgabe_leistender()}
-		<Input id="ausgabe-leistender" bind:value={leistender}  />
-	</label>
-	<label class="grid gap-1 text-sm" for="ausgabe-empfaenger">
-		{m.ausgabe_empfaenger()}
-		<Input id="ausgabe-empfaenger" bind:value={empfaenger}  />
-	</label>
-	<label class="grid gap-1 text-sm" for="ausgabe-betrag">
-		{m.ausgabe_betrag()}
-		<Input id="ausgabe-betrag" inputmode="decimal" bind:value={betrag} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="ausgabe-waehrung">
-		{m.ausgabe_waehrung()}
-		<NativeSelect class="w-full" id="ausgabe-waehrung" bind:value={waehrung}>
-			<option>EUR</option>
-			<option>USD</option>
-			<option>GBP</option>
-			<option>CHF</option>
-		</NativeSelect>
-	</label>
-	<label class="flex items-center gap-2 text-sm">
-		<input type="checkbox" bind:checked={aufArbeitgeber} />
-		{m.ausgabe_employer()}
-	</label>
-	{#if kostenart === "reisenebenkosten"}
-		<p class="text-sm">{m.ausgabe_neben_hint()}</p>
-	{/if}
-	{#if kostenart === "bewirtung"}
-		<p class="text-sm">{m.ausgabe_privat_hint()}</p>
-		<label class="grid gap-1 text-sm" for="f-ausgabeform-1">
-			{m.ausgabe_bewirtung_anlass()}
-			<Input id="f-ausgabeform-1" bind:value={anlass}  />
+	<fieldset class="grid gap-3" disabled={!session.online}>
+		<label class="grid gap-1 text-sm" for="ausgabe-kostenart">
+			{m.ausgabe_kostenart()}
+			<NativeSelect class="w-full" id="ausgabe-kostenart" bind:value={kostenart}>
+				<option value="fahrtkosten">{m.kostenart_fahrtkosten()}</option>
+				<option value="verpflegung">{m.kostenart_verpflegung()}</option>
+				<option value="uebernachtung">{m.kostenart_uebernachtung()}</option>
+				<option value="reisenebenkosten">{m.kostenart_reisenebenkosten()}</option>
+				<option value="bewirtung">{m.kostenart_bewirtung()}</option>
+			</NativeSelect>
 		</label>
-		<label class="grid gap-1 text-sm" for="f-ausgabeform-2">
-			{m.ausgabe_bewirtung_ort()}
-			<Input id="f-ausgabeform-2" bind:value={ort}  />
+		<label class="grid gap-1 text-sm" for="ausgabe-datum">
+			{m.ausgabe_datum()}
+			<DateField id="ausgabe-datum" type="date" bind:value={datum} required  />
 		</label>
-		<label class="grid gap-1 text-sm" for="f-ausgabeform-3">
-			{m.ausgabe_bewirtung_wer()}
-			<Input id="f-ausgabeform-3" bind:value={bewirtender}  />
+		<label class="grid gap-1 text-sm" for="ausgabe-leistender">
+			{m.ausgabe_leistender()}
+			<Input id="ausgabe-leistender" bind:value={leistender}  />
 		</label>
-		<p class="text-sm font-medium">{m.ausgabe_teilnehmer()}</p>
-		{#each teilnehmer as person, i (i)}
-			<div class="grid gap-2 sm:grid-cols-2">
-				<Input placeholder={m.ausgabe_teilnehmer_name()} bind:value={person.name}  />
-				<Input placeholder={m.ausgabe_teilnehmer_firma()} bind:value={person.firma}  />
-			</div>
-		{/each}
-		<Button variant="outline" type="button" onclick={() => { teilnehmer = [...teilnehmer, { name: "", firma: "" }]; }}>{m.ausgabe_teilnehmer_add()}</Button>
+		<label class="grid gap-1 text-sm" for="ausgabe-empfaenger">
+			{m.ausgabe_empfaenger()}
+			<Input id="ausgabe-empfaenger" bind:value={empfaenger}  />
+		</label>
+		<label class="grid gap-1 text-sm" for="ausgabe-betrag">
+			{m.ausgabe_betrag()}
+			<Input id="ausgabe-betrag" inputmode="decimal" bind:value={betrag} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="ausgabe-waehrung">
+			{m.ausgabe_waehrung()}
+			<NativeSelect class="w-full" id="ausgabe-waehrung" bind:value={waehrung}>
+				<option>EUR</option>
+				<option>USD</option>
+				<option>GBP</option>
+				<option>CHF</option>
+			</NativeSelect>
+		</label>
 		<label class="flex items-center gap-2 text-sm">
-			<input type="checkbox" bind:checked={tse} />
-			{m.ausgabe_tse()}
+			<input type="checkbox" bind:checked={aufArbeitgeber} />
+			{m.ausgabe_employer()}
 		</label>
-	{/if}
-	<fieldset class="grid gap-2">
-		<legend class="text-sm font-medium">{m.ausgabe_vat()}</legend>
-		{#each anteile as share, i (i)}
-			<div class="grid gap-2 sm:grid-cols-3">
-				<label class="grid gap-1 text-sm" for="f-ausgabeform-4">
-					{m.ausgabe_satz()}
-					<Input id="f-ausgabeform-4" type="number" bind:value={share.satz}  />
-				</label>
-				<label class="grid gap-1 text-sm" for="f-ausgabeform-5">
-					{m.ausgabe_betrag()}
-					<Input id="f-ausgabeform-5" inputmode="decimal" bind:value={share.brutto}  />
-				</label>
-				<label class="grid gap-1 text-sm" for="f-ausgabeform-6">
-					Land
-					<Input id="f-ausgabeform-6" bind:value={share.steuerland}  />
-				</label>
-			</div>
-		{/each}
-		<div class="flex flex-wrap gap-2">
-			<Button variant="outline" type="button" onclick={() => { anteile = [...anteile, { satz: 700, steuerland: "DE", brutto: "" }]; }}>{m.ausgabe_add_vat()}</Button>
-			<Button variant="outline" type="button" onclick={() => void applyHelper("gastronomie")}>{m.ausgabe_gastro()}</Button>
-			<Button variant="outline" type="button" onclick={() => void applyHelper("hotel")}>{m.ausgabe_hotel()}</Button>
-		</div>
-	</fieldset>
-	<label class="flex items-center gap-2 text-sm">
-		<input type="checkbox" bind:checked={eigen} />
-		{m.ausgabe_eigenbeleg()}
-	</label>
-	{#if eigen}
-		<label class="grid gap-1 text-sm" for="f-ausgabeform-7">
-			{m.ausgabe_eigen_grund()}
-			<Input id="f-ausgabeform-7" bind:value={eigenGrund}  />
+		{#if kostenart === "reisenebenkosten"}
+			<p class="text-sm">{m.ausgabe_neben_hint()}</p>
+		{/if}
+		{#if kostenart === "bewirtung"}
+			<p class="text-sm">{m.ausgabe_privat_hint()}</p>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-1">
+				{m.ausgabe_bewirtung_anlass()}
+				<Input id="f-ausgabeform-1" bind:value={anlass}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-2">
+				{m.ausgabe_bewirtung_ort()}
+				<Input id="f-ausgabeform-2" bind:value={ort}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-3">
+				{m.ausgabe_bewirtung_wer()}
+				<Input id="f-ausgabeform-3" bind:value={bewirtender}  />
+			</label>
+			<p class="text-sm font-medium">{m.ausgabe_teilnehmer()}</p>
+			{#each teilnehmer as person, i (i)}
+				<div class="grid gap-2 sm:grid-cols-2">
+					<Input placeholder={m.ausgabe_teilnehmer_name()} bind:value={person.name}  />
+					<Input placeholder={m.ausgabe_teilnehmer_firma()} bind:value={person.firma}  />
+				</div>
+			{/each}
+			<Button variant="outline" type="button" onclick={() => { teilnehmer = [...teilnehmer, { name: "", firma: "" }]; }}>{m.ausgabe_teilnehmer_add()}</Button>
+			<label class="flex items-center gap-2 text-sm">
+				<input type="checkbox" bind:checked={tse} />
+				{m.ausgabe_tse()}
+			</label>
+		{/if}
+		<fieldset class="grid gap-2">
+				<legend class="text-sm font-medium">{m.ausgabe_vat()}</legend>
+				{#each anteile as share, i (i)}
+					<div class="grid gap-2 sm:grid-cols-3">
+						<label class="grid gap-1 text-sm" for="f-ausgabeform-4">
+							{m.ausgabe_satz()}
+							<Input id="f-ausgabeform-4" type="number" bind:value={share.satz}  />
+						</label>
+						<label class="grid gap-1 text-sm" for="f-ausgabeform-5">
+							{m.ausgabe_betrag()}
+							<Input id="f-ausgabeform-5" inputmode="decimal" bind:value={share.brutto}  />
+						</label>
+						<label class="grid gap-1 text-sm" for="f-ausgabeform-6">
+							Land
+							<Input id="f-ausgabeform-6" bind:value={share.steuerland}  />
+						</label>
+					</div>
+				{/each}
+				<div class="flex flex-wrap gap-2">
+					<Button variant="outline" type="button" onclick={() => { anteile = [...anteile, { satz: 700, steuerland: "DE", brutto: "" }]; }}>{m.ausgabe_add_vat()}</Button>
+					<Button variant="outline" type="button" onclick={() => void applyHelper("gastronomie")}>{m.ausgabe_gastro()}</Button>
+					<Button variant="outline" type="button" onclick={() => void applyHelper("hotel")}>{m.ausgabe_hotel()}</Button>
+	</div>
+		</fieldset>
+		<label class="flex items-center gap-2 text-sm">
+			<input type="checkbox" bind:checked={eigen} />
+			{m.ausgabe_eigenbeleg()}
 		</label>
-		<label class="grid gap-1 text-sm" for="f-ausgabeform-8">
-			{m.ausgabe_eigen_wer()}
-			<Input id="f-ausgabeform-8" bind:value={eigenWer}  />
-		</label>
-		<label class="grid gap-1 text-sm" for="f-ausgabeform-9">
-			{m.ausgabe_eigen_art()}
-			<Input id="f-ausgabeform-9" bind:value={eigenArt}  />
-		</label>
-	{/if}
-	{#if error}
-		<p class="text-sm" role="alert">{error}</p>
-	{/if}
+		{#if eigen}
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-7">
+				{m.ausgabe_eigen_grund()}
+				<Input id="f-ausgabeform-7" bind:value={eigenGrund}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-8">
+				{m.ausgabe_eigen_wer()}
+				<Input id="f-ausgabeform-8" bind:value={eigenWer}  />
+			</label>
+			<label class="grid gap-1 text-sm" for="f-ausgabeform-9">
+				{m.ausgabe_eigen_art()}
+				<Input id="f-ausgabeform-9" bind:value={eigenArt}  />
+			</label>
+		{/if}
+		{#if error}
+			<p class="text-sm" role="alert">{error}</p>
+		{/if}
 	<Button id="ausgabe-save" type="submit" disabled={saving}>{m.create()}</Button>
+	</fieldset>
 </form>

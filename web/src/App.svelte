@@ -8,12 +8,14 @@
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import { Toaster } from "$lib/components/ui/sonner";
 	import { m } from "$lib/paraglide/messages.js";
+	import { pwa } from "$lib/pwa.svelte";
 	import ReloadPrompt from "$lib/ReloadPrompt.svelte";
 	import { session } from "$lib/session.svelte";
 	import { p } from "./router";
 
 	onMount(() => {
 		void session.init();
+		pwa.init();
 	});
 </script>
 

@@ -349,33 +349,39 @@
 
 			{#if row.status === "eingereicht"}
 				<form class="grid gap-2" onsubmit={markPaid}>
-					<label class="grid gap-1 text-sm" for="bezahlt-am">
+					<fieldset class="grid gap-2" disabled={!session.online}>
+						<label class="grid gap-1 text-sm" for="bezahlt-am">
 						{m.abrechnung_paid_date()}
 						<DateField id="bezahlt-am" type="date" bind:value={paidDate} required />
-					</label>
-					<Button class="w-fit" type="submit" data-testid="abrechnung-paid">
-						{m.abrechnung_mark_paid()}
-					</Button>
+						</label>
+						<Button class="w-fit" type="submit" data-testid="abrechnung-paid">
+							{m.abrechnung_mark_paid()}
+						</Button>
+					</fieldset>
 				</form>
 				<form class="grid gap-2" onsubmit={unlock}>
-					<label class="grid gap-1 text-sm" for="entsperr-grund">
-						{m.abrechnung_reason()}
-						<Input id="entsperr-grund" bind:value={reason} minlength={10} required />
-					</label>
-					<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-unlock">
-						{m.abrechnung_unlock()}
-					</Button>
+					<fieldset class="grid gap-2" disabled={!session.online}>
+						<label class="grid gap-1 text-sm" for="entsperr-grund">
+							{m.abrechnung_reason()}
+							<Input id="entsperr-grund" bind:value={reason} minlength={10} required />
+						</label>
+						<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-unlock">
+							{m.abrechnung_unlock()}
+						</Button>
+					</fieldset>
 				</form>
 			{/if}
 			{#if row.status === "bezahlt"}
 				<form class="grid gap-2" onsubmit={withdraw}>
-					<label class="grid gap-1 text-sm" for="zurueck-grund">
-						{m.abrechnung_reason()}
-						<Input id="zurueck-grund" bind:value={reason} required />
-					</label>
-					<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-withdraw">
-						{m.abrechnung_withdraw()}
-					</Button>
+					<fieldset class="grid gap-2" disabled={!session.online}>
+						<label class="grid gap-1 text-sm" for="zurueck-grund">
+							{m.abrechnung_reason()}
+							<Input id="zurueck-grund" bind:value={reason} required />
+						</label>
+						<Button variant="outline" class="w-fit" type="submit" data-testid="abrechnung-withdraw">
+							{m.abrechnung_withdraw()}
+						</Button>
+					</fieldset>
 				</form>
 			{/if}
 		</div>

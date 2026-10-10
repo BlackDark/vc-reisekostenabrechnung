@@ -187,131 +187,133 @@
 	</label>
 {/if}
 <form class="mt-4 grid gap-3" onsubmit={create}>
-	<label class="grid gap-1 text-sm" for="reise-anlass">
-		{m.reise_anlass()}
-		<Input id="reise-anlass" bind:value={anlass} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-projekt">
-		{m.reise_projekt()}
-		<Input id="reise-projekt" list="projekte" bind:value={projekt}  />
-		<datalist id="projekte">
-			{#each projects as name (name)}
-				<option value={name}></option>
-			{/each}
-		</datalist>
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-ag">
-		{m.reise_employer()}
-		<NativeSelect class="w-full" id="reise-ag" bind:value={employer} required>
-			{#each employers as item (item.id)}
-				<option value={item.id}>{item.name}</option>
-			{/each}
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-beginn">
-		{m.reise_beginn()}
-		<DateField id="reise-beginn" type="datetime-local" bind:value={beginn} onchange={() => void loadLands()} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-ende">
-		{m.reise_ende()}
-		<DateField id="reise-ende" type="datetime-local" bind:value={ende} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-zone">
-		{m.reise_zone()}
-		<Input id="reise-zone" list="zonen" bind:value={zone} required  />
-		<datalist id="zonen">
-			<option value="Europe/Berlin"></option>
-			<option value="Europe/Paris"></option>
-			<option value="Australia/Sydney"></option>
-			<option value="America/New_York"></option>
-		</datalist>
-	</label>
-	<label class="grid gap-1 text-sm" for="land-search">
-		{m.reise_search()}
-		<Input id="land-search" bind:value={landQuery}  />
-	</label>
-	<label class="grid gap-1 text-sm" for="leg-land">
-		{m.reise_country()}
-		<NativeSelect class="w-full"
-			id="leg-land"
-			bind:value={land}
-			onchange={() => void loadPlaces()}
-		>
-			{#each visibleLands(land) as item (item.land_iso)}
-				<option value={item.land_iso}>{item.land_name_de}</option>
-			{/each}
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="leg-place">
-		{m.reise_place()}
-		<NativeSelect class="w-full" id="leg-place" bind:value={satzort}>
-			<option value="">im Übrigen</option>
-			{#each places as place (place.satzort + (place.ort_name ?? ""))}
-				{#if place.satzort}
-					<option value={place.satzort}>{place.ort_name || place.satzort}</option>
-				{/if}
-			{/each}
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-ort">
-		{m.reise_city()}
-		<Input id="reise-ort" bind:value={ort}  />
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-means">
-		{m.reise_means()}
-		<NativeSelect class="w-full" id="reise-means" bind:value={means}>
-			<option value="bahn">Bahn</option>
-			<option value="flug">Flug</option>
-			<option value="pkw">Pkw</option>
-			<option value="schiff">Schiff</option>
-			<option value="bus">Bus</option>
-			<option value="sonstiges">Sonstiges</option>
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="reise-unterkunft">
-		{m.reise_lodging()}
-		<NativeSelect class="w-full" id="reise-unterkunft" bind:value={unterkunft}>
-			<option value="gestellt">{m.lodging_gestellt()}</option>
-			<option value="pauschale">{m.lodging_pauschale()}</option>
-			<option value="beleg">{m.lodging_beleg()}</option>
-			<option value="verkehrsmittel">{m.lodging_verkehrsmittel()}</option>
-			<option value="keine">{m.lodging_keine()}</option>
-		</NativeSelect>
-	</label>
-	{#each extras as leg, index (index)}
-		<fieldset class="grid gap-2 bg-card rounded-xl border p-3">
-			<legend class="text-sm">{m.reise_add_leg()}</legend>
-			<label class="grid gap-1 text-sm" for="f-reiseneu-1">
-				{m.reise_beginn()}
-				<DateField id="f-reiseneu-1" type="datetime-local" bind:value={leg.ankunft} required  />
-			</label>
-			<label class="grid gap-1 text-sm" for="f-reiseneu-2">
-				{m.reise_country()}
-				<NativeSelect id="f-reiseneu-2" class="w-full" bind:value={leg.land} onchange={() => void loadExtraPlaces(index)}>
-					{#each visibleLands(leg.land) as item (item.land_iso)}
-						<option value={item.land_iso}>{item.land_name_de}</option>
-					{/each}
-				</NativeSelect>
-			</label>
-			<label class="grid gap-1 text-sm" for="f-reiseneu-3">
-				{m.reise_place()}
-				<NativeSelect id="f-reiseneu-3" class="w-full" bind:value={leg.satzort}>
-					<option value="">im Übrigen</option>
-					{#each leg.places as place (place.satzort + (place.ort_name ?? ""))}
-						{#if place.satzort}
-							<option value={place.satzort}>{place.ort_name || place.satzort}</option>
-						{/if}
-					{/each}
-				</NativeSelect>
-			</label>
-			<label class="grid gap-1 text-sm" for="f-reiseneu-4">
-				{m.reise_city()}
-				<Input id="f-reiseneu-4" bind:value={leg.ort}  />
-			</label>
-		</fieldset>
-	{/each}
-	<Button variant="outline" type="button" onclick={() => void addLeg()}>{m.reise_add_leg()}</Button>
-	{#if error}<p class="text-sm" role="alert">{error}</p>{/if}
-	<Button type="submit">{m.create()}</Button>
+	<fieldset class="grid gap-3" disabled={!session.online}>
+		<label class="grid gap-1 text-sm" for="reise-anlass">
+			{m.reise_anlass()}
+			<Input id="reise-anlass" bind:value={anlass} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-projekt">
+			{m.reise_projekt()}
+			<Input id="reise-projekt" list="projekte" bind:value={projekt}  />
+			<datalist id="projekte">
+				{#each projects as name (name)}
+					<option value={name}></option>
+				{/each}
+			</datalist>
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-ag">
+			{m.reise_employer()}
+			<NativeSelect class="w-full" id="reise-ag" bind:value={employer} required>
+				{#each employers as item (item.id)}
+					<option value={item.id}>{item.name}</option>
+				{/each}
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-beginn">
+			{m.reise_beginn()}
+			<DateField id="reise-beginn" type="datetime-local" bind:value={beginn} onchange={() => void loadLands()} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-ende">
+			{m.reise_ende()}
+			<DateField id="reise-ende" type="datetime-local" bind:value={ende} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-zone">
+			{m.reise_zone()}
+			<Input id="reise-zone" list="zonen" bind:value={zone} required  />
+			<datalist id="zonen">
+				<option value="Europe/Berlin"></option>
+				<option value="Europe/Paris"></option>
+				<option value="Australia/Sydney"></option>
+				<option value="America/New_York"></option>
+			</datalist>
+		</label>
+		<label class="grid gap-1 text-sm" for="land-search">
+			{m.reise_search()}
+			<Input id="land-search" bind:value={landQuery}  />
+		</label>
+		<label class="grid gap-1 text-sm" for="leg-land">
+			{m.reise_country()}
+			<NativeSelect class="w-full"
+				id="leg-land"
+				bind:value={land}
+				onchange={() => void loadPlaces()}
+			>
+				{#each visibleLands(land) as item (item.land_iso)}
+					<option value={item.land_iso}>{item.land_name_de}</option>
+				{/each}
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="leg-place">
+			{m.reise_place()}
+			<NativeSelect class="w-full" id="leg-place" bind:value={satzort}>
+				<option value="">im Übrigen</option>
+				{#each places as place (place.satzort + (place.ort_name ?? ""))}
+					{#if place.satzort}
+						<option value={place.satzort}>{place.ort_name || place.satzort}</option>
+					{/if}
+				{/each}
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-ort">
+			{m.reise_city()}
+			<Input id="reise-ort" bind:value={ort}  />
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-means">
+			{m.reise_means()}
+			<NativeSelect class="w-full" id="reise-means" bind:value={means}>
+				<option value="bahn">Bahn</option>
+				<option value="flug">Flug</option>
+				<option value="pkw">Pkw</option>
+				<option value="schiff">Schiff</option>
+				<option value="bus">Bus</option>
+				<option value="sonstiges">Sonstiges</option>
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="reise-unterkunft">
+			{m.reise_lodging()}
+			<NativeSelect class="w-full" id="reise-unterkunft" bind:value={unterkunft}>
+				<option value="gestellt">{m.lodging_gestellt()}</option>
+				<option value="pauschale">{m.lodging_pauschale()}</option>
+				<option value="beleg">{m.lodging_beleg()}</option>
+				<option value="verkehrsmittel">{m.lodging_verkehrsmittel()}</option>
+				<option value="keine">{m.lodging_keine()}</option>
+			</NativeSelect>
+		</label>
+		{#each extras as leg, index (index)}
+			<fieldset class="grid gap-2 bg-card rounded-xl border p-3">
+					<legend class="text-sm">{m.reise_add_leg()}</legend>
+					<label class="grid gap-1 text-sm" for="f-reiseneu-1">
+						{m.reise_beginn()}
+						<DateField id="f-reiseneu-1" type="datetime-local" bind:value={leg.ankunft} required  />
+					</label>
+					<label class="grid gap-1 text-sm" for="f-reiseneu-2">
+						{m.reise_country()}
+						<NativeSelect id="f-reiseneu-2" class="w-full" bind:value={leg.land} onchange={() => void loadExtraPlaces(index)}>
+							{#each visibleLands(leg.land) as item (item.land_iso)}
+								<option value={item.land_iso}>{item.land_name_de}</option>
+							{/each}
+						</NativeSelect>
+					</label>
+					<label class="grid gap-1 text-sm" for="f-reiseneu-3">
+						{m.reise_place()}
+						<NativeSelect id="f-reiseneu-3" class="w-full" bind:value={leg.satzort}>
+							<option value="">im Übrigen</option>
+							{#each leg.places as place (place.satzort + (place.ort_name ?? ""))}
+								{#if place.satzort}
+									<option value={place.satzort}>{place.ort_name || place.satzort}</option>
+								{/if}
+							{/each}
+						</NativeSelect>
+					</label>
+					<label class="grid gap-1 text-sm" for="f-reiseneu-4">
+						{m.reise_city()}
+						<Input id="f-reiseneu-4" bind:value={leg.ort}  />
+					</label>
+			</fieldset>
+		{/each}
+		<Button variant="outline" type="button" onclick={() => void addLeg()}>{m.reise_add_leg()}</Button>
+		{#if error}<p class="text-sm" role="alert">{error}</p>{/if}
+		<Button type="submit">{m.create()}</Button>
+	</fieldset>
 </form>
 <p class="mt-4 text-sm"><a href={p("/reisen")}>{m.back()}</a></p>

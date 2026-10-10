@@ -3,6 +3,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { m } from "$lib/paraglide/messages.js";
+	import { pwa } from "$lib/pwa.svelte";
 	import { session } from "$lib/session.svelte";
 	import { navigate } from "../router";
 
@@ -91,6 +92,27 @@
 			{/if}
 			<p class="mt-2 font-medium">{letterhead.name}</p>
 			<p class="whitespace-pre-line text-sm">{letterhead.anschrift}</p>
+		</section>
+	{/if}
+	{#if pwa.canInstall || (pwa.ios && !pwa.installed)}
+		<section class="mt-8 max-w-sm" aria-label={m.install_title()}>
+			<h2 class="text-lg font-medium">{m.install_title()}</h2>
+			<div class="mt-2 grid gap-2">
+				{#if pwa.canInstall}
+					<Button
+						variant="outline"
+						type="button"
+						class="w-fit"
+						data-testid="install-app"
+						onclick={() => void pwa.promptInstall()}
+					>
+						{m.install_button()}
+					</Button>
+				{/if}
+				{#if pwa.ios && !pwa.installed}
+					<p class="text-sm" data-testid="install-ios-hint">{m.install_ios_hint()}</p>
+				{/if}
+			</div>
 		</section>
 	{/if}
 	<h2 class="mt-8 text-lg font-medium">{m.sessions()}</h2>

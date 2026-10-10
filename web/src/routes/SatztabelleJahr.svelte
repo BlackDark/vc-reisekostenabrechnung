@@ -128,11 +128,13 @@
 <p class="text-sm">{m.satz_inland()}: {euro(inland, session.locale)} €</p>
 
 <form class="mt-4 flex flex-wrap items-end gap-2" onsubmit={search}>
-	<label class="grid gap-1 text-sm" for="satz-q">
-		{m.satz_search()}
-		<Input id="satz-q" bind:value={query}  />
-	</label>
-	<Button type="submit">{m.satz_search()}</Button>
+	<fieldset class="flex flex-wrap items-end gap-2" disabled={!session.online}>
+		<label class="grid gap-1 text-sm" for="satz-q">
+			{m.satz_search()}
+			<Input id="satz-q" bind:value={query}  />
+		</label>
+		<Button type="submit">{m.satz_search()}</Button>
+	</fieldset>
 </form>
 
 {#if rows.length === 0}

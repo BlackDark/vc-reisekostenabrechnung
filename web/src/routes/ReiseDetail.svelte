@@ -377,7 +377,7 @@
 										<label class="border-border has-checked:bg-primary has-checked:text-primary-foreground relative inline-flex items-center rounded-md border px-2.5 py-1 text-xs">
 											<input class="absolute inset-0 cursor-pointer opacity-0" type="checkbox" bind:checked={day.abend_gestellt} />
 											{m.reise_dinner()}
-										</label>
+									</label>
 									</fieldset>
 									{#if tag?.regel_ids?.length || tag?.land_regel}
 										<Tooltip.Root>
@@ -552,34 +552,36 @@
 				<Sheet.Title>{m.reise_fahrt()}</Sheet.Title>
 			</Sheet.Header>
 			<form id="fahrt-form" class="grid gap-2 px-4 pb-4" onsubmit={addFahrt}>
-				<label class="grid gap-1 text-sm" for="fahrt-datum">
-					{m.reise_day()}
-					<DateField id="fahrt-datum" type="date" bind:value={fahrtDatum} required />
-				</label>
-				<label class="grid gap-1 text-sm" for="fahrt-start">
-					{m.reise_start()}
-					<Input id="fahrt-start" bind:value={fahrtStart} required />
-				</label>
-				<label class="grid gap-1 text-sm" for="fahrt-ziel">
-					{m.reise_ziel()}
-					<Input id="fahrt-ziel" bind:value={fahrtZiel} required />
-				</label>
-				<label class="grid gap-1 text-sm" for="fahrt-km">
-					{m.reise_km()}
-					<Input id="fahrt-km" type="number" min="1" max="100000" bind:value={fahrtKm} required />
-				</label>
-				<label class="flex items-center gap-2 text-sm" for="fahrt-return">
-					<input id="fahrt-return" type="checkbox" bind:checked={fahrtReturn} />
-					{m.reise_return()}
-				</label>
-				<label class="grid gap-1 text-sm" for="fahrt-vehicle">
-					{m.reise_vehicle()}
-					<NativeSelect class="w-full" id="fahrt-vehicle" bind:value={fahrtVehicle}>
-						<option value="kraftwagen">{m.vehicle_car()}</option>
-						<option value="anderes_motorfahrzeug">{m.vehicle_other()}</option>
-					</NativeSelect>
-				</label>
+				<fieldset class="grid gap-2" disabled={!session.online}>
+					<label class="grid gap-1 text-sm" for="fahrt-datum">
+						{m.reise_day()}
+						<DateField id="fahrt-datum" type="date" bind:value={fahrtDatum} required />
+					</label>
+					<label class="grid gap-1 text-sm" for="fahrt-start">
+						{m.reise_start()}
+						<Input id="fahrt-start" bind:value={fahrtStart} required />
+					</label>
+					<label class="grid gap-1 text-sm" for="fahrt-ziel">
+						{m.reise_ziel()}
+						<Input id="fahrt-ziel" bind:value={fahrtZiel} required />
+					</label>
+					<label class="grid gap-1 text-sm" for="fahrt-km">
+						{m.reise_km()}
+						<Input id="fahrt-km" type="number" min="1" max="100000" bind:value={fahrtKm} required />
+					</label>
+					<label class="flex items-center gap-2 text-sm" for="fahrt-return">
+						<input id="fahrt-return" type="checkbox" bind:checked={fahrtReturn} />
+						{m.reise_return()}
+					</label>
+					<label class="grid gap-1 text-sm" for="fahrt-vehicle">
+						{m.reise_vehicle()}
+						<NativeSelect class="w-full" id="fahrt-vehicle" bind:value={fahrtVehicle}>
+							<option value="kraftwagen">{m.vehicle_car()}</option>
+							<option value="anderes_motorfahrzeug">{m.vehicle_other()}</option>
+						</NativeSelect>
+					</label>
 				<Button variant="outline" type="submit">{m.create()}</Button>
+				</fieldset>
 			</form>
 		</Sheet.Content>
 	</Sheet.Root>

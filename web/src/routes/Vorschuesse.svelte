@@ -71,28 +71,30 @@
 	</ul>
 {/if}
 <form class="mt-6 grid gap-3" onsubmit={save}>
-	<label class="grid gap-1 text-sm" for="f-vorschuesse-1">
-		{m.reise_employer()}
-		<NativeSelect id="f-vorschuesse-1" class="w-full" bind:value={arbeitgeber}>
-			{#each employers as row (row.id)}
-				<option value={row.id}>{row.name}</option>
-			{/each}
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="f-vorschuesse-2">
-		{m.vorschuss_datum()}
-		<DateField id="f-vorschuesse-2" type="date" bind:value={datum} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="f-vorschuesse-3">
-		{m.vorschuss_betrag()}
-		<Input id="f-vorschuesse-3" inputmode="decimal" bind:value={betrag} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="vorschuss-notiz">
-		{m.vorschuss_notiz()}
-		<Input id="vorschuss-notiz" bind:value={notiz} />
-	</label>
-	{#if error}
-		<p class="text-sm" role="alert">{error}</p>
-	{/if}
-	<Button type="submit">{m.create()}</Button>
+	<fieldset class="grid gap-3" disabled={!session.online}>
+		<label class="grid gap-1 text-sm" for="f-vorschuesse-1">
+			{m.reise_employer()}
+			<NativeSelect id="f-vorschuesse-1" class="w-full" bind:value={arbeitgeber}>
+				{#each employers as row (row.id)}
+					<option value={row.id}>{row.name}</option>
+				{/each}
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="f-vorschuesse-2">
+			{m.vorschuss_datum()}
+			<DateField id="f-vorschuesse-2" type="date" bind:value={datum} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="f-vorschuesse-3">
+			{m.vorschuss_betrag()}
+			<Input id="f-vorschuesse-3" inputmode="decimal" bind:value={betrag} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="vorschuss-notiz">
+			{m.vorschuss_notiz()}
+			<Input id="vorschuss-notiz" bind:value={notiz} />
+		</label>
+		{#if error}
+			<p class="text-sm" role="alert">{error}</p>
+		{/if}
+		<Button type="submit">{m.create()}</Button>
+	</fieldset>
 </form>

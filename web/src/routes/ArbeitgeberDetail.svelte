@@ -83,17 +83,19 @@
 {#if loaded}
 	<div class="mt-4 grid items-start gap-4 md:grid-cols-2">
 		<form class="grid gap-3" onsubmit={save}>
-			<label class="grid gap-1 text-sm" for="ag-name">
-				{m.arbeitgeber_name()}
-				<Input id="ag-name" bind:value={name} required />
-			</label>
-			<label class="grid gap-1 text-sm" for="ag-address">
-				{m.arbeitgeber_address()}
-				<Textarea id="ag-address" bind:value={anschrift} required></Textarea>
-			</label>
-			<div class="bg-background/95 sticky bottom-16 z-30 -mx-4 border-t px-4 py-3 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
-				<Button type="submit">{m.save()}</Button>
-			</div>
+			<fieldset class="grid gap-3" disabled={!session.online}>
+				<label class="grid gap-1 text-sm" for="ag-name">
+					{m.arbeitgeber_name()}
+					<Input id="ag-name" bind:value={name} required />
+				</label>
+				<label class="grid gap-1 text-sm" for="ag-address">
+					{m.arbeitgeber_address()}
+					<Textarea id="ag-address" bind:value={anschrift} required></Textarea>
+				</label>
+				<div class="bg-background/95 sticky bottom-16 z-30 -mx-4 border-t px-4 py-3 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+					<Button type="submit">{m.save()}</Button>
+				</div>
+			</fieldset>
 		</form>
 		<div class="grid gap-3">
 			<label class="grid gap-1 text-sm" for="ag-logo">

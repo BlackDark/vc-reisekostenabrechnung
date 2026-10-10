@@ -26,6 +26,8 @@
 	});
 
 	async function addFiles(list: File[]) {
+		// The pickers and buttons are disabled offline, but drop and paste still reach here.
+		if (!session.online) return;
 		error = "";
 		const docs = list.filter((file) => /pdf|xml/i.test(file.type) || /\.(pdf|xml)$/i.test(file.name));
 		const images = list.filter((file) => !docs.includes(file));
@@ -155,11 +157,11 @@
 	<div class="grid grid-cols-2 gap-2">
 		<label class="bg-card rounded-xl border px-3 py-3 text-center">
 			{m.beleg_camera()}
-			<input class="sr-only" type="file" accept="image/*" capture="environment" onchange={onInput} />
+			<input class="sr-only" type="file" accept="image/*" capture="environment" disabled={!session.online} onchange={onInput} />
 		</label>
 		<label class="bg-card rounded-xl border px-3 py-3 text-center">
 			{m.beleg_file()}
-			<input data-testid="beleg-file" class="sr-only" type="file" accept="image/*,application/pdf,text/xml,application/xml,.xml,.pdf" multiple onchange={onInput} />
+			<input data-testid="beleg-file" class="sr-only" type="file" accept="image/*,application/pdf,text/xml,application/xml,.xml,.pdf" multiple disabled={!session.online} onchange={onInput} />
 		</label>
 	</div>
 	<div class="flex gap-2">
@@ -172,7 +174,7 @@
 	{#if dupId}
 		<p class="text-sm">
 			<a class="underline" href={p("/belege/:id", { params: { id: dupId } })}>{m.beleg_duplikat()}</a>
-			<Button variant="link" size="sm" class="ml-2" type="button" onclick={() => void upload(true)}>{m.beleg_duplikat_ok()}</Button>
+			<Button variant="link" size="sm" class="ml-2" type="button" disabled={!session.online} onclick={() => void upload(true)}>{m.beleg_duplikat_ok()}</Button>
 		</p>
 	{/if}
 	{#each pages as page, pageIndex (page.id)}
@@ -201,7 +203,7 @@
 			{/if}
 		</div>
 	{/each}
-	<Button type="button" disabled={busy || pages.length === 0} onclick={() => void upload(false)}>
+	<Button type="button" disabled={busy || !session.online || pages.length === 0} onclick={() => void upload(false)}>
 		{m.beleg_upload()}
 	</Button>
 </section>

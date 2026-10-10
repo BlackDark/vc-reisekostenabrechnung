@@ -46,25 +46,27 @@
 				void load();
 			}}
 		>
-			<Field.Field>
-				<Field.Label for="reise-q">{m.reise_search()}</Field.Label>
-				<Input id="reise-q" bind:value={q} />
-			</Field.Field>
-			<Field.Field>
-				<Field.Label>{m.reise_filter()}</Field.Label>
-				<Combobox
-					bind:value={status}
-					label={m.reise_filter()}
-					placeholder={m.reise_filter()}
-					options={[
-						{ value: "", label: m.reise_filter() },
-						{ value: "offen", label: statusLabel("offen") },
-						{ value: "in_entwurf", label: statusLabel("in_entwurf") },
-						{ value: "gesperrt", label: statusLabel("gesperrt") },
-					]}
-				/>
-			</Field.Field>
-			<Button class="sm:col-span-2" type="submit">{m.reise_search()}</Button>
+			<fieldset class="grid gap-3 sm:grid-cols-2" disabled={!session.online}>
+				<Field.Field>
+					<Field.Label for="reise-q">{m.reise_search()}</Field.Label>
+					<Input id="reise-q" bind:value={q} />
+				</Field.Field>
+				<Field.Field>
+					<Field.Label>{m.reise_filter()}</Field.Label>
+					<Combobox
+						bind:value={status}
+						label={m.reise_filter()}
+						placeholder={m.reise_filter()}
+						options={[
+							{ value: "", label: m.reise_filter() },
+							{ value: "offen", label: statusLabel("offen") },
+							{ value: "in_entwurf", label: statusLabel("in_entwurf") },
+							{ value: "gesperrt", label: statusLabel("gesperrt") },
+						]}
+					/>
+				</Field.Field>
+				<Button class="sm:col-span-2" type="submit">{m.reise_search()}</Button>
+			</fieldset>
 		</form>
 	</Card.Content>
 </Card.Root>

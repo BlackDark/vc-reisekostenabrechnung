@@ -151,11 +151,13 @@
 					resetPassword = "";
 				}}
 			>
-				<label class="grid gap-1" for={`pw-${row.id}`}>
-					{m.admin_reset()}
-					<Input id={`pw-${row.id}`} bind:value={resetPassword}  />
-				</label>
-				<Button type="submit" size="sm">{m.save()}</Button>
+				<fieldset class="flex flex-wrap items-end gap-2" disabled={!session.online}>
+					<label class="grid gap-1" for={`pw-${row.id}`}>
+						{m.admin_reset()}
+						<Input id={`pw-${row.id}`} bind:value={resetPassword}  />
+					</label>
+					<Button type="submit" size="sm">{m.save()}</Button>
+				</fieldset>
 			</form>
 		</li>
 	{/each}
@@ -170,22 +172,24 @@
 	</NativeSelect>
 </label>
 <form class="mt-3 grid max-w-sm gap-3" onsubmit={link}>
-	<label class="grid gap-1 text-sm" for="id-art">
-		{m.admin_identity()}
-		<NativeSelect class="w-full" id="id-art" bind:value={art}>
-			<option value="oidc">oidc</option>
-			<option value="header">header</option>
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="id-issuer">
-		{m.admin_issuer()}
-		<Input id="id-issuer" bind:value={issuer} required  />
-	</label>
-	<label class="grid gap-1 text-sm" for="id-subject">
-		{m.admin_subject()}
-		<Input id="id-subject" bind:value={subject} required  />
-	</label>
-	<Button type="submit">{m.admin_link()}</Button>
+	<fieldset class="grid gap-3" disabled={!session.online}>
+		<label class="grid gap-1 text-sm" for="id-art">
+			{m.admin_identity()}
+			<NativeSelect class="w-full" id="id-art" bind:value={art}>
+				<option value="oidc">oidc</option>
+				<option value="header">header</option>
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="id-issuer">
+			{m.admin_issuer()}
+			<Input id="id-issuer" bind:value={issuer} required  />
+		</label>
+		<label class="grid gap-1 text-sm" for="id-subject">
+			{m.admin_subject()}
+			<Input id="id-subject" bind:value={subject} required  />
+		</label>
+		<Button type="submit">{m.admin_link()}</Button>
+	</fieldset>
 </form>
 <ul class="mt-3 grid gap-1 text-sm">
 	{#each identities as row (row.id)}

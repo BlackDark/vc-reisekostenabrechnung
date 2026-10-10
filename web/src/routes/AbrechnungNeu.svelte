@@ -92,42 +92,44 @@
 
 <h1 class="text-2xl font-semibold tracking-tight">{m.abrechnung_new()}</h1>
 <form class="mt-4 grid gap-3" onsubmit={save}>
-	<label class="grid gap-1 text-sm" for="abrechnung-ag">
-		{m.reise_employer()}
-		<NativeSelect class="w-full" id="abrechnung-ag" bind:value={arbeitgeber}>
-			{#each employers as row (row.id)}
-				<option value={row.id}>{row.name}</option>
-			{/each}
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="abrechnung-art">
-		{m.abrechnung_period()}
-		<NativeSelect class="w-full" id="abrechnung-art" bind:value={art}>
-			<option value="tag">{m.abrechnung_art_tag()}</option>
-			<option value="woche">{m.abrechnung_art_woche()}</option>
-			<option value="monat">{m.abrechnung_art_monat()}</option>
-			<option value="quartal">{m.abrechnung_art_quartal()}</option>
-			<option value="frei">{m.abrechnung_art_frei()}</option>
-		</NativeSelect>
-	</label>
-	<label class="grid gap-1 text-sm" for="abrechnung-von">
-		{m.abrechnung_von()}
-		<DateField id="abrechnung-von" type="date" bind:value={von} required  />
-	</label>
-	{#if art === "frei"}
-		<label class="grid gap-1 text-sm" for="abrechnung-bis">
-			{m.abrechnung_bis()}
-			<DateField id="abrechnung-bis" type="date" bind:value={bis} required  />
+	<fieldset class="grid gap-3" disabled={!session.online}>
+		<label class="grid gap-1 text-sm" for="abrechnung-ag">
+			{m.reise_employer()}
+			<NativeSelect class="w-full" id="abrechnung-ag" bind:value={arbeitgeber}>
+				{#each employers as row (row.id)}
+					<option value={row.id}>{row.name}</option>
+				{/each}
+			</NativeSelect>
 		</label>
-	{/if}
-	<label class="grid gap-1 text-sm" for="abrechnung-titel">
-		{m.abrechnung_titel()}
-		<Input id="abrechnung-titel" bind:value={titel}  />
-	</label>
-	{#if error}
-		<p class="text-sm" role="alert">{error}</p>
-	{/if}
-	<Button type="submit" data-testid="abrechnung-create">
-		{m.create()}
-	</Button>
+		<label class="grid gap-1 text-sm" for="abrechnung-art">
+			{m.abrechnung_period()}
+			<NativeSelect class="w-full" id="abrechnung-art" bind:value={art}>
+				<option value="tag">{m.abrechnung_art_tag()}</option>
+				<option value="woche">{m.abrechnung_art_woche()}</option>
+				<option value="monat">{m.abrechnung_art_monat()}</option>
+				<option value="quartal">{m.abrechnung_art_quartal()}</option>
+				<option value="frei">{m.abrechnung_art_frei()}</option>
+			</NativeSelect>
+		</label>
+		<label class="grid gap-1 text-sm" for="abrechnung-von">
+			{m.abrechnung_von()}
+			<DateField id="abrechnung-von" type="date" bind:value={von} required  />
+		</label>
+		{#if art === "frei"}
+			<label class="grid gap-1 text-sm" for="abrechnung-bis">
+				{m.abrechnung_bis()}
+				<DateField id="abrechnung-bis" type="date" bind:value={bis} required  />
+			</label>
+		{/if}
+		<label class="grid gap-1 text-sm" for="abrechnung-titel">
+			{m.abrechnung_titel()}
+			<Input id="abrechnung-titel" bind:value={titel}  />
+		</label>
+		{#if error}
+			<p class="text-sm" role="alert">{error}</p>
+		{/if}
+		<Button type="submit" data-testid="abrechnung-create">
+			{m.create()}
+		</Button>
+	</fieldset>
 </form>
