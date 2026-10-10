@@ -45,12 +45,15 @@ Open `APP_BASE_URL`. The log line is the setup token for the first admin, until 
 
 ## Further reading
 
+All documents: [docs/](docs/README.md).
+
 - [Features](docs/features.md)
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md), the environment variables
 - [Authentication](docs/authentication.md), password, OIDC with Pocket ID, trusted header
 - [Operations](docs/operations.md), backup, restore, retention
 - [Development](docs/development.md)
+- [Roadmap](docs/roadmap.md), open tasks and possible features
 - [Tax rules, in short](docs/tax-rules.md)
 - [Specification](docs/SPEC.md), [milestones](docs/MILESTONES.md), [glossary](GLOSSARY.md), [architecture decisions](docs/adr/)
 
