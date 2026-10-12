@@ -317,6 +317,13 @@ func (a *App) maxUpload() int64 {
 	return 25 << 20
 }
 
+func (a *App) fxTimeout() time.Duration {
+	if a.cfg.FXTimeout > 0 {
+		return a.cfg.FXTimeout
+	}
+	return 4 * time.Second
+}
+
 func (a *App) typstBin() string {
 	p := a.cfg.TypstPath
 	base := filepath.Base(p)

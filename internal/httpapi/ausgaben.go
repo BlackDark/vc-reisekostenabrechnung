@@ -411,9 +411,11 @@ func (a *App) ecbRate(ctx context.Context, waehrung, datum string) (string, stri
 	if kurs, used, ok := fx.Lookback(all, waehrung, datum); ok {
 		return kurs, used, nil
 	}
-	fetchCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	fetchCtx, cancel := context.WithTimeout(ctx, a.fxTimeout())
 	defer cancel()
-	fetched, ferr := fx.FetchECB(fetchCtx, nil, waehrung, fx.ShiftDate(datum, -7), datum)
+	client := &http.Client{Timeout: a.fxTimeout()}
+	fetched, ferr := fx.FetchECB(fetchCtx, client, a.cfg.FXURL, waehrung,
+		fx.ShiftDate(datum, -7), datum)
 	if ferr == nil && len(fetched) > 0 {
 		_ = a.store.RememberRates(ctx, fetched)
 		all = append(all, fetched...)
@@ -429,9 +431,9 @@ func (a *App) ustRate(ctx context.Context, waehrung string, jahr, monat int) (st
 	if err != nil || ok {
 		return kurs, ok, err
 	}
-	fetchCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	fetchCtx, cancel := context.WithTimeout(ctx, a.fxTimeout())
 	defer cancel()
-	rows, ferr := fx.FetchBMF(fetchCtx, nil)
+	rows, ferr := fx.FetchBMF(fetchCtx, &http.Client{Timeout: a.fxTimeout()})
 	if ferr != nil {
 		return "", false, nil
 	}

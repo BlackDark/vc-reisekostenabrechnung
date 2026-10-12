@@ -194,8 +194,9 @@ func ValidCurrency(s string) bool {
 	return true
 }
 
-// FetchECB loads daily rates from the ECB Data API. The currency must already be validated.
-func FetchECB(ctx context.Context, client *http.Client, waehrung, start, end string) ([]Rate, error) {
+// FetchECB loads daily rates from the ECB Data API. The currency must already be
+// validated. baseURL overrides the default data-api.ecb.europa.eu host when set.
+func FetchECB(ctx context.Context, client *http.Client, baseURL, waehrung, start, end string) ([]Rate, error) {
 	if !ValidCurrency(waehrung) {
 		return nil, fmt.Errorf("waehrung")
 	}
@@ -206,6 +207,16 @@ func FetchECB(ctx context.Context, client *http.Client, waehrung, start, end str
 		Scheme: "https",
 		Host:   "data-api.ecb.europa.eu",
 		Path:   "/service/data/EXR/D." + waehrung + ".EUR.SP00.A",
+	}
+	if baseURL != "" {
+		if b, err := url.Parse(baseURL); err == nil {
+			if b.Scheme != "" {
+				u.Scheme = b.Scheme
+			}
+			if b.Host != "" {
+				u.Host = b.Host
+			}
+		}
 	}
 	q := u.Query()
 	q.Set("startPeriod", start)
