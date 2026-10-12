@@ -19,8 +19,6 @@
 	"token_created": "Token (shown only once, copy it now):",
 	"token_revoke": "Revoke",
 	"token_revoked": "revoked",
-	"pwa_install": "Install app",
-	"pwa_ios_hint": "To install: open the Share menu and choose Add to Home Screen.",
 	"profile_title": "Profile",
 	"admin_title": "Users",
 	"logout": "Sign out",

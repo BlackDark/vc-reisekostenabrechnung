@@ -3,7 +3,6 @@
 	import { Router } from "sv-router";
 	import { onMount } from "svelte";
 	import AppSidebar from "$lib/components/app-sidebar.svelte";
-	import PwaInstall from "$lib/components/pwa-install.svelte";
 	import ThemeToggle from "$lib/components/theme-toggle.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Sidebar from "$lib/components/ui/sidebar";
@@ -40,7 +39,6 @@
 					<Sidebar.Trigger class="md:hidden" />
 					<div class="ml-auto flex flex-wrap items-center gap-2">
 						<ThemeToggle />
-						<PwaInstall />
 						<Button variant="outline" size="sm" type="button" onclick={() => session.applyLocale("de")}>DE</Button>
 						<Button variant="outline" size="sm" type="button" onclick={() => session.applyLocale("en")}>EN</Button>
 					</div>

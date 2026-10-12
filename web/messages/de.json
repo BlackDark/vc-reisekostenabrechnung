@@ -19,8 +19,6 @@
 	"token_created": "Token (nur jetzt sichtbar, jetzt kopieren):",
 	"token_revoke": "Widerrufen",
 	"token_revoked": "widerrufen",
-	"pwa_install": "App installieren",
-	"pwa_ios_hint": "Zum Installieren: Share-Menü öffnen und Zum Home-Bildschirm wählen.",
 	"profile_title": "Profil",
 	"admin_title": "Nutzer",
 	"logout": "Abmelden",
