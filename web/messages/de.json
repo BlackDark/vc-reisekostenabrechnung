@@ -13,6 +13,8 @@
 	"setup_submit": "Admin anlegen",
 	"home_title": "Reisen",
 	"offline": "Offline – Änderungen sind erst wieder online möglich",
+	"pwa_install": "App installieren",
+	"pwa_ios_hint": "Zum Installieren: Share-Menü öffnen und Zum Home-Bildschirm wählen.",
 	"profile_title": "Profil",
 	"admin_title": "Nutzer",
 	"logout": "Abmelden",

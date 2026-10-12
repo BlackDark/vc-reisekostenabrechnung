@@ -61,7 +61,7 @@
 	</label>
 	<label class="mt-2 grid max-w-sm gap-1 text-sm" for="import-csv">
 		{m.satz_csv()}
-		<Input id="import-csv" type="file" accept="text/csv,.csv" onchange={upload}  />
+		<Input id="import-csv" type="file" accept="text/csv,.csv" onchange={upload} disabled={!session.online}  />
 	</label>
 	{#if error}<p class="mt-2 text-sm text-destructive" role="alert">{error}</p>{/if}
 {/if}
