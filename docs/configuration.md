@@ -2,9 +2,9 @@
 
 Every setting is an environment variable. A secret also has a `<NAME>_FILE` form (a file path, for example a Docker secret). The file wins when both are set. `reisekosten config check` validates a configuration without serving.
 
-Compose reads `.env` from the directory of the compose file. `APP_BASE_URL` is required there (`${APP_BASE_URL:?fehlt}`). `APP_VERSION` and `APP_PORT` are Compose variables, not application settings: they select the image tag (default `latest`) and the published host port (default `8080`).
+Compose reads `.env` from the directory of the compose file. `APP_BASE_URL` is required there (`${APP_BASE_URL:?required}`). `APP_VERSION` and `APP_PORT` are Compose variables, not application settings: they select the image tag (default `latest`) and the published host port (default `8080`).
 
-`FX_ECB_URL` and `EXPORT_PDF_STANDARD` are listed in `.env.example` for operators. This build still uses the ECB host and PDF/A-3b that are compiled in. The other variables below are read at startup.
+`FX_ECB_URL`, `FX_TIMEOUT` and `EXPORT_PDF_STANDARD` are read at startup and applied; their defaults match the previously compiled-in values. Every variable below is read at startup, and a malformed value (including a non-boolean where a boolean is expected) stops the process.
 
 Invalid combinations stop the process with a clear error (every login method off, or S3 without an EU/EEA location).
 
@@ -71,7 +71,7 @@ Invalid combinations stop the process with a clear error (every login method off
 | `BELEG_AVIF_QUALITY` | `70` | 1–100. 70 keeps a clean scan above 0.95 SSIM, lower values blur small print |
 | `BELEG_AVIF_SPEED` | `8` | 0 is slow, 10 is fast. 8 encodes all-intra about four times faster than 6 |
 | `BELEG_WEBP_QUALITY` | `55` | When `BELEG_FORMAT=webp` |
-| `BELEG_JPEG_QUALITY` | `70` | JPEG derivative of a photo receipt and of a PDF page. A PDF-source receipt embedded in the export still uses quality 70 |
+| `BELEG_JPEG_QUALITY` | `70` | JPEG quality for the photo and PDF-page derivatives, including receipts embedded in the export |
 | `BELEG_ERFASSUNG_KARENZ` | `720h` | How long the capture JPEG is kept after confirmation |
 | **Optional receipt reading** | | |
 | `AI_ENABLED` | `false` | Suggestions only, and only after the user opts in |
@@ -83,11 +83,11 @@ Invalid combinations stop the process with a clear error (every login method off
 | `AI_MAX_IMAGE_PX` | `2480` | Longest edge sent to the model |
 | `AI_RESPONSE_FORMAT` | `auto` | `auto`, `json_schema`, `json_object`, or `text` |
 | **Exchange rates and export** | | |
-| `FX_ECB_URL` | ECB data API | Listed for operators. This build fetches the compiled-in ECB host |
-| `FX_TIMEOUT` | | Listed in `.env.example`. This build uses a compiled-in 4 second fetch timeout |
+| `FX_ECB_URL` | `https://data-api.ecb.europa.eu` | Scheme and host for the ECB rates endpoint. Only the scheme and host are used; the data path is fixed by the currency |
+| `FX_TIMEOUT` | `4s` | Deadline and HTTP client timeout for the ECB and BMF rate fetches. Must be positive |
 | `TYPST_PATH` | `/usr/local/bin/typst` | |
-| `EXPORT_TIMEOUT` | `120s` | Loaded and not applied. Typst export uses a fixed 60 second timeout |
-| `EXPORT_PDF_STANDARD` | `a-3b` | Listed for operators. This build always writes PDF/A-3b |
+| `EXPORT_TIMEOUT` | `120s` | Bounds the Typst export pipeline (render, raster and PDF compile) |
+| `EXPORT_PDF_STANDARD` | `a-3b` | PDF standard passed to Typst (for example `a-3b` for PDF/A-3b) |
 | **Rate limits** | | |
 | `RATE_LIMIT_LOGIN` | `5/m` | Per client IP |
 | `RATE_LIMIT_LOGIN_ACCOUNT` | `20/h` | Per account and client IP |

@@ -858,8 +858,8 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 | `AI_MAX_IMAGE_PX` | `2480` | längste Kante |
 | `AI_RESPONSE_FORMAT` | `auto` | `auto`\|`json_schema`\|`json_object`\|`text` |
 | **Wechselkurse** | | |
-| `FX_ECB_URL` | `https://data-api.ecb.europa.eu/service/data/EXR` | |
-| `FX_TIMEOUT` | `10s` | |
+| `FX_ECB_URL` | `https://data-api.ecb.europa.eu` | |
+| `FX_TIMEOUT` | `4s` | |
 | **Export** | | |
 | `TYPST_PATH` | `/usr/local/bin/typst` | |
 | `EXPORT_TIMEOUT` | `120s` | |
