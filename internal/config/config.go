@@ -42,15 +42,18 @@ type Config struct {
 	StorageLocalPath string
 	S3               S3
 
-	UploadMaxBytes   int64
-	BelegFormat      string
-	BelegAVIFQuality int
-	BelegAVIFSpeed   int
-	BelegWebPQuality int
-	BelegJPEGQuality int
-	BelegKarenz      time.Duration
-	TypstPath        string
-	ExportTimeout    time.Duration
+	UploadMaxBytes    int64
+	BelegFormat       string
+	BelegAVIFQuality  int
+	BelegAVIFSpeed    int
+	BelegWebPQuality  int
+	BelegJPEGQuality  int
+	BelegKarenz       time.Duration
+	TypstPath         string
+	ExportTimeout     time.Duration
+	ExportPDFStandard string
+	FXURL             string
+	FXTimeout         time.Duration
 
 	RateLogin        Rate
 	RateLoginAccount Rate
@@ -133,12 +136,12 @@ func Load() (Config, error) {
 		LogFormat:           lookupDefault("LOG_FORMAT", "json"),
 		DefaultLocale:       lookupDefault("DEFAULT_LOCALE", "de"),
 		TZDefault:           lookupDefault("TZ_DEFAULT", "Europe/Berlin"),
-		CookieSecure:        lookupBool("COOKIE_SECURE", true),
+		CookieSecure:        lookupBool("COOKIE_SECURE", true, &errs),
 		SessionIdle:         lookupDuration("SESSION_IDLE_TIMEOUT", 168*time.Hour, &errs),
 		SessionLifetime:     lookupDuration("SESSION_LIFETIME", 720*time.Hour, &errs),
 		InitialAdminUser:    lookup("INITIAL_ADMIN_USERNAME"),
 		InitialAdminMail:    lookup("INITIAL_ADMIN_EMAIL"),
-		AuthPasswordEnabled: lookupBool("AUTH_PASSWORD_ENABLED", true),
+		AuthPasswordEnabled: lookupBool("AUTH_PASSWORD_ENABLED", true, &errs),
 		Argon2MemoryKiB:     lookupUint32("ARGON2_MEMORY_KIB", 65536, &errs),
 		Argon2Time:          lookupUint32("ARGON2_TIME", 3, &errs),
 		Argon2Threads:       lookupUint8("ARGON2_THREADS", 4, &errs),
@@ -152,15 +155,18 @@ func Load() (Config, error) {
 		BelegKarenz:         lookupDuration("BELEG_ERFASSUNG_KARENZ", 720*time.Hour, &errs),
 		TypstPath:           lookupDefault("TYPST_PATH", "/usr/local/bin/typst"),
 		ExportTimeout:       lookupDuration("EXPORT_TIMEOUT", 120*time.Second, &errs),
+		ExportPDFStandard:   lookupDefault("EXPORT_PDF_STANDARD", "a-3b"),
+		FXURL:               lookup("FX_ECB_URL"),
+		FXTimeout:           lookupDuration("FX_TIMEOUT", 4*time.Second, &errs),
 		JobWorkers:          lookupInt("JOB_WORKERS", 2, &errs),
-		RetentionReport:     lookupBool("RETENTION_REPORT_ENABLED", true),
+		RetentionReport:     lookupBool("RETENTION_REPORT_ENABLED", true, &errs),
 	}
 	aiKey, err := secret("AI_API_KEY")
 	if err != nil {
 		errs = append(errs, err.Error())
 	}
 	cfg.AI = AI{
-		Enabled:        lookupBool("AI_ENABLED", false),
+		Enabled:        lookupBool("AI_ENABLED", false, &errs),
 		BaseURL:        strings.TrimRight(lookup("AI_BASE_URL"), "/"),
 		APIKey:         aiKey,
 		Model:          lookup("AI_MODEL"),
@@ -189,7 +195,7 @@ func Load() (Config, error) {
 	}
 
 	cfg.OIDC = OIDC{
-		Enabled:           lookupBool("OIDC_ENABLED", false),
+		Enabled:           lookupBool("OIDC_ENABLED", false, &errs),
 		IssuerURL:         strings.TrimRight(lookup("OIDC_ISSUER_URL"), "/"),
 		ClientID:          lookup("OIDC_CLIENT_ID"),
 		ClientSecret:      oidcSecret,
@@ -197,12 +203,12 @@ func Load() (Config, error) {
 		GroupsClaim:       lookupDefault("OIDC_GROUPS_CLAIM", "groups"),
 		AdminGroup:        lookup("OIDC_ADMIN_GROUP"),
 		AllowedGroup:      lookup("OIDC_ALLOWED_GROUP"),
-		AllowEmailLinking: lookupBool("OIDC_ALLOW_EMAIL_LINKING", false),
+		AllowEmailLinking: lookupBool("OIDC_ALLOW_EMAIL_LINKING", false, &errs),
 		ButtonLabel:       lookupDefault("OIDC_BUTTON_LABEL", "Mit SSO anmelden"),
-		AutoRedirect:      lookupBool("OIDC_AUTO_REDIRECT", false),
+		AutoRedirect:      lookupBool("OIDC_AUTO_REDIRECT", false, &errs),
 	}
 	cfg.Header = Header{
-		Enabled:      lookupBool("HEADER_AUTH_ENABLED", false),
+		Enabled:      lookupBool("HEADER_AUTH_ENABLED", false, &errs),
 		UserHeader:   lookupDefault("HEADER_AUTH_USER_HEADER", "Remote-User"),
 		EmailHeader:  lookupDefault("HEADER_AUTH_EMAIL_HEADER", "Remote-Email"),
 		NameHeader:   lookupDefault("HEADER_AUTH_NAME_HEADER", "Remote-Name"),
@@ -218,9 +224,9 @@ func Load() (Config, error) {
 		Prefix:       lookup("S3_PREFIX"),
 		AccessKey:    lookup("S3_ACCESS_KEY_ID"),
 		SecretKey:    s3secret,
-		UsePathStyle: lookupBool("S3_USE_PATH_STYLE", false),
+		UsePathStyle: lookupBool("S3_USE_PATH_STYLE", false, &errs),
 		DataLocation: strings.ToUpper(lookup("S3_DATA_LOCATION")),
-		AllowNonEU:   lookupBool("S3_ALLOW_NON_EU", false),
+		AllowNonEU:   lookupBool("S3_ALLOW_NON_EU", false, &errs),
 	}
 
 	if nets, err := parseCIDRs(lookup("TRUSTED_PROXIES")); err != nil {
@@ -320,6 +326,9 @@ func validate(cfg Config) []string {
 	if cfg.BelegKarenz <= 0 {
 		errs = append(errs, "BELEG_ERFASSUNG_KARENZ must be positive")
 	}
+	if cfg.FXTimeout <= 0 {
+		errs = append(errs, "FX_TIMEOUT must be positive")
+	}
 	if cfg.SessionIdle <= 0 || cfg.SessionLifetime <= 0 {
 		errs = append(errs, "session timeouts must be positive")
 	}
@@ -406,13 +415,14 @@ func lookupDefault(key, def string) string {
 	return def
 }
 
-func lookupBool(key string, def bool) bool {
+func lookupBool(key string, def bool, errs *[]string) bool {
 	v := lookup(key)
 	if v == "" {
 		return def
 	}
 	b, err := strconv.ParseBool(v)
 	if err != nil {
+		*errs = append(*errs, key+" must be a boolean (true or false)")
 		return def
 	}
 	return b
