@@ -797,6 +797,46 @@ paths:
           $ref: "#/components/responses/Problem"
         "403":
           $ref: "#/components/responses/Problem"
+  /api/v1/protokoll:
+    get:
+      operationId: getProtokoll
+      tags: [protokoll]
+      summary: The current Nutzer's own audit events
+      parameters:
+        - name: objekt_typ
+          in: query
+          schema:
+            type: string
+        - name: objekt_id
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Own audit events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtokollListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/system:
+    get:
+      operationId: getAdminSystem
+      tags: [admin]
+      summary: System status for administrators
+      responses:
+        "200":
+          description: Version, storage and job counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatus"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
   /api/v1/admin/aufbewahrung:
     get:
       operationId: getAdminAufbewahrung
@@ -2951,6 +2991,38 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProtokollEreignis"
+    SystemStatus:
+      type: object
+      required: [version, storage_backend, db_size_bytes]
+      properties:
+        version:
+          type: string
+        commit:
+          type: string
+        pipeline_version:
+          type: string
+        storage_backend:
+          type: string
+        storage_location:
+          type: string
+        db_size_bytes:
+          type: integer
+          format: int64
+        nutzer_count:
+          type: integer
+          format: int64
+        admin_count:
+          type: integer
+          format: int64
+        jobs_open:
+          type: integer
+          format: int64
+        jobs_done:
+          type: integer
+          format: int64
+        jobs_failed:
+          type: integer
+          format: int64
     AufbewahrungPosten:
       type: object
       required: [art, id, nutzer_id, bezeichnung, aufbewahren_bis, abgelaufen, inhalt_geloescht, sha256]

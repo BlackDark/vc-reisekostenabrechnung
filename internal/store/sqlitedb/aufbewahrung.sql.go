@@ -28,6 +28,45 @@ func (q *Queries) CountDoneJobsSince(ctx context.Context, arg CountDoneJobsSince
 	return n, err
 }
 
+const countJobsDone = `-- name: CountJobsDone :one
+SELECT CAST(COUNT(*) AS BIGINT) AS n
+FROM job
+WHERE status = 'done'
+`
+
+func (q *Queries) CountJobsDone(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countJobsDone)
+	var n int64
+	err := row.Scan(&n)
+	return n, err
+}
+
+const countJobsFailed = `-- name: CountJobsFailed :one
+SELECT CAST(COUNT(*) AS BIGINT) AS n
+FROM job
+WHERE status = 'failed'
+`
+
+func (q *Queries) CountJobsFailed(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countJobsFailed)
+	var n int64
+	err := row.Scan(&n)
+	return n, err
+}
+
+const countJobsOpen = `-- name: CountJobsOpen :one
+SELECT CAST(COUNT(*) AS BIGINT) AS n
+FROM job
+WHERE status IN ('pending', 'running')
+`
+
+func (q *Queries) CountJobsOpen(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countJobsOpen)
+	var n int64
+	err := row.Scan(&n)
+	return n, err
+}
+
 const countOpenJobsByArt = `-- name: CountOpenJobsByArt :one
 SELECT CAST(COUNT(*) AS BIGINT) AS n
 FROM job

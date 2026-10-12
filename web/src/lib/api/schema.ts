@@ -440,6 +440,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/protokoll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current Nutzer's own audit events */
+        get: operations["getProtokoll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/system": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** System status for administrators */
+        get: operations["getAdminSystem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/aufbewahrung": {
         parameters: {
             query?: never;
@@ -1538,6 +1572,25 @@ export interface components {
         };
         ProtokollListe: {
             items: components["schemas"]["ProtokollEreignis"][];
+        };
+        SystemStatus: {
+            version: string;
+            commit?: string;
+            pipeline_version?: string;
+            storage_backend: string;
+            storage_location?: string;
+            /** Format: int64 */
+            db_size_bytes: number;
+            /** Format: int64 */
+            nutzer_count?: number;
+            /** Format: int64 */
+            admin_count?: number;
+            /** Format: int64 */
+            jobs_open?: number;
+            /** Format: int64 */
+            jobs_done?: number;
+            /** Format: int64 */
+            jobs_failed?: number;
         };
         AufbewahrungPosten: {
             /** @enum {string} */
@@ -3081,6 +3134,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProtokollListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
+        };
+    };
+    getProtokoll: {
+        parameters: {
+            query?: {
+                objekt_typ?: string;
+                objekt_id?: string;
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Own audit events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtokollListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    getAdminSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Version, storage and job counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemStatus"];
                 };
             };
             401: components["responses"]["Problem"];

@@ -158,3 +158,61 @@ func (q *Queries) ListAuditFiltered(ctx context.Context, arg ListAuditFilteredPa
 	}
 	return items, nil
 }
+
+const listAuditForNutzer = `-- name: ListAuditForNutzer :many
+SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash FROM audit_ereignis
+WHERE akteur_nutzer_id = ?1
+  AND (?2 IS NULL OR objekt_typ = ?2)
+  AND (?3 IS NULL OR objekt_id = ?3)
+ORDER BY zeitpunkt DESC, id DESC
+LIMIT ?4
+`
+
+type ListAuditForNutzerParams struct {
+	NutzerID  *string
+	ObjektTyp interface{}
+	ObjektID  interface{}
+	LimitN    int64
+}
+
+func (q *Queries) ListAuditForNutzer(ctx context.Context, arg ListAuditForNutzerParams) ([]AuditEreigni, error) {
+	rows, err := q.db.QueryContext(ctx, listAuditForNutzer,
+		arg.NutzerID,
+		arg.ObjektTyp,
+		arg.ObjektID,
+		arg.LimitN,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuditEreigni
+	for rows.Next() {
+		var i AuditEreigni
+		if err := rows.Scan(
+			&i.ID,
+			&i.Zeitpunkt,
+			&i.AkteurNutzerID,
+			&i.AkteurArt,
+			&i.Aktion,
+			&i.ObjektTyp,
+			&i.ObjektID,
+			&i.Vorher,
+			&i.Nachher,
+			&i.Grund,
+			&i.Ip,
+			&i.VorgaengerHash,
+			&i.Hash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

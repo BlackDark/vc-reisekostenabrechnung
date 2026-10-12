@@ -652,6 +652,21 @@ func (s *Store) ListProtokoll(ctx context.Context, objektTyp, objektID string, l
 	return s.readQ().ListAuditFiltered(ctx, sqlitedb.ListAuditFilteredParams{ObjektTyp: typ, ObjektID: id, LimitN: limit})
 }
 
+// ListProtokollForNutzer returns the signed-in account's own audit events,
+// optionally filtered by object type and object id.
+func (s *Store) ListProtokollForNutzer(ctx context.Context, nutzerID, objektTyp, objektID string, limit int64) ([]sqlitedb.AuditEreigni, error) {
+	var typ, id any
+	if objektTyp != "" {
+		typ = objektTyp
+	}
+	if objektID != "" {
+		id = objektID
+	}
+	return s.readQ().ListAuditForNutzer(ctx, sqlitedb.ListAuditForNutzerParams{
+		NutzerID: &nutzerID, ObjektTyp: typ, ObjektID: id, LimitN: limit,
+	})
+}
+
 func deref(s *string) string {
 	if s == nil {
 		return ""

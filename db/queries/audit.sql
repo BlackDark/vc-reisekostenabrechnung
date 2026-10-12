@@ -20,3 +20,11 @@ WHERE (sqlc.narg(objekt_typ) IS NULL OR objekt_typ = sqlc.narg(objekt_typ))
   AND (sqlc.narg(objekt_id) IS NULL OR objekt_id = sqlc.narg(objekt_id))
 ORDER BY zeitpunkt DESC, id DESC
 LIMIT sqlc.arg(limit_n);
+
+-- name: ListAuditForNutzer :many
+SELECT * FROM audit_ereignis
+WHERE akteur_nutzer_id = sqlc.arg(nutzer_id)
+  AND (sqlc.narg(objekt_typ) IS NULL OR objekt_typ = sqlc.narg(objekt_typ))
+  AND (sqlc.narg(objekt_id) IS NULL OR objekt_id = sqlc.narg(objekt_id))
+ORDER BY zeitpunkt DESC, id DESC
+LIMIT sqlc.arg(limit_n);

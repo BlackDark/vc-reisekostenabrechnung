@@ -75,3 +75,18 @@ WHERE art = sqlc.arg(art) AND status IN ('pending', 'running');
 SELECT CAST(COUNT(*) AS BIGINT) AS n
 FROM job
 WHERE art = sqlc.arg(art) AND status = 'done' AND geaendert_am >= sqlc.arg(seit);
+
+-- name: CountJobsOpen :one
+SELECT CAST(COUNT(*) AS BIGINT) AS n
+FROM job
+WHERE status IN ('pending', 'running');
+
+-- name: CountJobsDone :one
+SELECT CAST(COUNT(*) AS BIGINT) AS n
+FROM job
+WHERE status = 'done';
+
+-- name: CountJobsFailed :one
+SELECT CAST(COUNT(*) AS BIGINT) AS n
+FROM job
+WHERE status = 'failed';

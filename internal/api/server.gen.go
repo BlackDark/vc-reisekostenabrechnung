@@ -992,6 +992,21 @@ type SteueranteilWrite struct {
 	Steuerland string `json:"steuerland"`
 }
 
+// SystemStatus defines model for SystemStatus.
+type SystemStatus struct {
+	AdminCount      *int64  `json:"admin_count,omitempty"`
+	Commit          *string `json:"commit,omitempty"`
+	DbSizeBytes     int64   `json:"db_size_bytes"`
+	JobsDone        *int64  `json:"jobs_done,omitempty"`
+	JobsFailed      *int64  `json:"jobs_failed,omitempty"`
+	JobsOpen        *int64  `json:"jobs_open,omitempty"`
+	NutzerCount     *int64  `json:"nutzer_count,omitempty"`
+	PipelineVersion *string `json:"pipeline_version,omitempty"`
+	StorageBackend  string  `json:"storage_backend"`
+	StorageLocation *string `json:"storage_location,omitempty"`
+	Version         string  `json:"version"`
+}
+
 // Taetigkeitsstaette defines model for Taetigkeitsstaette.
 type Taetigkeitsstaette struct {
 	Anschrift   string  `json:"anschrift"`
@@ -1320,6 +1335,13 @@ type GetProjekteParams struct {
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
 }
 
+// GetProtokollParams defines parameters for GetProtokoll.
+type GetProtokollParams struct {
+	ObjektTyp *string `form:"objekt_typ,omitempty" json:"objekt_typ,omitempty"`
+	ObjektId  *string `form:"objekt_id,omitempty" json:"objekt_id,omitempty"`
+	Limit     *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // GetReisenParams defines parameters for GetReisen.
 type GetReisenParams struct {
 	Status        *string `form:"status,omitempty" json:"status,omitempty"`
@@ -1606,6 +1628,9 @@ type ServerInterface interface {
 
 	// (GET /api/v1/admin/protokoll)
 	GetAdminProtokoll(w http.ResponseWriter, r *http.Request, params GetAdminProtokollParams)
+	// GetAdminSystem System status for administrators
+	// (GET /api/v1/admin/system)
+	GetAdminSystem(w http.ResponseWriter, r *http.Request)
 	// GetArbeitgeber List the current Nutzer's Arbeitgeber
 	// (GET /api/v1/arbeitgeber)
 	GetArbeitgeber(w http.ResponseWriter, r *http.Request, params GetArbeitgeberParams)
@@ -1747,6 +1772,9 @@ type ServerInterface interface {
 
 	// (GET /api/v1/projekte)
 	GetProjekte(w http.ResponseWriter, r *http.Request, params GetProjekteParams)
+	// GetProtokoll The current Nutzer's own audit events
+	// (GET /api/v1/protokoll)
+	GetProtokoll(w http.ResponseWriter, r *http.Request, params GetProtokollParams)
 
 	// (GET /api/v1/reisen)
 	GetReisen(w http.ResponseWriter, r *http.Request, params GetReisenParams)
@@ -2714,6 +2742,20 @@ func (siw *ServerInterfaceWrapper) GetAdminProtokoll(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAdminProtokoll(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminSystem operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminSystem(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminSystem(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4253,6 +4295,65 @@ func (siw *ServerInterfaceWrapper) GetProjekte(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// GetProtokoll operation middleware
+func (siw *ServerInterfaceWrapper) GetProtokoll(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProtokollParams
+
+	// ------------- Optional query parameter "objekt_typ" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "objekt_typ", r.URL.Query(), &params.ObjektTyp, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "objekt_typ"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "objekt_typ", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "objekt_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "objekt_id", r.URL.Query(), &params.ObjektId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "objekt_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "objekt_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProtokoll(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetReisen operation middleware
 func (siw *ServerInterfaceWrapper) GetReisen(w http.ResponseWriter, r *http.Request) {
 
@@ -5698,6 +5799,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/nutzer/{id}/identitaeten", wrapper.GetAdminIdentitaeten)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/admin/nutzer/{id}/identitaeten", wrapper.PostAdminIdentitaet)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/protokoll", wrapper.GetAdminProtokoll)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/protokoll", wrapper.GetProtokoll)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/system", wrapper.GetAdminSystem)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/aufbewahrung", wrapper.GetAdminAufbewahrung)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/admin/aufbewahrung/loeschen", wrapper.PostAdminAufbewahrungLoeschen)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/reisen", wrapper.GetReisen)
@@ -7428,6 +7531,57 @@ func (response GetAdminProtokoll401ApplicationProblemPlusJSONResponse) VisitGetA
 type GetAdminProtokoll403ApplicationProblemPlusJSONResponse Problem
 
 func (response GetAdminProtokoll403ApplicationProblemPlusJSONResponse) VisitGetAdminProtokollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminSystemRequestObject struct {
+}
+
+type GetAdminSystemResponseObject interface {
+	VisitGetAdminSystemResponse(w http.ResponseWriter) error
+}
+
+type GetAdminSystem200JSONResponse SystemStatus
+
+func (response GetAdminSystem200JSONResponse) VisitGetAdminSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminSystem401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetAdminSystem401ApplicationProblemPlusJSONResponse) VisitGetAdminSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminSystem403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAdminSystem403ApplicationProblemPlusJSONResponse) VisitGetAdminSystemResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -10451,6 +10605,44 @@ func (response GetProjekte401ApplicationProblemPlusJSONResponse) VisitGetProjekt
 	return err
 }
 
+type GetProtokollRequestObject struct {
+	Params GetProtokollParams
+}
+
+type GetProtokollResponseObject interface {
+	VisitGetProtokollResponse(w http.ResponseWriter) error
+}
+
+type GetProtokoll200JSONResponse ProtokollListe
+
+func (response GetProtokoll200JSONResponse) VisitGetProtokollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProtokoll401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetProtokoll401ApplicationProblemPlusJSONResponse) VisitGetProtokollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetReisenRequestObject struct {
 	Params GetReisenParams
 }
@@ -12753,6 +12945,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/admin/protokoll)
 	GetAdminProtokoll(ctx context.Context, request GetAdminProtokollRequestObject) (GetAdminProtokollResponseObject, error)
+	// GetAdminSystem System status for administrators
+	// (GET /api/v1/admin/system)
+	GetAdminSystem(ctx context.Context, request GetAdminSystemRequestObject) (GetAdminSystemResponseObject, error)
 	// GetArbeitgeber List the current Nutzer's Arbeitgeber
 	// (GET /api/v1/arbeitgeber)
 	GetArbeitgeber(ctx context.Context, request GetArbeitgeberRequestObject) (GetArbeitgeberResponseObject, error)
@@ -12894,6 +13089,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/projekte)
 	GetProjekte(ctx context.Context, request GetProjekteRequestObject) (GetProjekteResponseObject, error)
+	// GetProtokoll The current Nutzer's own audit events
+	// (GET /api/v1/protokoll)
+	GetProtokoll(ctx context.Context, request GetProtokollRequestObject) (GetProtokollResponseObject, error)
 
 	// (GET /api/v1/reisen)
 	GetReisen(ctx context.Context, request GetReisenRequestObject) (GetReisenResponseObject, error)
@@ -13745,6 +13943,30 @@ func (sh *strictHandler) GetAdminProtokoll(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAdminProtokollResponseObject); ok {
 		if err := validResponse.VisitGetAdminProtokollResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminSystem operation middleware
+func (sh *strictHandler) GetAdminSystem(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminSystemRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminSystem(ctx, request.(GetAdminSystemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminSystem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminSystemResponseObject); ok {
+		if err := validResponse.VisitGetAdminSystemResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -15070,6 +15292,32 @@ func (sh *strictHandler) GetProjekte(w http.ResponseWriter, r *http.Request, par
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProjekteResponseObject); ok {
 		if err := validResponse.VisitGetProjekteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProtokoll operation middleware
+func (sh *strictHandler) GetProtokoll(w http.ResponseWriter, r *http.Request, params GetProtokollParams) {
+	var request GetProtokollRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProtokoll(ctx, request.(GetProtokollRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProtokoll")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProtokollResponseObject); ok {
+		if err := validResponse.VisitGetProtokollResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
