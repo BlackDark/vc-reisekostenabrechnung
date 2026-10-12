@@ -1323,6 +1323,8 @@ paths:
       operationId: postBelege
       tags: [belege]
       summary: Upload one or more receipt files
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -1354,6 +1356,53 @@ paths:
         "409":
           $ref: "#/components/responses/Problem"
         "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/me/tokens:
+    get:
+      operationId: getMeTokens
+      tags: [nutzer]
+      responses:
+        "200":
+          description: API tokens of the signed-in Nutzer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiTokenListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postMeToken
+      tags: [nutzer]
+      summary: Create an API token; the plaintext token is returned only in this response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiTokenInput"
+      responses:
+        "201":
+          description: Created; store the token now, it is not shown again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiTokenMitToken"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/me/tokens/{id}:
+    delete:
+      operationId: deleteMeToken
+      tags: [nutzer]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Revoked
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
           $ref: "#/components/responses/Problem"
   /api/v1/belege/duplikate:
     get:
@@ -2422,6 +2471,11 @@ paths:
         "409":
           $ref: "#/components/responses/Problem"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API token
   parameters:
     IfMatch:
       name: If-Match
@@ -3023,6 +3077,47 @@ components:
         jobs_failed:
           type: integer
           format: int64
+    ApiTokenInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    ApiToken:
+      type: object
+      required: [id, name, scope, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        scope:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+    ApiTokenListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiToken"
+    ApiTokenMitToken:
+      allOf:
+        - $ref: "#/components/schemas/ApiToken"
+        - type: object
+          required: [token]
+          properties:
+            token:
+              type: string
     AufbewahrungPosten:
       type: object
       required: [art, id, nutzer_id, bezeichnung, aufbewahren_bis, abgelaufen, inhalt_geloescht, sha256]

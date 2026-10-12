@@ -54,6 +54,7 @@ type Querier interface {
 	FailJobRow(ctx context.Context, arg FailJobRowParams) error
 	FindBelegByDateiSHA(ctx context.Context, arg FindBelegByDateiSHAParams) (Beleg, error)
 	FindBelegBySHA(ctx context.Context, arg FindBelegBySHAParams) (Beleg, error)
+	FindTokenByHash(ctx context.Context, tokenHash string) (ApiToken, error)
 	FinishEinreichung(ctx context.Context, arg FinishEinreichungParams) (Abrechnung, error)
 	FinishExportRow(ctx context.Context, arg FinishExportRowParams) (Export, error)
 	FinishJob(ctx context.Context, arg FinishJobParams) error
@@ -104,6 +105,7 @@ type Querier interface {
 	InsertSatztabelle(ctx context.Context, arg InsertSatztabelleParams) (Satztabelle, error)
 	InsertSteueranteil(ctx context.Context, arg InsertSteueranteilParams) (Steueranteil, error)
 	InsertTaetigkeitsstaette(ctx context.Context, arg InsertTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
+	InsertToken(ctx context.Context, arg InsertTokenParams) error
 	InsertVorlage(ctx context.Context, arg InsertVorlageParams) (Vorlage, error)
 	InsertVorschuss(ctx context.Context, arg InsertVorschussParams) (Vorschuss, error)
 	LastAuditHash(ctx context.Context) (string, error)
@@ -141,6 +143,7 @@ type Querier interface {
 	ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNutzerParams) ([]Session, error)
 	ListSteueranteile(ctx context.Context, ausgabeID string) ([]Steueranteil, error)
 	ListTaetigkeitsstaetten(ctx context.Context, arg ListTaetigkeitsstaettenParams) ([]Taetigkeitsstaette, error)
+	ListTokensByNutzer(ctx context.Context, arg ListTokensByNutzerParams) ([]ApiToken, error)
 	ListVorlagen(ctx context.Context, arg ListVorlagenParams) ([]Vorlage, error)
 	ListVorschuesse(ctx context.Context, nutzerID string) ([]Vorschuss, error)
 	ListVorschuesseByArbeitgeber(ctx context.Context, arg ListVorschuesseByArbeitgeberParams) ([]Vorschuss, error)
@@ -162,6 +165,7 @@ type Querier interface {
 	ReleaseVorschuesse(ctx context.Context, arg ReleaseVorschuesseParams) error
 	RescheduleJob(ctx context.Context, arg RescheduleJobParams) error
 	ResumeJobs(ctx context.Context, jetzt time.Time) error
+	RevokeToken(ctx context.Context, arg RevokeTokenParams) (int64, error)
 	RollbackEinreichung(ctx context.Context, arg RollbackEinreichungParams) (Abrechnung, error)
 	SetAdminUeberGruppe(ctx context.Context, arg SetAdminUeberGruppeParams) error
 	SetBelegFailed(ctx context.Context, arg SetBelegFailedParams) error
@@ -174,6 +178,7 @@ type Querier interface {
 	TouchIdentitaet(ctx context.Context, arg TouchIdentitaetParams) error
 	TouchReise(ctx context.Context, arg TouchReiseParams) (Reise, error)
 	TouchSatztabelle(ctx context.Context, arg TouchSatztabelleParams) (Satztabelle, error)
+	TouchToken(ctx context.Context, arg TouchTokenParams) error
 	UpdateAbrechnungKopf(ctx context.Context, arg UpdateAbrechnungKopfParams) (Abrechnung, error)
 	UpdateArbeitgeber(ctx context.Context, arg UpdateArbeitgeberParams) (Arbeitgeber, error)
 	UpdateAusgabe(ctx context.Context, arg UpdateAusgabeParams) (Ausgabe, error)

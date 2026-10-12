@@ -81,7 +81,7 @@ func (a *App) GetBelegDuplikate(w http.ResponseWriter, r *http.Request, params a
 }
 
 func (a *App) PostBelege(w http.ResponseWriter, r *http.Request) {
-	n, ok := a.requireUser(w, r)
+	n, ok := a.requireUploadActor(w, r)
 	if !ok {
 		return
 	}

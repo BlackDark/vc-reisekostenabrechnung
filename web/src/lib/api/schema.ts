@@ -702,6 +702,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getMeTokens"];
+        put?: never;
+        /** Create an API token; the plaintext token is returned only in this response */
+        post: operations["postMeToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteMeToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/belege/duplikate": {
         parameters: {
             query?: never;
@@ -1591,6 +1624,26 @@ export interface components {
             jobs_done?: number;
             /** Format: int64 */
             jobs_failed?: number;
+        };
+        ApiTokenInput: {
+            name: string;
+        };
+        ApiToken: {
+            id: string;
+            name: string;
+            scope: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at?: string;
+            /** Format: date-time */
+            revoked_at?: string;
+        };
+        ApiTokenListe: {
+            items: components["schemas"]["ApiToken"][];
+        };
+        ApiTokenMitToken: components["schemas"]["ApiToken"] & {
+            token: string;
         };
         AufbewahrungPosten: {
             /** @enum {string} */
@@ -3801,6 +3854,75 @@ export interface operations {
             401: components["responses"]["Problem"];
             409: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+        };
+    };
+    getMeTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API tokens of the signed-in Nutzer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiTokenListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    postMeToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiTokenInput"];
+            };
+        };
+        responses: {
+            /** @description Created; store the token now, it is not shown again */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiTokenMitToken"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    deleteMeToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
         };
     };
     getBelegDuplikate: {

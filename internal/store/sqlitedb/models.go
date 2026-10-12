@@ -43,6 +43,17 @@ type AbrechnungsnummerFolge struct {
 	Naechste      int64
 }
 
+type ApiToken struct {
+	ID               string
+	NutzerID         string
+	Name             string
+	Scope            string
+	TokenHash        string
+	ErstelltAm       string
+	ZuletztBenutztAm *string
+	WiderrufenAm     *string
+}
+
 type Arbeitgeber struct {
 	ID                       string
 	NutzerID                 string

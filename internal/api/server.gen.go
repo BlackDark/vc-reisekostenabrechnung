@@ -224,6 +224,37 @@ type AbrechnungWrite struct {
 	ZeitraumArt   string    `json:"zeitraum_art"`
 }
 
+// ApiToken defines model for ApiToken.
+type ApiToken struct {
+	CreatedAt  time.Time  `json:"created_at"`
+	Id         string     `json:"id"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	Name       string     `json:"name"`
+	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
+	Scope      string     `json:"scope"`
+}
+
+// ApiTokenInput defines model for ApiTokenInput.
+type ApiTokenInput struct {
+	Name string `json:"name"`
+}
+
+// ApiTokenListe defines model for ApiTokenListe.
+type ApiTokenListe struct {
+	Items []ApiToken `json:"items"`
+}
+
+// ApiTokenMitToken defines model for ApiTokenMitToken.
+type ApiTokenMitToken struct {
+	CreatedAt  time.Time  `json:"created_at"`
+	Id         string     `json:"id"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	Name       string     `json:"name"`
+	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
+	Scope      string     `json:"scope"`
+	Token      string     `json:"token"`
+}
+
 // Arbeitgeber defines model for Arbeitgeber.
 type Arbeitgeber struct {
 	AbrechnungsnummerPraefix string                   `json:"abrechnungsnummer_praefix"`
@@ -1509,6 +1540,9 @@ type PatchFahrtJSONRequestBody = FahrtWrite
 // PatchMeJSONRequestBody defines body for PatchMe for application/json ContentType.
 type PatchMeJSONRequestBody = ProfilPatch
 
+// PostMeTokenJSONRequestBody defines body for PostMeToken for application/json ContentType.
+type PostMeTokenJSONRequestBody = ApiTokenInput
+
 // PostMwstHelferJSONRequestBody defines body for PostMwstHelfer for application/json ContentType.
 type PostMwstHelferJSONRequestBody = MwstHelfer
 
@@ -1766,6 +1800,15 @@ type ServerInterface interface {
 	// DeleteMeSession End one session
 	// (DELETE /api/v1/me/sessions/{id})
 	DeleteMeSession(w http.ResponseWriter, r *http.Request, id string)
+
+	// (GET /api/v1/me/tokens)
+	GetMeTokens(w http.ResponseWriter, r *http.Request)
+	// PostMeToken Create an API token; the plaintext token is returned only in this response
+	// (POST /api/v1/me/tokens)
+	PostMeToken(w http.ResponseWriter, r *http.Request)
+
+	// (DELETE /api/v1/me/tokens/{id})
+	DeleteMeToken(w http.ResponseWriter, r *http.Request, id Id)
 
 	// (POST /api/v1/mwst-helfer)
 	PostMwstHelfer(w http.ResponseWriter, r *http.Request)
@@ -4248,6 +4291,60 @@ func (siw *ServerInterfaceWrapper) DeleteMeSession(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// GetMeTokens operation middleware
+func (siw *ServerInterfaceWrapper) GetMeTokens(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMeTokens(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostMeToken operation middleware
+func (siw *ServerInterfaceWrapper) PostMeToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostMeToken(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteMeToken operation middleware
+func (siw *ServerInterfaceWrapper) DeleteMeToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteMeToken(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // PostMwstHelfer operation middleware
 func (siw *ServerInterfaceWrapper) PostMwstHelfer(w http.ResponseWriter, r *http.Request) {
 
@@ -5824,6 +5921,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/warnungen", wrapper.GetWarnungen)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege", wrapper.GetBelege)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege", wrapper.PostBelege)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/me/tokens", wrapper.GetMeTokens)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/me/tokens", wrapper.PostMeToken)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/me/tokens/{id}", wrapper.DeleteMeToken)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/duplikate", wrapper.GetBelegDuplikate)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.DeleteBeleg)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.GetBeleg)
@@ -10515,6 +10615,141 @@ func (response DeleteMeSession404ApplicationProblemPlusJSONResponse) VisitDelete
 	return err
 }
 
+type GetMeTokensRequestObject struct {
+}
+
+type GetMeTokensResponseObject interface {
+	VisitGetMeTokensResponse(w http.ResponseWriter) error
+}
+
+type GetMeTokens200JSONResponse ApiTokenListe
+
+func (response GetMeTokens200JSONResponse) VisitGetMeTokensResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMeTokens401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetMeTokens401ApplicationProblemPlusJSONResponse) VisitGetMeTokensResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMeTokenRequestObject struct {
+	Body *PostMeTokenJSONRequestBody
+}
+
+type PostMeTokenResponseObject interface {
+	VisitPostMeTokenResponse(w http.ResponseWriter) error
+}
+
+type PostMeToken201JSONResponse ApiTokenMitToken
+
+func (response PostMeToken201JSONResponse) VisitPostMeTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMeToken401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostMeToken401ApplicationProblemPlusJSONResponse) VisitPostMeTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMeToken422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostMeToken422ApplicationProblemPlusJSONResponse) VisitPostMeTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMeTokenRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type DeleteMeTokenResponseObject interface {
+	VisitDeleteMeTokenResponse(w http.ResponseWriter) error
+}
+
+type DeleteMeToken204Response struct {
+}
+
+func (response DeleteMeToken204Response) VisitDeleteMeTokenResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteMeToken401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteMeToken401ApplicationProblemPlusJSONResponse) VisitDeleteMeTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMeToken404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteMeToken404ApplicationProblemPlusJSONResponse) VisitDeleteMeTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PostMwstHelferRequestObject struct {
 	Body *PostMwstHelferJSONRequestBody
 }
@@ -13084,6 +13319,15 @@ type StrictServerInterface interface {
 	// (DELETE /api/v1/me/sessions/{id})
 	DeleteMeSession(ctx context.Context, request DeleteMeSessionRequestObject) (DeleteMeSessionResponseObject, error)
 
+	// (GET /api/v1/me/tokens)
+	GetMeTokens(ctx context.Context, request GetMeTokensRequestObject) (GetMeTokensResponseObject, error)
+	// PostMeToken Create an API token; the plaintext token is returned only in this response
+	// (POST /api/v1/me/tokens)
+	PostMeToken(ctx context.Context, request PostMeTokenRequestObject) (PostMeTokenResponseObject, error)
+
+	// (DELETE /api/v1/me/tokens/{id})
+	DeleteMeToken(ctx context.Context, request DeleteMeTokenRequestObject) (DeleteMeTokenResponseObject, error)
+
 	// (POST /api/v1/mwst-helfer)
 	PostMwstHelfer(ctx context.Context, request PostMwstHelferRequestObject) (PostMwstHelferResponseObject, error)
 
@@ -15235,6 +15479,87 @@ func (sh *strictHandler) DeleteMeSession(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DeleteMeSessionResponseObject); ok {
 		if err := validResponse.VisitDeleteMeSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMeTokens operation middleware
+func (sh *strictHandler) GetMeTokens(w http.ResponseWriter, r *http.Request) {
+	var request GetMeTokensRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMeTokens(ctx, request.(GetMeTokensRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMeTokens")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMeTokensResponseObject); ok {
+		if err := validResponse.VisitGetMeTokensResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostMeToken operation middleware
+func (sh *strictHandler) PostMeToken(w http.ResponseWriter, r *http.Request) {
+	var request PostMeTokenRequestObject
+
+	var body PostMeTokenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostMeToken(ctx, request.(PostMeTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostMeToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostMeTokenResponseObject); ok {
+		if err := validResponse.VisitPostMeTokenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteMeToken operation middleware
+func (sh *strictHandler) DeleteMeToken(w http.ResponseWriter, r *http.Request, id Id) {
+	var request DeleteMeTokenRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteMeToken(ctx, request.(DeleteMeTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteMeToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteMeTokenResponseObject); ok {
+		if err := validResponse.VisitDeleteMeTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from "$lib/api";
+	import type { components } from "$lib/api/schema";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { m } from "$lib/paraglide/messages.js";
@@ -12,6 +13,9 @@
 	let kiErlaubt = $state(false);
 	let letterhead = $state<{ id: string; name: string; anschrift: string; logo_datei_id?: string | null } | null>(null);
 	let sessions = $state<{ id: string; aktuell: boolean; user_agent?: string | null }[]>([]);
+	let tokens = $state<components["schemas"]["ApiToken"][]>([]);
+	let tokenName = $state("");
+	let createdToken = $state("");
 
 	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
@@ -31,6 +35,7 @@
 			const standard = res.data?.items.find((row) => row.ist_standard && !row.archiviert);
 			letterhead = standard ?? null;
 		});
+		void reloadTokens();
 	});
 
 	async function save(event: SubmitEvent) {
@@ -58,6 +63,28 @@
 	async function endSession(id: string) {
 		await api.DELETE("/api/v1/me/sessions/{id}", { params: { path: { id } } });
 		sessions = sessions.filter((row) => row.id !== id);
+	}
+
+	async function reloadTokens() {
+		const res = await api.GET("/api/v1/me/tokens");
+		if (res.data) tokens = res.data.items;
+	}
+
+	async function createToken(event: SubmitEvent) {
+		event.preventDefault();
+		const name = tokenName.trim();
+		if (!name) return;
+		const res = await api.POST("/api/v1/me/tokens", { body: { name } });
+		if (res.response.ok && res.data) {
+			createdToken = res.data.token;
+			tokenName = "";
+			await reloadTokens();
+		}
+	}
+
+	async function revokeToken(id: string) {
+		await api.DELETE("/api/v1/me/tokens/{id}", { params: { path: { id } } });
+		await reloadTokens();
 	}
 </script>
 
@@ -121,6 +148,32 @@
 			<li class="flex items-center justify-between gap-2">
 				<span>{row.user_agent || row.id}{row.aktuell ? ` (${m.current_session()})` : ""}</span>
 				<Button variant="link" size="sm" type="button" onclick={() => endSession(row.id)}>{m.end_session()}</Button>
+			</li>
+		{/each}
+	</ul>
+	<h2 class="mt-8 text-lg font-medium">{m.tokens_title()}</h2>
+	<form class="mt-2 flex max-w-sm items-end gap-2" onsubmit={createToken}>
+		<fieldset class="flex flex-1 items-end gap-2" disabled={!session.online}>
+			<label class="grid flex-1 gap-1 text-sm" for="token-name">
+				{m.token_name()}
+				<Input id="token-name" bind:value={tokenName} />
+			</label>
+			<Button type="submit">{m.token_create()}</Button>
+		</fieldset>
+	</form>
+	{#if createdToken}
+		<p class="mt-2 text-sm" role="status">
+			{m.token_created()}
+			<code class="break-all" data-testid="token-value">{createdToken}</code>
+		</p>
+	{/if}
+	<ul class="mt-2 grid gap-2 text-sm">
+		{#each tokens as row (row.id)}
+			<li class="flex items-center justify-between gap-2">
+				<span>{row.name} · {row.scope}{row.revoked_at ? ` (${m.token_revoked()})` : ""}</span>
+				{#if !row.revoked_at}
+					<Button variant="link" size="sm" type="button" onclick={() => revokeToken(row.id)}>{m.token_revoke()}</Button>
+				{/if}
 			</li>
 		{/each}
 	</ul>
