@@ -169,12 +169,7 @@ func (a *App) PatchMe(w http.ResponseWriter, r *http.Request, params api.PatchMe
 		ki = *body.KiErlaubt
 	}
 	updated, err := a.store.UpdateProfil(r.Context(), n.ID, version, name, sprache, pn, ki, a.actor(r, n))
-	if errors.Is(err, store.ErrConflict) {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-		return
-	}
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeNutzer(w, http.StatusOK, updated)
@@ -218,12 +213,7 @@ func (a *App) PutAuthPasswort(w http.ResponseWriter, r *http.Request, params api
 		return
 	}
 	updated, err := a.store.UpdatePasswort(r.Context(), n.ID, version, hash, a.actor(r, n))
-	if errors.Is(err, store.ErrConflict) {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-		return
-	}
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	_ = a.sessions.RenewToken(r.Context())

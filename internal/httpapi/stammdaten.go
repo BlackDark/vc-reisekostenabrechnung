@@ -24,8 +24,7 @@ func (a *App) GetArbeitgeber(w http.ResponseWriter, r *http.Request, params api.
 	}
 	limit := limitOf(params.Limit)
 	rows, err := a.store.ListArbeitgeber(r.Context(), n.ID, params.Cursor, limit+1)
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	items, next := pageArbeitgeber(rows, limit)
@@ -47,8 +46,7 @@ func (a *App) PostArbeitgeber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	row, err := a.store.CreateArbeitgeber(r.Context(), n.ID, in, a.actor(r, n))
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeObject(w, http.StatusCreated, row.Version, toArbeitgeber(row))
@@ -217,8 +215,7 @@ func (a *App) GetTaetigkeitsstaetten(w http.ResponseWriter, r *http.Request, par
 	}
 	limit := limitOf(params.Limit)
 	rows, err := a.store.ListTaetigkeiten(r.Context(), n.ID, params.Cursor, limit+1)
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	items := make([]api.Taetigkeitsstaette, 0, len(rows))
@@ -248,8 +245,7 @@ func (a *App) PostTaetigkeitsstaette(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	row, err := a.store.CreateTaetigkeit(r.Context(), n.ID, in, a.actor(r, n))
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeObject(w, http.StatusCreated, row.Version, toTaetigkeit(row))
@@ -327,15 +323,13 @@ func (a *App) GetSatztabellen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rows, err := a.store.ListSatztabellen(r.Context())
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	items := make([]api.SatztabelleKurz, 0, len(rows))
 	for _, row := range rows {
 		abroad, err := a.store.ListAusland(r.Context(), int(row.Jahr))
-		if err != nil {
-			writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+		if writeStoreErr(w, err) {
 			return
 		}
 		n := len(abroad)
@@ -491,8 +485,7 @@ func (a *App) GetSatzOverrides(w http.ResponseWriter, r *http.Request, jahr api.
 		return
 	}
 	rows, err := a.store.ListOverrides(r.Context(), jahr)
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	items := make([]api.SatzOverride, 0, len(rows))
@@ -525,8 +518,7 @@ func (a *App) PostSatztabelleImport(w http.ResponseWriter, r *http.Request, jahr
 		return
 	}
 	row, err := a.store.ImportSatztabelle(r.Context(), jahr, parsed, a.actor(r, admin))
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeJSON(w, http.StatusOK, api.SatztabelleImport{Jahr: int(row.Jahr), Status: row.Status, Zeilen: len(parsed)})
@@ -560,8 +552,7 @@ func (a *App) GetAdminIdentitaeten(w http.ResponseWriter, r *http.Request, id ap
 		return
 	}
 	rows, err := a.store.ListIdentitaeten(r.Context(), id)
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	items := make([]api.Identitaet, 0, len(rows))
@@ -596,8 +587,7 @@ func (a *App) PostAdminIdentitaet(w http.ResponseWriter, r *http.Request, id api
 		return
 	}
 	rows, err := a.store.ListIdentitaeten(r.Context(), id)
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	for _, row := range rows {

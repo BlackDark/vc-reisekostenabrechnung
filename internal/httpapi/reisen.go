@@ -51,7 +51,7 @@ func (a *App) PostReise(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	in, ok := reiseFromWrite(body)
+	in, ok := reiseFromWrite(body, a.cfg.TZDefault)
 	if !ok {
 		writeProblem(w, http.StatusUnprocessableEntity, "validierung", "Check the trip", "")
 		return
@@ -88,7 +88,7 @@ func (a *App) PatchReise(w http.ResponseWriter, r *http.Request, id api.Id, para
 	if !decodeJSON(w, r, &body) {
 		return
 	}
-	in, ok := reiseFromWrite(body)
+	in, ok := reiseFromWrite(body, a.cfg.TZDefault)
 	if !ok {
 		writeProblem(w, http.StatusUnprocessableEntity, "validierung", "Check the trip", "")
 		return
@@ -333,7 +333,7 @@ func (a *App) PostVorlageAnwenden(w http.ResponseWriter, r *http.Request, id api
 		writeJSON(w, http.StatusCreated, api.VorlageAnwendung{Fahrt: &view})
 		return
 	}
-	in := reiseFromTemplate(daten, body, vorlage.ID)
+	in := reiseFromTemplate(daten, body, vorlage.ID, a.cfg.TZDefault)
 	row, err := a.store.CreateReise(r.Context(), n.ID, in, a.actor(r, n))
 	if writeStoreErr(w, err) {
 		return
@@ -663,10 +663,10 @@ func (a *App) applyFahrt(r *http.Request, n sqlitedb.Nutzer, vorlageID string, d
 	}, a.actor(r, n))
 }
 
-func reiseFromTemplate(daten map[string]any, body api.VorlageAnwenden, vorlageID string) store.ReiseInput {
+func reiseFromTemplate(daten map[string]any, body api.VorlageAnwenden, vorlageID, tz string) store.ReiseInput {
 	zone := deref(body.BeginnZone)
 	if zone == "" {
-		zone = "Europe/Berlin"
+		zone = tz
 	}
 	beginn := deref(body.Beginn)
 	if beginn == "" {
@@ -777,19 +777,34 @@ func toVorlage(row sqlitedb.Vorlage) api.Vorlage {
 	return api.Vorlage{Id: row.ID, Name: row.Name, Art: row.Art, Daten: daten, Version: row.Version}
 }
 
-func reiseFromWrite(body api.ReiseWrite) (store.ReiseInput, bool) {
+func defaultZone(zone, fallback string) string {
+	if zone == "" {
+		return fallback
+	}
+	return zone
+}
+
+func reiseFromWrite(body api.ReiseWrite, tz string) (store.ReiseInput, bool) {
+	zone := defaultZone(body.BeginnZone, tz)
+	endeZone := defaultZone(body.EndeZone, tz)
 	in := store.ReiseInput{
 		ArbeitgeberID: body.ArbeitgeberId, Anlass: body.Anlass, Projekt: deref(body.Projekt),
-		BeginnLokal: body.Beginn, BeginnZone: body.BeginnZone, EndeLokal: body.Ende, EndeZone: body.EndeZone,
+		BeginnLokal: body.Beginn, BeginnZone: zone, EndeLokal: body.Ende, EndeZone: endeZone,
 		Notiz: deref(body.Notiz), UnterkunftDefault: deref(body.Unterkunft),
 	}
 	for _, leg := range body.Ortswechsel {
 		in.Ortswechsel = append(in.Ortswechsel, store.OrtswechselInput{
-			AbfahrtLokal: deref(leg.Abfahrt), AbfahrtZone: deref(leg.AbfahrtZone),
-			AnkunftLokal: leg.Ankunft, AnkunftZone: leg.AnkunftZone, Verkehrsmittel: leg.Verkehrsmittel,
-			LandISO: leg.LandIso, Satzort: deref(leg.Satzort), Ort: deref(leg.Ort),
-			TaetigkeitsstaetteID:            deref(leg.TaetigkeitsstaetteId),
-			ZwischenlandungMitUebernachtung: leg.ZwischenlandungMitUebernachtung != nil && *leg.ZwischenlandungMitUebernachtung,
+			AbfahrtLokal:         deref(leg.Abfahrt),
+			AbfahrtZone:          defaultZone(deref(leg.AbfahrtZone), tz),
+			AnkunftLokal:         leg.Ankunft,
+			AnkunftZone:          defaultZone(leg.AnkunftZone, tz),
+			Verkehrsmittel:       leg.Verkehrsmittel,
+			LandISO:              leg.LandIso,
+			Satzort:              deref(leg.Satzort),
+			Ort:                  deref(leg.Ort),
+			TaetigkeitsstaetteID: deref(leg.TaetigkeitsstaetteId),
+			ZwischenlandungMitUebernachtung: leg.ZwischenlandungMitUebernachtung != nil &&
+				*leg.ZwischenlandungMitUebernachtung,
 		})
 	}
 	if strings.TrimSpace(in.Anlass) == "" || in.ArbeitgeberID == "" || len(in.Ortswechsel) == 0 {
@@ -825,6 +840,14 @@ func writeStoreErr(w http.ResponseWriter, err error) bool {
 	}
 	if errors.Is(err, store.ErrConflict) {
 		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+		return true
+	}
+	if errors.Is(err, store.ErrInvalid) {
+		writeProblem(w, http.StatusUnprocessableEntity, "validierung", "Check the input", "")
+		return true
+	}
+	if errors.Is(err, store.ErrLastAdmin) {
+		writeProblem(w, http.StatusConflict, "letzter_admin", "Last admin", "")
 		return true
 	}
 	var calc *berechnung.CalcError
