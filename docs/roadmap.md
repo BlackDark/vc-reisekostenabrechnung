@@ -21,6 +21,8 @@ Also done after M9: shadcn-svelte UI with dark default; second design pass with 
 
 Resolved open points (history in SPEC §22): O2 (decided, see below), O3 veraPDF job, O4 release-please flow, O5 CodeQL and O6 public repo (moot, the repo is public), O8 router, O9 glossary, O16 Litestream as UID 65532.
 
+Backend config wiring done in `main` (through commit `fecc74c`): `EXPORT_TIMEOUT`, `BELEG_JPEG_QUALITY`, `EXPORT_PDF_STANDARD`, `FX_ECB_URL` and `FX_TIMEOUT` are read from the environment and applied; startup fails on a malformed boolean environment variable; `TZ_DEFAULT` defaults the zone of a new trip; stammdaten and profile store errors map through `writeStoreErr` ([#17](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/17)–[#21](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/21), [#31](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/31)).
+
 ## Open tasks
 
 ### Maintainer (Eduard)
@@ -37,15 +39,9 @@ Resolved open points (history in SPEC §22): O2 (decided, see below), O3 veraPDF
 
 | Task | Reference |
 |---|---|
-| Apply `EXPORT_TIMEOUT` to the Typst export | [#17](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/17) |
-| Apply `TZ_DEFAULT` when a new trip has no zone | [#18](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/18) |
-| Use `BELEG_JPEG_QUALITY` for PDF-source pages in the export | [#19](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/19) |
-| Map stammdaten and profile store errors with `writeStoreErr` | [#20](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/20) |
-| Fail startup when a boolean env var is not a boolean | [#21](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/21) |
 | Measure AVIF encode time in the container, then accept ADR 0005 or switch to WebP | O7, [#29](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/29) |
 | Track JStG 2026 and ship the 2027 Satztabelle when the BMF letter is out (expected Nov/Dec 2026) | O12, [#28](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/28) |
 | Second design pass leftover: Ausgabe and Beleg forms in a side panel like the Fahrt form | [#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35) |
-| Read `FX_ECB_URL`, `FX_TIMEOUT`, `EXPORT_PDF_STANDARD` (SPEC §11; today compiled in) | [#31](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/31) |
 | Own audit log endpoint `GET /api/v1/protokoll` (SPEC §2, §9) | [#32](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/32) |
 | Admin system status `GET /api/v1/admin/system` (SPEC §2, §9) | [#33](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/33) |
 | PWA install button and iOS hint; disable all forms while offline (SPEC §13) | [#34](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/34) |
@@ -55,7 +51,7 @@ Watch only, no action planned: O10 Dreimonatsfrist heuristic, O11 German VAT in 
 
 ### Spec audit (10 October 2026)
 
-Every decision in SPEC §0 (Q1–Q35), the calculation rules with golden tests G01–G20, the API, auth, ENV, CI, Renovate, ADRs 0001–0005 and MILESTONES was checked against the code. Everything is implemented except the code tasks above ([#31](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/31)–[#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35)) and ADR 0005, which stays `proposed` until [#29](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/29) is done.
+Every decision in SPEC §0 (Q1–Q35), the calculation rules with golden tests G01–G20, the API, auth, ENV, CI, Renovate, ADRs 0001–0005 and MILESTONES was checked against the code. Everything is implemented except the remaining code tasks ([#32](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/32)–[#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35)) and ADR 0005, which stays `proposed` until [#29](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/29) is done.
 
 ## Possible features
 
