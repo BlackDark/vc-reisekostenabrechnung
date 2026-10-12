@@ -14,13 +14,13 @@ import (
 	"time"
 )
 
-func compilePDF(ctx context.Context, typst, dir string, stamp int64) ([]byte, error) {
+func compilePDF(ctx context.Context, typst, dir string, stamp int64, standard string) ([]byte, error) {
 	if typst == "" {
 		return nil, fmt.Errorf("typst missing")
 	}
 	args := []string{
 		"compile", "--root", dir, "--ignore-system-fonts",
-		"--pdf-standard", "a-3b",
+		"--pdf-standard", standard,
 	}
 	if stamp > 0 {
 		args = append(args, "--creation-timestamp", strconv.FormatInt(stamp, 10))
@@ -41,7 +41,7 @@ func compilePDF(ctx context.Context, typst, dir string, stamp int64) ([]byte, er
 	return os.ReadFile(filepath.Join(dir, "out.pdf"))
 }
 
-func rasterPDF(ctx context.Context, typst, dir, pdfName string) ([][]byte, error) {
+func rasterPDF(ctx context.Context, typst, dir, pdfName string, quality int) ([][]byte, error) {
 	var pages [][]byte
 	for page := 1; page <= 30; page++ {
 		typ := fmt.Sprintf("#set page(width: auto, height: auto, margin: 0pt)\n#image(%q, page: %d)\n", pdfName, page)
@@ -64,7 +64,7 @@ func rasterPDF(ctx context.Context, typst, dir, pdfName string) ([][]byte, error
 		if err != nil {
 			return nil, err
 		}
-		jpg, err := pngToJPEG(raw)
+		jpg, err := pngToJPEG(raw, quality)
 		if err != nil {
 			return nil, err
 		}
@@ -75,22 +75,25 @@ func rasterPDF(ctx context.Context, typst, dir, pdfName string) ([][]byte, error
 	return pages, nil
 }
 
-func pngToJPEG(raw []byte) ([]byte, error) {
+func pngToJPEG(raw []byte, quality int) ([]byte, error) {
 	img, err := png.Decode(bytes.NewReader(raw))
 	if err != nil {
 		return nil, err
 	}
-	return encodeJPEG(img)
+	return encodeJPEG(img, quality)
 }
 
-func encodeJPEG(img image.Image) ([]byte, error) {
+func encodeJPEG(img image.Image, quality int) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 70}); err != nil {
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func withTimeout() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), 60*time.Second)
+func withTimeout(d time.Duration) (context.Context, context.CancelFunc) {
+	if d <= 0 {
+		d = 60 * time.Second
+	}
+	return context.WithTimeout(context.Background(), d)
 }

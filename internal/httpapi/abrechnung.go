@@ -178,7 +178,7 @@ func (a *App) GetAbrechnungVorschau(w http.ResponseWriter, r *http.Request, id a
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	doc, err := renderExport(bin, view.snap, sources, true)
+	doc, err := renderExport(bin, view.snap, sources, true, a.exportOptions())
 	if err != nil {
 		writeProblem(w, http.StatusInternalServerError, "export", "Export failed", "")
 		return

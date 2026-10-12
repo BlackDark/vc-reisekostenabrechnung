@@ -68,7 +68,7 @@ func (a *App) jobExport(ctx context.Context, jobID, exportID string) error {
 	if bin == "" {
 		return errors.New("typst missing")
 	}
-	doc, err := renderExport(bin, snap, sources, false)
+	doc, err := renderExport(bin, snap, sources, false, a.exportOptions())
 	if err != nil {
 		return err
 	}
@@ -184,8 +184,17 @@ func quittungen(raw string) []export.Quittung {
 	return out
 }
 
-func renderExport(typst string, snap export.Snapshot, sources []export.Source, draft bool) (export.Result, error) {
-	return export.Render(typst, snap, sources, draft)
+func renderExport(typst string, snap export.Snapshot, sources []export.Source, draft bool, opt export.Options) (export.Result, error) {
+	return export.RenderWith(typst, snap, sources, draft, opt)
+}
+
+// exportOptions maps config to the Typst pipeline settings (SPEC 7).
+func (a *App) exportOptions() export.Options {
+	return export.Options{
+		Timeout:     a.cfg.ExportTimeout,
+		JPEGQuality: a.cfg.BelegJPEGQuality,
+		PDFStandard: a.cfg.ExportPDFStandard,
+	}
 }
 
 func (a *App) putBlob(ctx context.Context, key string, body []byte) error {

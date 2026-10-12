@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "embed"
 )
@@ -38,8 +39,32 @@ type Result struct {
 	JSON []byte
 }
 
-// Render builds a PDF/A-3b and the ZIP described in SPEC 7.2.
+// Options tunes the Typst pipeline. Zero fields fall back to the SPEC defaults:
+// a 60s timeout, JPEG quality 70 and PDF standard a-3b.
+type Options struct {
+	Timeout     time.Duration
+	JPEGQuality int
+	PDFStandard string
+}
+
+// Render builds the export with the SPEC defaults. It is a convenience wrapper
+// around RenderWith for callers that do not need to tune the pipeline.
 func Render(typst string, snap Snapshot, sources []Source, draft bool) (Result, error) {
+	return RenderWith(typst, snap, sources, draft, Options{})
+}
+
+// RenderWith builds a PDF/A-3b and the ZIP described in SPEC 7.2, tuning the
+// pipeline with opt. Zero fields in opt fall back to the SPEC defaults.
+func RenderWith(typst string, snap Snapshot, sources []Source, draft bool, opt Options) (Result, error) {
+	if opt.Timeout <= 0 {
+		opt.Timeout = 60 * time.Second
+	}
+	if opt.JPEGQuality <= 0 {
+		opt.JPEGQuality = 70
+	}
+	if opt.PDFStandard == "" {
+		opt.PDFStandard = "a-3b"
+	}
 	body, err := canonical(snap)
 	if err != nil {
 		return Result{}, err
@@ -52,7 +77,7 @@ func Render(typst string, snap Snapshot, sources []Source, draft bool) (Result, 
 	if err := os.WriteFile(filepath.Join(dir, "abrechnung.typ"), template, 0o644); err != nil {
 		return Result{}, err
 	}
-	ctx, cancel := withTimeout()
+	ctx, cancel := withTimeout(opt.Timeout)
 	defer cancel()
 	var extra []memFile
 	var bilder []map[string]any
@@ -71,7 +96,7 @@ func Render(typst string, snap Snapshot, sources []Source, draft bool) (Result, 
 			if err := os.WriteFile(filepath.Join(dir, pdfName), src.Bytes, 0o644); err != nil {
 				return Result{}, err
 			}
-			pages, err := rasterPDF(ctx, typst, dir, pdfName)
+			pages, err := rasterPDF(ctx, typst, dir, pdfName, opt.JPEGQuality)
 			if err != nil {
 				return Result{}, err
 			}
@@ -110,7 +135,7 @@ func Render(typst string, snap Snapshot, sources []Source, draft bool) (Result, 
 			})
 			extra = append(extra, memFile{name: base, body: src.Bytes})
 		default:
-			jpg, err := asJPEG(src.Bytes)
+			jpg, err := asJPEG(src.Bytes, opt.JPEGQuality)
 			if err != nil {
 				return Result{}, err
 			}
@@ -140,7 +165,7 @@ func Render(typst string, snap Snapshot, sources []Source, draft bool) (Result, 
 	if err := os.WriteFile(filepath.Join(dir, "render.json"), raw, 0o644); err != nil {
 		return Result{}, err
 	}
-	pdf, err := compilePDF(ctx, typst, dir, snap.Stamp())
+	pdf, err := compilePDF(ctx, typst, dir, snap.Stamp(), opt.PDFStandard)
 	if err != nil {
 		return Result{}, err
 	}
@@ -182,7 +207,7 @@ func canonical(s Snapshot) ([]byte, error) {
 	return bytes.TrimSpace(buf.Bytes()), nil
 }
 
-func asJPEG(raw []byte) ([]byte, error) {
+func asJPEG(raw []byte, quality int) ([]byte, error) {
 	if len(raw) > 2 && raw[0] == 0xFF && raw[1] == 0xD8 {
 		return raw, nil
 	}
@@ -191,7 +216,7 @@ func asJPEG(raw []byte) ([]byte, error) {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 70}); err != nil {
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
