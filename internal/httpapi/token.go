@@ -86,9 +86,14 @@ func (a *App) PostMeToken(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	writeJSON(w, http.StatusCreated, api.ApiTokenMitToken{
+	view := api.ApiTokenMitToken{
 		Id: tok.ID, Name: tok.Name, Scope: tok.Scope, CreatedAt: apiTime(tok.ErstelltAm), Token: plain,
-	})
+	}
+	if scope == store.TokenScopeMailIngest && a.cfg.Mail.ForwardDomain != "" {
+		addr := "belege+" + plain + "@" + a.cfg.Mail.ForwardDomain
+		view.ForwardingAddress = &addr
+	}
+	writeJSON(w, http.StatusCreated, view)
 }
 
 // DeleteMeToken revokes one of the signed-in Nutzer's tokens.

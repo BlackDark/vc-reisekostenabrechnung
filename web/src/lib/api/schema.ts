@@ -1695,6 +1695,7 @@ export interface components {
         };
         ApiTokenMitToken: components["schemas"]["ApiToken"] & {
             token: string;
+            forwarding_address?: string;
         };
         MailErlaubtInput: {
             wert: string;

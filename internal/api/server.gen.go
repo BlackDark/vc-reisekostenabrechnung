@@ -268,13 +268,14 @@ type ApiTokenListe struct {
 
 // ApiTokenMitToken defines model for ApiTokenMitToken.
 type ApiTokenMitToken struct {
-	CreatedAt  time.Time  `json:"created_at"`
-	Id         string     `json:"id"`
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
-	Name       string     `json:"name"`
-	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
-	Scope      string     `json:"scope"`
-	Token      string     `json:"token"`
+	CreatedAt         time.Time  `json:"created_at"`
+	ForwardingAddress *string    `json:"forwarding_address,omitempty"`
+	Id                string     `json:"id"`
+	LastUsedAt        *time.Time `json:"last_used_at,omitempty"`
+	Name              string     `json:"name"`
+	RevokedAt         *time.Time `json:"revoked_at,omitempty"`
+	Scope             string     `json:"scope"`
+	Token             string     `json:"token"`
 }
 
 // Arbeitgeber defines model for Arbeitgeber.

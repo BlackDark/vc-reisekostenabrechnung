@@ -3200,6 +3200,8 @@ components:
           properties:
             token:
               type: string
+            forwarding_address:
+              type: string
     MailErlaubtInput:
       type: object
       required: [wert]
