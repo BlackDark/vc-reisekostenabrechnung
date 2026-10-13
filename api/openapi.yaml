@@ -1404,6 +1404,33 @@ paths:
           $ref: "#/components/responses/Problem"
         "404":
           $ref: "#/components/responses/Problem"
+  /api/v1/eingang/mail:
+    post:
+      operationId: postEingangMail
+      tags: [eingang]
+      summary: File a raw email's attachments into the caller's Belegeingang
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          message/rfc822:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "202":
+          description: Receipts created from the attachments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BelegListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
   /api/v1/belege/duplikate:
     get:
       operationId: getBelegDuplikate
@@ -3083,6 +3110,9 @@ components:
       properties:
         name:
           type: string
+        scope:
+          type: string
+          enum: [belege:upload, mail:ingest]
     ApiToken:
       type: object
       required: [id, name, scope, created_at]

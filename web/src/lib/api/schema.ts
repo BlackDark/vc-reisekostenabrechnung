@@ -735,6 +735,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/eingang/mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** File a raw email's attachments into the caller's Belegeingang */
+        post: operations["postEingangMail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/belege/duplikate": {
         parameters: {
             query?: never;
@@ -1627,6 +1644,8 @@ export interface components {
         };
         ApiTokenInput: {
             name: string;
+            /** @enum {string} */
+            scope?: "belege:upload" | "mail:ingest";
         };
         ApiToken: {
             id: string;
@@ -3923,6 +3942,33 @@ export interface operations {
             };
             401: components["responses"]["Problem"];
             404: components["responses"]["Problem"];
+        };
+    };
+    postEingangMail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "message/rfc822": string;
+            };
+        };
+        responses: {
+            /** @description Receipts created from the attachments */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BelegListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            413: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     getBelegDuplikate: {

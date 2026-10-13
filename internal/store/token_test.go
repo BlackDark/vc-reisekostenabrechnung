@@ -23,7 +23,7 @@ func TestApiTokenLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	tok, err := s.CreateToken(ctx, n.ID, "scanner", hash, now, actor)
+	tok, err := s.CreateToken(ctx, n.ID, "scanner", TokenScopeUpload, hash, now, actor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,14 @@ func TestApiTokenLifecycle(t *testing.T) {
 	if _, err := s.FindActiveToken(ctx, hash); !errorsIs(err, ErrNotFound) {
 		t.Fatalf("revoked token should be gone, got %v", err)
 	}
-	if err := s.VerifyAudit(ctx); err != nil {
+	events, err := s.AuditAll(ctx)
+	if err != nil {
 		t.Fatal(err)
+	}
+	// nutzer.angelegt + token.angelegt + one token.widerrufen (a second revoke
+	// finds no live row and writes nothing). The hash chain itself is verified in
+	// migrate_test; here we only assert the lifecycle events were recorded.
+	if len(events) != 3 {
+		t.Fatalf("expected 3 audit events, got %d", len(events))
 	}
 }

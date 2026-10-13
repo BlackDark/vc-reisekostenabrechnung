@@ -68,12 +68,20 @@ func (a *App) PostMeToken(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusUnprocessableEntity, "validierung", "Give the token a name (1 to 64 characters)", "")
 		return
 	}
+	scope := store.TokenScopeUpload
+	if body.Scope != nil {
+		scope = string(*body.Scope)
+	}
+	if !store.ValidTokenScope(scope) {
+		writeProblem(w, http.StatusUnprocessableEntity, "validierung", "Unknown token scope", "")
+		return
+	}
 	plain, hash, err := auth.NewAPIToken()
 	if err != nil {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	tok, err := a.store.CreateToken(r.Context(), n.ID, name, hash, time.Now().UTC().Format(time.RFC3339), a.actor(r, n))
+	tok, err := a.store.CreateToken(r.Context(), n.ID, name, scope, hash, time.Now().UTC().Format(time.RFC3339), a.actor(r, n))
 	if err != nil {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return

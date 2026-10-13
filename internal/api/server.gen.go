@@ -20,6 +20,24 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ApiTokenInputScope.
+const (
+	BelegeUpload ApiTokenInputScope = "belege:upload"
+	MailIngest   ApiTokenInputScope = "mail:ingest"
+)
+
+// Valid indicates whether the value is a known member of the ApiTokenInputScope enum.
+func (e ApiTokenInputScope) Valid() bool {
+	switch e {
+	case BelegeUpload:
+		return true
+	case MailIngest:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ArbeitgeberKonstellation.
 const (
 	Arbeitgebererstattung ArbeitgeberKonstellation = "arbeitgebererstattung"
@@ -236,8 +254,12 @@ type ApiToken struct {
 
 // ApiTokenInput defines model for ApiTokenInput.
 type ApiTokenInput struct {
-	Name string `json:"name"`
+	Name  string              `json:"name"`
+	Scope *ApiTokenInputScope `json:"scope,omitempty"`
 }
+
+// ApiTokenInputScope defines model for ApiTokenInput.Scope.
+type ApiTokenInputScope string
 
 // ApiTokenListe defines model for ApiTokenListe.
 type ApiTokenListe struct {
@@ -1773,6 +1795,9 @@ type ServerInterface interface {
 
 	// (GET /api/v1/belege/{id}/vorschau)
 	GetBelegVorschau(w http.ResponseWriter, r *http.Request, id Id)
+	// PostEingangMail File a raw email's attachments into the caller's Belegeingang
+	// (POST /api/v1/eingang/mail)
+	PostEingangMail(w http.ResponseWriter, r *http.Request)
 
 	// (GET /api/v1/exporte/{id})
 	GetExport(w http.ResponseWriter, r *http.Request, id Id)
@@ -4042,6 +4067,20 @@ func (siw *ServerInterfaceWrapper) GetBelegVorschau(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// PostEingangMail operation middleware
+func (siw *ServerInterfaceWrapper) PostEingangMail(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostEingangMail(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetExport operation middleware
 func (siw *ServerInterfaceWrapper) GetExport(w http.ResponseWriter, r *http.Request) {
 
@@ -5924,6 +5963,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/me/tokens", wrapper.GetMeTokens)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/me/tokens", wrapper.PostMeToken)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/me/tokens/{id}", wrapper.DeleteMeToken)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/eingang/mail", wrapper.PostEingangMail)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/duplikate", wrapper.GetBelegDuplikate)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.DeleteBeleg)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.GetBeleg)
@@ -10060,6 +10100,72 @@ func (response GetBelegVorschau404ApplicationProblemPlusJSONResponse) VisitGetBe
 	return err
 }
 
+type PostEingangMailRequestObject struct {
+	Body io.Reader
+}
+
+type PostEingangMailResponseObject interface {
+	VisitPostEingangMailResponse(w http.ResponseWriter) error
+}
+
+type PostEingangMail202JSONResponse BelegListe
+
+func (response PostEingangMail202JSONResponse) VisitPostEingangMailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostEingangMail401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostEingangMail401ApplicationProblemPlusJSONResponse) VisitPostEingangMailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostEingangMail413ApplicationProblemPlusJSONResponse Problem
+
+func (response PostEingangMail413ApplicationProblemPlusJSONResponse) VisitPostEingangMailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostEingangMail422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostEingangMail422ApplicationProblemPlusJSONResponse) VisitPostEingangMailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetExportRequestObject struct {
 	Id Id `json:"id"`
 }
@@ -13291,6 +13397,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/belege/{id}/vorschau)
 	GetBelegVorschau(ctx context.Context, request GetBelegVorschauRequestObject) (GetBelegVorschauResponseObject, error)
+	// PostEingangMail File a raw email's attachments into the caller's Belegeingang
+	// (POST /api/v1/eingang/mail)
+	PostEingangMail(ctx context.Context, request PostEingangMailRequestObject) (PostEingangMailResponseObject, error)
 
 	// (GET /api/v1/exporte/{id})
 	GetExport(ctx context.Context, request GetExportRequestObject) (GetExportResponseObject, error)
@@ -15234,6 +15343,32 @@ func (sh *strictHandler) GetBelegVorschau(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetBelegVorschauResponseObject); ok {
 		if err := validResponse.VisitGetBelegVorschauResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostEingangMail operation middleware
+func (sh *strictHandler) PostEingangMail(w http.ResponseWriter, r *http.Request) {
+	var request PostEingangMailRequestObject
+
+	request.Body = r.Body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostEingangMail(ctx, request.(PostEingangMailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostEingangMail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostEingangMailResponseObject); ok {
+		if err := validResponse.VisitPostEingangMailResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

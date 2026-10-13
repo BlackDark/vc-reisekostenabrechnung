@@ -11,22 +11,35 @@ import (
 // nothing else. Every other endpoint still requires the session cookie.
 const TokenScopeUpload = "belege:upload"
 
+// TokenScopeMailIngest lets a token file a raw email's attachments into the
+// owner's Belegeingang (email receipt intake). It grants no other access.
+const TokenScopeMailIngest = "mail:ingest"
+
+// ValidTokenScope reports whether scope is a known token scope.
+func ValidTokenScope(scope string) bool {
+	return scope == TokenScopeUpload || scope == TokenScopeMailIngest
+}
+
 // CreateToken stores a hashed token for the user and audits the creation. The
-// timestamp is RFC-3339 UTC, matching the api_token text columns.
-func (s *Store) CreateToken(ctx context.Context, nutzerID, name, tokenHash, erstelltAm string, actor Actor) (sqlitedb.ApiToken, error) {
+// scope must be a known token scope; the timestamp is RFC-3339 UTC, matching the
+// api_token text columns.
+func (s *Store) CreateToken(ctx context.Context, nutzerID, name, scope, tokenHash, erstelltAm string, actor Actor) (sqlitedb.ApiToken, error) {
+	if !ValidTokenScope(scope) {
+		return sqlitedb.ApiToken{}, ErrInvalid
+	}
 	tok := sqlitedb.ApiToken{
 		ID: id.Must(), NutzerID: nutzerID, Name: name,
-		Scope: TokenScopeUpload, TokenHash: tokenHash, ErstelltAm: erstelltAm,
+		Scope: scope, TokenHash: tokenHash, ErstelltAm: erstelltAm,
 	}
 	q := sqlitedb.New(s.write)
 	if err := q.InsertToken(ctx, sqlitedb.InsertTokenParams{
-		ID: tok.ID, NutzerID: nutzerID, Name: name, Scope: TokenScopeUpload,
+		ID: tok.ID, NutzerID: nutzerID, Name: name, Scope: scope,
 		TokenHash: tokenHash, ErstelltAm: erstelltAm,
 	}); err != nil {
 		return sqlitedb.ApiToken{}, err
 	}
 	if err := appendAudit(ctx, q, actor, "nutzer.token.angelegt", "api_token", tok.ID, nil,
-		mustJSON(map[string]string{"name": name, "scope": TokenScopeUpload}), nil); err != nil {
+		mustJSON(map[string]string{"name": name, "scope": scope}), nil); err != nil {
 		return sqlitedb.ApiToken{}, err
 	}
 	return tok, nil
