@@ -23,7 +23,7 @@ Resolved open points (history in SPEC §22): O2 (decided, see below), O3 veraPDF
 
 Backend config wiring done in `main` (through commit `fecc74c`): `EXPORT_TIMEOUT`, `BELEG_JPEG_QUALITY`, `EXPORT_PDF_STANDARD`, `FX_ECB_URL` and `FX_TIMEOUT` are read from the environment and applied; startup fails on a malformed boolean environment variable; `TZ_DEFAULT` defaults the zone of a new trip; stammdaten and profile store errors map through `writeStoreErr` ([#17](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/17)–[#21](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/21), [#31](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/31)).
 
-Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `GET /api/v1/admin/system` ([#32](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/32), [#33](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/33)), and the receipt capture in a side panel like the Fahrt form ([#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35)), plus a PWA install button with an iOS share-sheet hint ([#34](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/34)). Personal API tokens (stored only as a SHA-256 hash) with a bearer-authenticated receipt upload landed as the first #25 slice ([#25](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/25), design-note option d); IMAP/plus-address polling is the next #25 step.
+Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `GET /api/v1/admin/system` ([#32](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/32), [#33](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/33)), and the receipt capture in a side panel like the Fahrt form ([#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35)), plus a PWA install button with an iOS share-sheet hint ([#34](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/34)). Personal API tokens (stored only as a SHA-256 hash) with a bearer-authenticated receipt upload landed as the first #25 slice ([#25](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/25), design-note option d); and `POST /api/v1/eingang/mail` files a raw email's attachments into the Belegeingang (design-note a/c, reuses the upload path, dedupes by checksum, archives the `.eml`). Remaining for #25: the IMAP poller, per-user sender allowlist plus SPF/DKIM, a Beleg source field, and profile UI to mint a `mail:ingest` token.
 
 ## Open tasks
 
@@ -46,6 +46,8 @@ Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `G
 | O1: authoritative basis for the meal deduction confirmed in the research (BMF-RK 2020 + § 9 Abs. 4a); verbatim Rz. 64–86 wording still pending a fetchable HTML source (PDF not parseable here, researcher unavailable) | O1 |
 
 Watch only, no action planned: O10 Dreimonatsfrist heuristic, O11 German VAT in foreign currency, O13 Frühstück herausrechnen, O14 erste Tätigkeitsstätte not modelled.
+
+**Known issue (found during #25, not fixed yet):** the audit hash chain is verified in id order, but ids are millisecond-resolution UUIDv7 with a random tail, so several audit rows written in the same millisecond can verify out of order. It is latent in production for a single request that appends two or more audit events within one millisecond; recommend verifying the chain by insertion order (rowid) in a dedicated fix.
 
 ### Spec audit (10 October 2026)
 
