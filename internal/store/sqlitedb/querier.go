@@ -55,7 +55,7 @@ type Querier interface {
 	FailJobRow(ctx context.Context, arg FailJobRowParams) error
 	FindBelegByDateiSHA(ctx context.Context, arg FindBelegByDateiSHAParams) (Beleg, error)
 	FindBelegBySHA(ctx context.Context, arg FindBelegBySHAParams) (Beleg, error)
-	FindMailErlaubtByWert(ctx context.Context, arg FindMailErlaubtByWertParams) (string, error)
+	FindMailErlaubtByWert(ctx context.Context, wert string) (string, error)
 	FindTokenByHash(ctx context.Context, tokenHash string) (ApiToken, error)
 	FinishEinreichung(ctx context.Context, arg FinishEinreichungParams) (Abrechnung, error)
 	FinishExportRow(ctx context.Context, arg FinishExportRowParams) (Export, error)

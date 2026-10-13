@@ -83,18 +83,26 @@ func (s *Store) RemoveMailErlaubt(ctx context.Context, nutzerID, wert string, ac
 	return true, nil
 }
 
-// MailOwnerForAbsender resolves a sender address to a Nutzer, trying the exact
-// address first and then the sender's domain entry. It returns ok=false when no
-// Nutzer allows that sender.
+// MailOwnerForAbsender resolves a sender address to a Nutzer: the exact address
+// wins over a domain entry, so a user who allowlisted one sender is not shadowed
+// by another user allowlisting that domain.
 func (s *Store) MailOwnerForAbsender(ctx context.Context, absender string) (string, bool, error) {
 	absender = strings.ToLower(strings.TrimSpace(absender))
+	if id, ok, err := s.mailOwnerByWert(ctx, absender); err != nil || ok {
+		return id, ok, err
+	}
 	domainWert := ""
 	if i := strings.LastIndex(absender, "@"); i >= 0 {
 		domainWert = "@" + absender[i+1:]
 	}
-	w, err := s.readQ().FindMailErlaubtByWert(ctx, sqlitedb.FindMailErlaubtByWertParams{
-		Wert1: absender, Wert2: domainWert,
-	})
+	return s.mailOwnerByWert(ctx, domainWert)
+}
+
+func (s *Store) mailOwnerByWert(ctx context.Context, wert string) (string, bool, error) {
+	if wert == "" {
+		return "", false, nil
+	}
+	w, err := s.readQ().FindMailErlaubtByWert(ctx, wert)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", false, nil

@@ -279,7 +279,11 @@ func Load() (Config, error) {
 }
 
 func validProcessedAction(s string) bool {
-	return s == "flag" || s == "delete" || strings.HasPrefix(s, "move:")
+	switch s {
+	case "flag", "delete":
+		return true
+	}
+	return strings.HasPrefix(s, "move:") && strings.TrimSpace(strings.TrimPrefix(s, "move:")) != ""
 }
 
 func validate(cfg Config) []string {

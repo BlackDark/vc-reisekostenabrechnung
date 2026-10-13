@@ -102,7 +102,7 @@ func (a *App) extractMailAttachments(msg *mail.Message) [][]byte {
 			break
 		}
 		disp, _, _ := mime.ParseMediaType(p.Header.Get("Content-Disposition"))
-		if disp != "attachment" && p.FileName() == "" {
+		if disp == "inline" || (disp != "attachment" && p.FileName() == "") {
 			_ = p.Close()
 			continue
 		}

@@ -6,7 +6,7 @@ LIMIT sqlc.arg(limit_n);
 
 -- name: FindMailErlaubtByWert :one
 SELECT nutzer_id FROM mail_erlaubt
-WHERE wert IN (sqlc.arg(wert1), sqlc.arg(wert2))
+WHERE wert = sqlc.arg(wert)
 LIMIT 1;
 
 -- name: InsertMailErlaubt :exec

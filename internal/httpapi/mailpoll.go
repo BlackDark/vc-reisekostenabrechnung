@@ -79,7 +79,7 @@ func (a *App) pollMailOnce(ctx context.Context) (int, error) {
 		return 0, nil
 	}
 	fetch := client.Fetch(found.All, &imap.FetchOptions{
-		BodySection: []*imap.FetchItemBodySection{{}},
+		BodySection: []*imap.FetchItemBodySection{{Peek: true}},
 		Envelope:    true,
 	})
 	handled := 0
@@ -96,6 +96,10 @@ func (a *App) pollMailOnce(ctx context.Context) (int, error) {
 			case *imapclient.FetchItemDataEnvelope:
 				env = v.Envelope
 			}
+		}
+		if len(body) > int(a.maxUpload()) {
+			a.log.Warn("mail intake: skipping oversized message", "seq", msg.SeqNum, "bytes", len(body))
+			continue
 		}
 		nutzerID, ok := a.resolveMailUser(ctx, env)
 		if !ok || len(body) == 0 {
@@ -133,7 +137,7 @@ func (a *App) resolveMailUser(ctx context.Context, env *imap.Envelope) (string, 
 			continue
 		}
 		tok, err := a.store.FindActiveToken(ctx, auth.HashAPIToken(raw))
-		if err == nil && tok.Scope == store.TokenScopeMailIngest {
+		if err == nil && tok.Scope == store.TokenScopeMailIngest && strings.EqualFold(to.Host, a.cfg.Mail.ForwardDomain) {
 			return tok.NutzerID, true
 		}
 	}

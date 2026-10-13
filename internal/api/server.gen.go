@@ -10796,6 +10796,20 @@ func (response PostMeMailErlaubt401ApplicationProblemPlusJSONResponse) VisitPost
 	return err
 }
 
+type PostMeMailErlaubt409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostMeMailErlaubt409ApplicationProblemPlusJSONResponse) VisitPostMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PostMeMailErlaubt422ApplicationProblemPlusJSONResponse Problem
 
 func (response PostMeMailErlaubt422ApplicationProblemPlusJSONResponse) VisitPostMeMailErlaubtResponse(w http.ResponseWriter) error {

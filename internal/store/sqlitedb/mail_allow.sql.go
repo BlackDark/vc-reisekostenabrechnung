@@ -29,17 +29,12 @@ func (q *Queries) DeleteMailErlaubt(ctx context.Context, arg DeleteMailErlaubtPa
 
 const findMailErlaubtByWert = `-- name: FindMailErlaubtByWert :one
 SELECT nutzer_id FROM mail_erlaubt
-WHERE wert IN (?1, ?2)
+WHERE wert = ?1
 LIMIT 1
 `
 
-type FindMailErlaubtByWertParams struct {
-	Wert1 string
-	Wert2 string
-}
-
-func (q *Queries) FindMailErlaubtByWert(ctx context.Context, arg FindMailErlaubtByWertParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, findMailErlaubtByWert, arg.Wert1, arg.Wert2)
+func (q *Queries) FindMailErlaubtByWert(ctx context.Context, wert string) (string, error) {
+	row := q.db.QueryRowContext(ctx, findMailErlaubtByWert, wert)
 	var nutzer_id string
 	err := row.Scan(&nutzer_id)
 	return nutzer_id, err

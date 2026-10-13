@@ -46,6 +46,15 @@ func buildMail(t *testing.T, jpg []byte) []byte {
 	}
 	_, _ = pw.Write([]byte("Receipt attached."))
 
+	// An inline image with a filename (logo/signature) must be skipped.
+	logoHeader := make(textproto.MIMEHeader)
+	logoHeader.Set("Content-Disposition", `inline; filename="logo.png"`)
+	logoHeader.Set("Content-Type", "image/jpeg")
+	lw, err := mw.CreatePart(logoHeader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _ = lw.Write(jpegBytesMarked(t, 2))
 	attachHeader := make(textproto.MIMEHeader)
 	attachHeader.Set("Content-Disposition", `attachment; filename="receipt.jpg"`)
 	attachHeader.Set("Content-Type", "image/jpeg")
