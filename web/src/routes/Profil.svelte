@@ -3,6 +3,7 @@
 	import type { components } from "$lib/api/schema";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
+	import { NativeSelect } from "$lib/components/ui/native-select";
 	import { m } from "$lib/paraglide/messages.js";
 	import { pwa } from "$lib/pwa.svelte";
 	import { session } from "$lib/session.svelte";
@@ -16,6 +17,10 @@
 	let tokens = $state<components["schemas"]["ApiToken"][]>([]);
 	let tokenName = $state("");
 	let createdToken = $state("");
+	let createdForward = $state("");
+	let tokenScope = $state<"belege:upload" | "mail:ingest">("belege:upload");
+	let allowlist = $state<{ wert: string; created_at: string }[]>([]);
+	let allowWert = $state("");
 
 	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
@@ -36,6 +41,7 @@
 			letterhead = standard ?? null;
 		});
 		void reloadTokens();
+		void reloadAllowlist();
 	});
 
 	async function save(event: SubmitEvent) {
@@ -74,12 +80,34 @@
 		event.preventDefault();
 		const name = tokenName.trim();
 		if (!name) return;
-		const res = await api.POST("/api/v1/me/tokens", { body: { name } });
+		const res = await api.POST("/api/v1/me/tokens", { body: { name, scope: tokenScope } });
 		if (res.response.ok && res.data) {
 			createdToken = res.data.token;
+			createdForward = res.data.forwarding_address ?? "";
 			tokenName = "";
 			await reloadTokens();
 		}
+	}
+
+	async function reloadAllowlist() {
+		const res = await api.GET("/api/v1/me/mail/erlaubt");
+		if (res.data) allowlist = res.data.items;
+	}
+
+	async function addAllowed(event: SubmitEvent) {
+		event.preventDefault();
+		const wert = allowWert.trim();
+		if (!wert) return;
+		const res = await api.POST("/api/v1/me/mail/erlaubt", { body: { wert } });
+		if (res.response.ok) {
+			allowWert = "";
+			await reloadAllowlist();
+		}
+	}
+
+	async function removeAllowed(wert: string) {
+		await api.DELETE("/api/v1/me/mail/erlaubt/{wert}", { params: { path: { wert } } });
+		await reloadAllowlist();
 	}
 
 	async function revokeToken(id: string) {
@@ -158,6 +186,13 @@
 				{m.token_name()}
 				<Input id="token-name" bind:value={tokenName} />
 			</label>
+			<label class="grid gap-1 text-sm" for="token-scope">
+				{m.token_scope()}
+				<NativeSelect id="token-scope" bind:value={tokenScope}>
+					<option value="belege:upload">{m.token_scope_upload()}</option>
+					<option value="mail:ingest">{m.token_scope_mail()}</option>
+				</NativeSelect>
+			</label>
 			<Button type="submit">{m.token_create()}</Button>
 		</fieldset>
 	</form>
@@ -165,6 +200,12 @@
 		<p class="mt-2 text-sm" role="status">
 			{m.token_created()}
 			<code class="break-all" data-testid="token-value">{createdToken}</code>
+		</p>
+	{/if}
+	{#if createdForward}
+		<p class="mt-2 text-sm" role="status">
+			{m.token_forward()}
+			<code class="break-all" data-testid="token-forward">{createdForward}</code>
 		</p>
 	{/if}
 	<ul class="mt-2 grid gap-2 text-sm">
@@ -177,6 +218,30 @@
 			</li>
 		{/each}
 	</ul>
+	<section class="mt-8 max-w-sm" aria-label={m.allow_title()}>
+		<h2 class="text-lg font-medium">{m.allow_title()}</h2>
+		<form class="mt-2 flex items-end gap-2" onsubmit={addAllowed}>
+			<fieldset class="flex flex-1 items-end gap-2" disabled={!session.online}>
+				<label class="grid flex-1 gap-1 text-sm" for="allow-wert">
+					{m.allow_add()}
+					<Input id="allow-wert" bind:value={allowWert} placeholder={m.allow_placeholder()} />
+				</label>
+				<Button type="submit">{m.allow_add()}</Button>
+			</fieldset>
+		</form>
+		{#if allowlist.length === 0}
+			<p class="text-muted-foreground mt-2 text-sm">{m.allow_none()}</p>
+		{:else}
+			<ul class="mt-2 grid gap-2 text-sm">
+				{#each allowlist as row (row.wert)}
+					<li class="flex items-center justify-between gap-2">
+						<span class="break-all">{row.wert}</span>
+						<Button variant="link" size="sm" type="button" onclick={() => removeAllowed(row.wert)}>{m.allow_remove()}</Button>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</section>
 	<p class="mt-6">
 		<Button variant="outline" type="button" onclick={logout}>{m.logout()}</Button>
 	</p>
