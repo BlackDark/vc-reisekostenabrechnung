@@ -47,7 +47,7 @@ Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `G
 
 Watch only, no action planned: O10 Dreimonatsfrist heuristic, O11 German VAT in foreign currency, O13 Frühstück herausrechnen, O14 erste Tätigkeitsstätte not modelled.
 
-**Known issue (found during #25, not fixed yet):** the audit hash chain is verified in id order, but ids are millisecond-resolution UUIDv7 with a random tail, so several audit rows written in the same millisecond can verify out of order. It is latent in production for a single request that appends two or more audit events within one millisecond; recommend verifying the chain by insertion order (rowid) in a dedicated fix.
+**Fixed:** the audit hash chain was linked in write order but verified by id order; with millisecond-resolution UUIDv7 ids, same-millisecond rows could verify out of order. `LastAuditHash` and `ListAudit` now order by rowid (insertion order), so the chain is consistent, and `TestApiTokenLifecycle` now verifies it.
 
 ### Spec audit (10 October 2026)
 
