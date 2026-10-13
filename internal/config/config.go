@@ -270,6 +270,7 @@ func Load() (Config, error) {
 		errs = append(errs, err.Error())
 	}
 	cfg.Mail.IMAPPassword = mailPass
+	cfg.Mail.ForwardDomain = strings.TrimSpace(strings.TrimPrefix(cfg.Mail.ForwardDomain, "@"))
 
 	errs = append(errs, validate(cfg)...)
 	if len(errs) > 0 {
