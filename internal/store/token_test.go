@@ -60,4 +60,9 @@ func TestApiTokenLifecycle(t *testing.T) {
 	if len(events) != 3 {
 		t.Fatalf("expected 3 audit events, got %d", len(events))
 	}
+	// The chain must verify even though these rows share a millisecond: the
+	// chain follows insertion order, not the random tail of the UUIDv7 ids.
+	if err := s.VerifyAudit(ctx); err != nil {
+		t.Fatalf("audit chain broken by same-millisecond writes: %v", err)
+	}
 }

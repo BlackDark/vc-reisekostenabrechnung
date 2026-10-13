@@ -57,7 +57,7 @@ func (q *Queries) InsertAudit(ctx context.Context, arg InsertAuditParams) error 
 }
 
 const lastAuditHash = `-- name: LastAuditHash :one
-SELECT hash FROM audit_ereignis ORDER BY id DESC LIMIT 1
+SELECT hash FROM audit_ereignis ORDER BY rowid DESC LIMIT 1
 `
 
 func (q *Queries) LastAuditHash(ctx context.Context) (string, error) {
@@ -68,7 +68,7 @@ func (q *Queries) LastAuditHash(ctx context.Context) (string, error) {
 }
 
 const listAudit = `-- name: ListAudit :many
-SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash FROM audit_ereignis ORDER BY id ASC
+SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash FROM audit_ereignis ORDER BY rowid ASC
 `
 
 func (q *Queries) ListAudit(ctx context.Context) ([]AuditEreigni, error) {

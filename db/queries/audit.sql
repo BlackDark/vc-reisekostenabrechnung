@@ -1,5 +1,5 @@
 -- name: LastAuditHash :one
-SELECT hash FROM audit_ereignis ORDER BY id DESC LIMIT 1;
+SELECT hash FROM audit_ereignis ORDER BY rowid DESC LIMIT 1;
 
 -- name: InsertAudit :exec
 INSERT INTO audit_ereignis (
@@ -12,7 +12,7 @@ INSERT INTO audit_ereignis (
 );
 
 -- name: ListAudit :many
-SELECT * FROM audit_ereignis ORDER BY id ASC;
+SELECT * FROM audit_ereignis ORDER BY rowid ASC;
 
 -- name: ListAuditFiltered :many
 SELECT * FROM audit_ereignis
