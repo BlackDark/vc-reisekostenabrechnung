@@ -103,3 +103,22 @@ Invalid combinations stop the process with a clear error (every login method off
 | `LITESTREAM_REPLICA_URL` | | `s3://bucket/path` in the EU/EEA |
 
 Sign-in details and a Pocket ID example are in [Authentication](authentication.md). Backup, restore, and retention are in [Operations](operations.md).
+
+## Email receipt intake (IMAP poller)
+
+Forward or redirect receipts to a mailbox the app polls; their attachments then land in the Belegeingang (unassigned receipts). Off by default; set `MAIL_IMAP_HOST` to enable.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MAIL_IMAP_HOST` | | IMAP host. Empty disables the poller; when set, `MAIL_FORWARD_DOMAIN` is also required |
+| `MAIL_IMAP_PORT` | `993` | IMAP port (implicit TLS) |
+| `MAIL_IMAP_USERNAME` | | Mailbox login (required with `MAIL_IMAP_HOST`) |
+| `MAIL_IMAP_PASSWORD` | | Mailbox password; also as `MAIL_IMAP_PASSWORD_FILE` |
+| `MAIL_IMAP_FOLDER` | `INBOX` | Mailbox folder to poll |
+| `MAIL_IMAP_INTERVAL` | `5m` | Poll interval; must be positive |
+| `MAIL_IMAP_PROCESSED_ACTION` | `flag` | After filing: `flag`, `delete`, or `move:<mailbox>` |
+| `MAIL_FORWARD_DOMAIN` | | Domain of the per-user plus address `belege+<token>@<domain>` |
+
+Each user gets a `mail:ingest` token (Profile; the plaintext is shown once). Its forwarding address is `belege+<that token>@MAIL_FORWARD_DOMAIN`. On each poll the app reads unseen mail and, per message, picks the owner by that plus-address token first, then by the sender allowlist (addresses and `@domains` the user listed). It files PDF, image and XML attachments into that owner's Belegeingang (inline logos and text parts are skipped, duplicates dedupe by checksum), archives the original message, and then flags, deletes or moves it per the processed action. A message it cannot map, or that fails to ingest, is left unseen and retried next tick.
+
+Trust note: the poller files whatever a mapped sender attaches, so only a user's forwarding-token senders and allowlisted senders can add receipts to their inbox.
