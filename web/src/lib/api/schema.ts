@@ -752,6 +752,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/mail/erlaubt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getMeMailErlaubt"];
+        put?: never;
+        post: operations["postMeMailErlaubt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mail/erlaubt/{wert}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteMeMailErlaubt"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/belege/duplikate": {
         parameters: {
             query?: never;
@@ -1663,6 +1695,17 @@ export interface components {
         };
         ApiTokenMitToken: components["schemas"]["ApiToken"] & {
             token: string;
+        };
+        MailErlaubtInput: {
+            wert: string;
+        };
+        MailErlaubt: {
+            wert: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        MailErlaubtListe: {
+            items: components["schemas"]["MailErlaubt"][];
         };
         AufbewahrungPosten: {
             /** @enum {string} */
@@ -3969,6 +4012,75 @@ export interface operations {
             401: components["responses"]["Problem"];
             413: components["responses"]["Problem"];
             422: components["responses"]["Problem"];
+        };
+    };
+    getMeMailErlaubt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Allowed senders of the signed-in Nutzer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailErlaubtListe"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    postMeMailErlaubt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailErlaubtInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailErlaubt"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
+        };
+    };
+    deleteMeMailErlaubt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wert: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
         };
     };
     getBelegDuplikate: {

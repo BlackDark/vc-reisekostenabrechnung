@@ -255,6 +255,12 @@ type Job struct {
 	GeaendertAm        time.Time
 }
 
+type MailErlaubt struct {
+	NutzerID   string
+	Wert       string
+	ErstelltAm string
+}
+
 type Nutzer struct {
 	ID               string
 	Anzeigename      string

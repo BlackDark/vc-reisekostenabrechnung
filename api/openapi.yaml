@@ -1431,6 +1431,56 @@ paths:
           $ref: "#/components/responses/Problem"
         "422":
           $ref: "#/components/responses/Problem"
+  /api/v1/me/mail/erlaubt:
+    get:
+      operationId: getMeMailErlaubt
+      tags: [nutzer]
+      responses:
+        "200":
+          description: Allowed senders of the signed-in Nutzer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MailErlaubtListe"
+        "401":
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: postMeMailErlaubt
+      tags: [nutzer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MailErlaubtInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MailErlaubt"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+  /api/v1/me/mail/erlaubt/{wert}:
+    delete:
+      operationId: deleteMeMailErlaubt
+      tags: [nutzer]
+      parameters:
+        - name: wert
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
   /api/v1/belege/duplikate:
     get:
       operationId: getBelegDuplikate
@@ -3148,6 +3198,29 @@ components:
           properties:
             token:
               type: string
+    MailErlaubtInput:
+      type: object
+      required: [wert]
+      properties:
+        wert:
+          type: string
+    MailErlaubt:
+      type: object
+      required: [wert, created_at]
+      properties:
+        wert:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    MailErlaubtListe:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MailErlaubt"
     AufbewahrungPosten:
       type: object
       required: [art, id, nutzer_id, bezeichnung, aufbewahren_bis, abgelaufen, inhalt_geloescht, sha256]

@@ -38,6 +38,7 @@ type Querier interface {
 	DeleteFahrt(ctx context.Context, arg DeleteFahrtParams) (int64, error)
 	DeleteIdentitaet(ctx context.Context, arg DeleteIdentitaetParams) error
 	DeleteJobsForBeleg(ctx context.Context, belegID *string) error
+	DeleteMailErlaubt(ctx context.Context, arg DeleteMailErlaubtParams) (int64, error)
 	DeleteOrtswechsel(ctx context.Context, reiseID string) error
 	DeleteReise(ctx context.Context, arg DeleteReiseParams) (int64, error)
 	DeleteReisetag(ctx context.Context, arg DeleteReisetagParams) error
@@ -54,6 +55,7 @@ type Querier interface {
 	FailJobRow(ctx context.Context, arg FailJobRowParams) error
 	FindBelegByDateiSHA(ctx context.Context, arg FindBelegByDateiSHAParams) (Beleg, error)
 	FindBelegBySHA(ctx context.Context, arg FindBelegBySHAParams) (Beleg, error)
+	FindMailErlaubtByWert(ctx context.Context, arg FindMailErlaubtByWertParams) (string, error)
 	FindTokenByHash(ctx context.Context, tokenHash string) (ApiToken, error)
 	FinishEinreichung(ctx context.Context, arg FinishEinreichungParams) (Abrechnung, error)
 	FinishExportRow(ctx context.Context, arg FinishExportRowParams) (Export, error)
@@ -98,6 +100,7 @@ type Querier interface {
 	InsertExport(ctx context.Context, arg InsertExportParams) (Export, error)
 	InsertFahrt(ctx context.Context, arg InsertFahrtParams) (Fahrt, error)
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
+	InsertMailErlaubt(ctx context.Context, arg InsertMailErlaubtParams) error
 	InsertOrtswechsel(ctx context.Context, arg InsertOrtswechselParams) (Ortswechsel, error)
 	InsertReise(ctx context.Context, arg InsertReiseParams) (Reise, error)
 	InsertReisetag(ctx context.Context, arg InsertReisetagParams) (Reisetag, error)
@@ -128,6 +131,7 @@ type Querier interface {
 	ListFahrtenByNutzer(ctx context.Context, nutzerID string) ([]Fahrt, error)
 	ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error)
 	ListLaender(ctx context.Context, jahr int64) ([]ListLaenderRow, error)
+	ListMailErlaubt(ctx context.Context, arg ListMailErlaubtParams) ([]MailErlaubt, error)
 	ListNutzer(ctx context.Context, arg ListNutzerParams) ([]Nutzer, error)
 	ListOffeneDuplikate(ctx context.Context, nutzerID string) ([]Beleg, error)
 	ListOrtswechsel(ctx context.Context, reiseID string) ([]Ortswechsel, error)

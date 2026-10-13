@@ -712,6 +712,22 @@ type LoginRequest struct {
 	Passwort     string `json:"passwort"`
 }
 
+// MailErlaubt defines model for MailErlaubt.
+type MailErlaubt struct {
+	CreatedAt time.Time `json:"created_at"`
+	Wert      string    `json:"wert"`
+}
+
+// MailErlaubtInput defines model for MailErlaubtInput.
+type MailErlaubtInput struct {
+	Wert string `json:"wert"`
+}
+
+// MailErlaubtListe defines model for MailErlaubtListe.
+type MailErlaubtListe struct {
+	Items []MailErlaubt `json:"items"`
+}
+
 // MwstHelfer defines model for MwstHelfer.
 type MwstHelfer struct {
 	Art        string `json:"art"`
@@ -1562,6 +1578,9 @@ type PatchFahrtJSONRequestBody = FahrtWrite
 // PatchMeJSONRequestBody defines body for PatchMe for application/json ContentType.
 type PatchMeJSONRequestBody = ProfilPatch
 
+// PostMeMailErlaubtJSONRequestBody defines body for PostMeMailErlaubt for application/json ContentType.
+type PostMeMailErlaubtJSONRequestBody = MailErlaubtInput
+
 // PostMeTokenJSONRequestBody defines body for PostMeToken for application/json ContentType.
 type PostMeTokenJSONRequestBody = ApiTokenInput
 
@@ -1819,6 +1838,15 @@ type ServerInterface interface {
 	// PatchMe Update the profile
 	// (PATCH /api/v1/me)
 	PatchMe(w http.ResponseWriter, r *http.Request, params PatchMeParams)
+
+	// (GET /api/v1/me/mail/erlaubt)
+	GetMeMailErlaubt(w http.ResponseWriter, r *http.Request)
+
+	// (POST /api/v1/me/mail/erlaubt)
+	PostMeMailErlaubt(w http.ResponseWriter, r *http.Request)
+
+	// (DELETE /api/v1/me/mail/erlaubt/{wert})
+	DeleteMeMailErlaubt(w http.ResponseWriter, r *http.Request, wert string)
 	// GetMeSessions Active sessions of the current Nutzer
 	// (GET /api/v1/me/sessions)
 	GetMeSessions(w http.ResponseWriter, r *http.Request)
@@ -4290,6 +4318,60 @@ func (siw *ServerInterfaceWrapper) PatchMe(w http.ResponseWriter, r *http.Reques
 	handler.ServeHTTP(w, r)
 }
 
+// GetMeMailErlaubt operation middleware
+func (siw *ServerInterfaceWrapper) GetMeMailErlaubt(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMeMailErlaubt(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostMeMailErlaubt operation middleware
+func (siw *ServerInterfaceWrapper) PostMeMailErlaubt(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostMeMailErlaubt(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteMeMailErlaubt operation middleware
+func (siw *ServerInterfaceWrapper) DeleteMeMailErlaubt(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "wert" -------------
+	var wert string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "wert", r.PathValue("wert"), &wert, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "wert", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteMeMailErlaubt(w, r, wert)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMeSessions operation middleware
 func (siw *ServerInterfaceWrapper) GetMeSessions(w http.ResponseWriter, r *http.Request) {
 
@@ -5964,6 +6046,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/me/tokens", wrapper.PostMeToken)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/me/tokens/{id}", wrapper.DeleteMeToken)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/eingang/mail", wrapper.PostEingangMail)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/me/mail/erlaubt", wrapper.GetMeMailErlaubt)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/me/mail/erlaubt", wrapper.PostMeMailErlaubt)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/me/mail/erlaubt/{wert}", wrapper.DeleteMeMailErlaubt)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/duplikate", wrapper.GetBelegDuplikate)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.DeleteBeleg)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}", wrapper.GetBeleg)
@@ -10636,6 +10721,141 @@ func (response PatchMe428ApplicationProblemPlusJSONResponse) VisitPatchMeRespons
 	return err
 }
 
+type GetMeMailErlaubtRequestObject struct {
+}
+
+type GetMeMailErlaubtResponseObject interface {
+	VisitGetMeMailErlaubtResponse(w http.ResponseWriter) error
+}
+
+type GetMeMailErlaubt200JSONResponse MailErlaubtListe
+
+func (response GetMeMailErlaubt200JSONResponse) VisitGetMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMeMailErlaubt401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetMeMailErlaubt401ApplicationProblemPlusJSONResponse) VisitGetMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMeMailErlaubtRequestObject struct {
+	Body *PostMeMailErlaubtJSONRequestBody
+}
+
+type PostMeMailErlaubtResponseObject interface {
+	VisitPostMeMailErlaubtResponse(w http.ResponseWriter) error
+}
+
+type PostMeMailErlaubt201JSONResponse MailErlaubt
+
+func (response PostMeMailErlaubt201JSONResponse) VisitPostMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMeMailErlaubt401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostMeMailErlaubt401ApplicationProblemPlusJSONResponse) VisitPostMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostMeMailErlaubt422ApplicationProblemPlusJSONResponse Problem
+
+func (response PostMeMailErlaubt422ApplicationProblemPlusJSONResponse) VisitPostMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMeMailErlaubtRequestObject struct {
+	Wert string `json:"wert"`
+}
+
+type DeleteMeMailErlaubtResponseObject interface {
+	VisitDeleteMeMailErlaubtResponse(w http.ResponseWriter) error
+}
+
+type DeleteMeMailErlaubt204Response struct {
+}
+
+func (response DeleteMeMailErlaubt204Response) VisitDeleteMeMailErlaubtResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteMeMailErlaubt401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteMeMailErlaubt401ApplicationProblemPlusJSONResponse) VisitDeleteMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMeMailErlaubt404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteMeMailErlaubt404ApplicationProblemPlusJSONResponse) VisitDeleteMeMailErlaubtResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeSessionsRequestObject struct {
 }
 
@@ -13421,6 +13641,15 @@ type StrictServerInterface interface {
 	// PatchMe Update the profile
 	// (PATCH /api/v1/me)
 	PatchMe(ctx context.Context, request PatchMeRequestObject) (PatchMeResponseObject, error)
+
+	// (GET /api/v1/me/mail/erlaubt)
+	GetMeMailErlaubt(ctx context.Context, request GetMeMailErlaubtRequestObject) (GetMeMailErlaubtResponseObject, error)
+
+	// (POST /api/v1/me/mail/erlaubt)
+	PostMeMailErlaubt(ctx context.Context, request PostMeMailErlaubtRequestObject) (PostMeMailErlaubtResponseObject, error)
+
+	// (DELETE /api/v1/me/mail/erlaubt/{wert})
+	DeleteMeMailErlaubt(ctx context.Context, request DeleteMeMailErlaubtRequestObject) (DeleteMeMailErlaubtResponseObject, error)
 	// GetMeSessions Active sessions of the current Nutzer
 	// (GET /api/v1/me/sessions)
 	GetMeSessions(ctx context.Context, request GetMeSessionsRequestObject) (GetMeSessionsResponseObject, error)
@@ -15564,6 +15793,87 @@ func (sh *strictHandler) PatchMe(w http.ResponseWriter, r *http.Request, params 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PatchMeResponseObject); ok {
 		if err := validResponse.VisitPatchMeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMeMailErlaubt operation middleware
+func (sh *strictHandler) GetMeMailErlaubt(w http.ResponseWriter, r *http.Request) {
+	var request GetMeMailErlaubtRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMeMailErlaubt(ctx, request.(GetMeMailErlaubtRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMeMailErlaubt")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMeMailErlaubtResponseObject); ok {
+		if err := validResponse.VisitGetMeMailErlaubtResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostMeMailErlaubt operation middleware
+func (sh *strictHandler) PostMeMailErlaubt(w http.ResponseWriter, r *http.Request) {
+	var request PostMeMailErlaubtRequestObject
+
+	var body PostMeMailErlaubtJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostMeMailErlaubt(ctx, request.(PostMeMailErlaubtRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostMeMailErlaubt")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostMeMailErlaubtResponseObject); ok {
+		if err := validResponse.VisitPostMeMailErlaubtResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteMeMailErlaubt operation middleware
+func (sh *strictHandler) DeleteMeMailErlaubt(w http.ResponseWriter, r *http.Request, wert string) {
+	var request DeleteMeMailErlaubtRequestObject
+
+	request.Wert = wert
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteMeMailErlaubt(ctx, request.(DeleteMeMailErlaubtRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteMeMailErlaubt")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteMeMailErlaubtResponseObject); ok {
+		if err := validResponse.VisitDeleteMeMailErlaubtResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
