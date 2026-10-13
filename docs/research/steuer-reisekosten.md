@@ -65,6 +65,8 @@ Wird eine Mahlzeit **vom Arbeitgeber oder auf dessen Veranlassung von einem Drit
 * Steuerliche Grenze „übliche Mahlzeit“: Preis ≤ **60 €** (§ 8 Abs. 2 Satz 8 EStG; BMF-RK 2020 Rz. 63).
 * **Für SE gilt die Kürzung *nicht*** bei Mahlzeiten von Dritten oder bei selbst getragenen Bewirtungen (BMF 23.12.2014 Rz. 12).
 
+**Stand 2026-10-13 (O1):** Die Kürzung stützt sich autoritativ auf § 9 Abs. 4a Satz 8–10 EStG und BMF-RK 2020 (Rz. 63–65, 73 ff.), nicht auf eine IHK-Zusammenfassung. BMF-Schreiben (25.11.2020, BStBl I S. 1228) und die Inlands-Verpflegungssätze 2020 (28 € / 14 €) am 2026-10-13 erneut bestätigt ([lohn-info.de/reisekosten.html](https://www.lohn-info.de/reisekosten.html)). Der verbatim *Wortlaut* der Rz. 64–75 und 77–86 steht noch aus: die zugängliche Kopie ist ein PDF, das der hiesige Webfetch nicht parsen kann.
+
 **Sachbezugswerte für gestellte Mahlzeiten** (relevant, wenn *keine* Verpflegungspauschale zusteht, z. B. ≤ 8 h oder nach Ablauf der Dreimonatsfrist; dann ist die Mahlzeit mit dem Sachbezugswert Arbeitslohn):
 
 | Jahr | Frühstück | Mittag/Abend | Quelle |
