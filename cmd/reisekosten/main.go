@@ -126,6 +126,7 @@ func cmdServe() error {
 	jobCtx, stopJobs := context.WithCancel(context.Background())
 	defer stopJobs()
 	app.StartJobs(jobCtx)
+	go app.StartMailPoller(jobCtx)
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr,
 		Handler:           app.Handler(),
