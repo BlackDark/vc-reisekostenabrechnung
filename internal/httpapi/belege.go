@@ -120,7 +120,7 @@ func (a *App) PostBelege(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	stored, dateien, err := a.storeOriginals(r, n.ID, belegID, kind, bodies)
+	stored, dateien, err := a.storeOriginals(r.Context(), n.ID, belegID, kind, bodies)
 	if err != nil {
 		a.dropKeys(r.Context(), stored, "beleg.hochgeladen")
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
@@ -182,7 +182,7 @@ func (a *App) PostBelegNeuAufbereiten(w http.ResponseWriter, r *http.Request, id
 			return
 		}
 		a.dropKeys(r.Context(), keys, "beleg.neu_aufbereitet")
-		if _, _, serr := a.storeOriginals(r, n.ID, id, kind, bodies); serr != nil {
+		if _, _, serr := a.storeOriginals(r.Context(), n.ID, id, kind, bodies); serr != nil {
 			writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 			return
 		}
@@ -501,11 +501,11 @@ func planDateien(nutzerID, belegID string, kind uploadKind, bodies [][]byte) []s
 	return dateien
 }
 
-func (a *App) storeOriginals(r *http.Request, nutzerID, belegID string, kind uploadKind, bodies [][]byte) ([]string, []store.DateiIn, error) {
+func (a *App) storeOriginals(ctx context.Context, nutzerID, belegID string, kind uploadKind, bodies [][]byte) ([]string, []store.DateiIn, error) {
 	dateien := planDateien(nutzerID, belegID, kind, bodies)
 	keys := make([]string, 0, len(dateien))
 	for i, d := range dateien {
-		if err := a.blobs.PutIfAbsent(r.Context(), d.Key, bytes.NewReader(bodies[i]), d.SHA256); err != nil {
+		if err := a.blobs.PutIfAbsent(ctx, d.Key, bytes.NewReader(bodies[i]), d.SHA256); err != nil {
 			return keys, nil, err
 		}
 		keys = append(keys, d.Key)

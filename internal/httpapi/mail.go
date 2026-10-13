@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -134,7 +135,6 @@ func (a *App) PostEingangMail(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ctx := r.Context()
 	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, a.maxUpload()))
 	if err != nil {
 		var max *http.MaxBytesError
@@ -145,17 +145,35 @@ func (a *App) PostEingangMail(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusBadRequest, "ungueltige_anfrage", "Bad request", "")
 		return
 	}
-	if len(raw) == 0 {
-		writeProblem(w, http.StatusUnprocessableEntity, "leere_mail", "Empty message", "")
+	items, ierr := a.ingestMailFor(r.Context(), n.ID, raw, a.actor(r, n))
+	if ierr != nil {
+		if errors.Is(ierr, errMailInvalid) {
+			writeProblem(w, http.StatusUnprocessableEntity, "ungueltige_mail", "Not a valid email", "")
+			return
+		}
+		writeStoreErr(w, ierr)
 		return
+	}
+	writeJSON(w, http.StatusAccepted, api.BelegListe{Items: items})
+}
+
+// errMailInvalid marks an empty or unparsable email (a client error, 422).
+var errMailInvalid = errors.New("not a valid email")
+
+// ingestMailFor parses a raw email and files each attachment as a Beleg in the
+// given owner's Belegeingang, archiving the original .eml for GoBD and skipping
+// duplicate attachments by checksum. It is shared by the HTTP ingest endpoint and
+// the mail poller (design note options a/c); ctx is the request or job context.
+func (a *App) ingestMailFor(ctx context.Context, nutzerID string, raw []byte, actor store.Actor) ([]api.Beleg, error) {
+	if len(raw) == 0 {
+		return nil, errMailInvalid
 	}
 	msg, err := mail.ReadMessage(bytes.NewReader(raw))
 	if err != nil {
-		writeProblem(w, http.StatusUnprocessableEntity, "ungueltige_mail", "Not a valid email", "")
-		return
+		return nil, errMailInvalid
 	}
 	sha := belegpipe.SHA256Hex(raw)
-	if err := a.blobs.PutIfAbsent(ctx, fmt.Sprintf("mail/%s/%s.eml", n.ID, sha), bytes.NewReader(raw), sha); err != nil {
+	if err := a.blobs.PutIfAbsent(ctx, fmt.Sprintf("mail/%s/%s.eml", nutzerID, sha), bytes.NewReader(raw), sha); err != nil {
 		a.log.Error("archive mail", "err", err)
 	}
 	items := make([]api.Beleg, 0)
@@ -166,32 +184,28 @@ func (a *App) PostEingangMail(w http.ResponseWriter, r *http.Request) {
 		}
 		one := [][]byte{b}
 		original, parts := hashParts(one)
-		_, found, derr := a.store.FindBelegDuplicate(ctx, n.ID, original, parts)
+		_, found, derr := a.store.FindBelegDuplicate(ctx, nutzerID, original, parts)
 		if derr != nil {
-			writeStoreErr(w, derr)
-			return
+			return items, derr
 		}
 		if found {
 			continue
 		}
 		belegID := id.Must()
-		stored, dateien, serr := a.storeOriginals(r, n.ID, belegID, kind, one)
+		stored, dateien, serr := a.storeOriginals(ctx, nutzerID, belegID, kind, one)
 		if serr != nil {
 			a.dropKeys(ctx, stored, "mail.eingegangen")
-			writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
-			return
+			return items, serr
 		}
-		row, cerr := a.store.CreateBeleg(ctx, n.ID, store.NewBeleg{
+		row, cerr := a.store.CreateBeleg(ctx, nutzerID, store.NewBeleg{
 			ID: belegID, Typ: kind.typ, Seiten: int64(kind.pages), SHA256: original,
 			Status: kind.status, Dateien: dateien, JobArt: kind.job,
-		}, a.actor(r, n))
+		}, actor)
 		if cerr != nil {
 			a.dropKeys(ctx, stored, "mail.eingegangen")
-			if writeStoreErr(w, cerr) {
-				return
-			}
+			return items, cerr
 		}
 		items = append(items, toBeleg(row))
 	}
-	writeJSON(w, http.StatusAccepted, api.BelegListe{Items: items})
+	return items, nil
 }
