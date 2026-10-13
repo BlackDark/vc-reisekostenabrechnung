@@ -25,7 +25,7 @@ func TestMailConfigValid(t *testing.T) {
 	t.Setenv("MAIL_IMAP_HOST", "imap.example.com")
 	t.Setenv("MAIL_IMAP_USERNAME", "belege@example.com")
 	t.Setenv("MAIL_IMAP_PASSWORD", "secret")
-	t.Setenv("MAIL_FORWARD_DOMAIN", "example.com")
+	t.Setenv("MAIL_FORWARD_DOMAIN", "@Example.com")
 	t.Setenv("MAIL_IMAP_PROCESSED_ACTION", "move:Processed")
 	t.Setenv("MAIL_IMAP_INTERVAL", "15m")
 	cfg, err := Load()
@@ -53,7 +53,7 @@ func TestMailConfigRejectsBadInterval(t *testing.T) {
 	t.Setenv("MAIL_IMAP_HOST", "imap.example.com")
 	t.Setenv("MAIL_IMAP_USERNAME", "u")
 	t.Setenv("MAIL_IMAP_PASSWORD", "p")
-	t.Setenv("MAIL_FORWARD_DOMAIN", "example.com")
+	t.Setenv("MAIL_FORWARD_DOMAIN", "@Example.com")
 	t.Setenv("MAIL_IMAP_INTERVAL", "0s")
 	_, err := Load()
 	if err == nil || !strings.Contains(err.Error(), "MAIL_IMAP_INTERVAL") {
