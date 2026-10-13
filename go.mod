@@ -42,6 +42,8 @@ require (
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/elastic/go-sysinfo v1.15.5 // indirect
 	github.com/elastic/go-windows v1.0.2 // indirect
+	github.com/emersion/go-imap/v2 v2.0.0-beta.8 // indirect
+	github.com/emersion/go-message v0.18.2 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/getkin/kin-openapi v0.142.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect

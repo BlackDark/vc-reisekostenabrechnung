@@ -64,6 +64,7 @@ type Config struct {
 	JobWorkers      int
 	RetentionReport bool
 	AI              AI
+	Mail            Mail
 }
 
 // AI is the optional OpenAI-compatible receipt reader. It stays off unless
@@ -77,6 +78,20 @@ type AI struct {
 	MaxConcurrency int
 	MaxImagePx     int
 	ResponseFormat string
+}
+
+// Mail holds inbound email receipt intake (the IMAP poller, design note a/c).
+// The poller stays off unless IMAPHost is set. ForwardDomain is the domain of the
+// per-user plus-address belege+<token>@ForwardDomain.
+type Mail struct {
+	IMAPHost        string
+	IMAPPort        string
+	IMAPUser        string
+	IMAPPassword    string
+	IMAPFolder      string
+	IMAPInterval    time.Duration
+	ProcessedAction string
+	ForwardDomain   string
 }
 
 // OIDC holds the OpenID Connect client settings.
@@ -241,11 +256,30 @@ func Load() (Config, error) {
 	cfg.RateUpload = lookupRate("RATE_LIMIT_UPLOAD", Rate{Count: 30, Per: time.Minute}, &errs)
 	cfg.RateAI = lookupRate("RATE_LIMIT_AI", Rate{Count: 20, Per: time.Minute}, &errs)
 
+	cfg.Mail = Mail{
+		IMAPHost:        lookup("MAIL_IMAP_HOST"),
+		IMAPPort:        lookupDefault("MAIL_IMAP_PORT", "993"),
+		IMAPUser:        lookup("MAIL_IMAP_USERNAME"),
+		IMAPFolder:      lookupDefault("MAIL_IMAP_FOLDER", "INBOX"),
+		IMAPInterval:    lookupDuration("MAIL_IMAP_INTERVAL", 5*time.Minute, &errs),
+		ProcessedAction: lookupDefault("MAIL_IMAP_PROCESSED_ACTION", "flag"),
+		ForwardDomain:   lookup("MAIL_FORWARD_DOMAIN"),
+	}
+	mailPass, err := secret("MAIL_IMAP_PASSWORD")
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+	cfg.Mail.IMAPPassword = mailPass
+
 	errs = append(errs, validate(cfg)...)
 	if len(errs) > 0 {
 		return Config{}, &Error{Messages: errs}
 	}
 	return cfg, nil
+}
+
+func validProcessedAction(s string) bool {
+	return s == "flag" || s == "delete" || strings.HasPrefix(s, "move:")
 }
 
 func validate(cfg Config) []string {
@@ -328,6 +362,20 @@ func validate(cfg Config) []string {
 	}
 	if cfg.FXTimeout <= 0 {
 		errs = append(errs, "FX_TIMEOUT must be positive")
+	}
+	if cfg.Mail.IMAPHost != "" {
+		if cfg.Mail.IMAPUser == "" || cfg.Mail.IMAPPassword == "" {
+			errs = append(errs, "MAIL_IMAP_USERNAME and PASSWORD are required when MAIL_IMAP_HOST is set")
+		}
+		if cfg.Mail.IMAPInterval <= 0 {
+			errs = append(errs, "MAIL_IMAP_INTERVAL must be positive")
+		}
+		if cfg.Mail.ForwardDomain == "" {
+			errs = append(errs, "MAIL_FORWARD_DOMAIN is required when MAIL_IMAP_HOST is set")
+		}
+		if !validProcessedAction(cfg.Mail.ProcessedAction) {
+			errs = append(errs, "MAIL_IMAP_PROCESSED_ACTION must be flag, delete, or move:<mailbox>")
+		}
 	}
 	if cfg.SessionIdle <= 0 || cfg.SessionLifetime <= 0 {
 		errs = append(errs, "session timeouts must be positive")
