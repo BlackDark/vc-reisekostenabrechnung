@@ -1,18 +1,19 @@
 -- name: LastAuditHash :one
-SELECT hash FROM audit_ereignis ORDER BY rowid DESC LIMIT 1;
+SELECT hash FROM audit_ereignis ORDER BY nr DESC LIMIT 1;
 
 -- name: InsertAudit :exec
 INSERT INTO audit_ereignis (
   id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id,
-  vorher, nachher, grund, ip, vorgaenger_hash, hash
+  vorher, nachher, grund, ip, vorgaenger_hash, hash, nr
 ) VALUES (
   sqlc.arg(id), sqlc.arg(zeitpunkt), sqlc.narg(akteur_nutzer_id), sqlc.arg(akteur_art),
   sqlc.arg(aktion), sqlc.arg(objekt_typ), sqlc.arg(objekt_id), sqlc.narg(vorher),
-  sqlc.narg(nachher), sqlc.narg(grund), sqlc.arg(ip), sqlc.arg(vorgaenger_hash), sqlc.arg(hash)
+  sqlc.narg(nachher), sqlc.narg(grund), sqlc.arg(ip), sqlc.arg(vorgaenger_hash), sqlc.arg(hash),
+  (SELECT COALESCE(MAX(nr), 0) + 1 FROM audit_ereignis)
 );
 
 -- name: ListAudit :many
-SELECT * FROM audit_ereignis ORDER BY rowid ASC;
+SELECT * FROM audit_ereignis ORDER BY nr ASC;
 
 -- name: ListAuditFiltered :many
 SELECT * FROM audit_ereignis

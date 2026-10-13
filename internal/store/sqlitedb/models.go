@@ -85,6 +85,7 @@ type AuditEreigni struct {
 	Ip             *string
 	VorgaengerHash string
 	Hash           string
+	Nr             int64
 }
 
 type Ausgabe struct {

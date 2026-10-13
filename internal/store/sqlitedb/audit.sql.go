@@ -13,11 +13,12 @@ import (
 const insertAudit = `-- name: InsertAudit :exec
 INSERT INTO audit_ereignis (
   id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id,
-  vorher, nachher, grund, ip, vorgaenger_hash, hash
+  vorher, nachher, grund, ip, vorgaenger_hash, hash, nr
 ) VALUES (
   ?1, ?2, ?3, ?4,
   ?5, ?6, ?7, ?8,
-  ?9, ?10, ?11, ?12, ?13
+  ?9, ?10, ?11, ?12, ?13,
+  (SELECT COALESCE(MAX(nr), 0) + 1 FROM audit_ereignis)
 )
 `
 
@@ -57,7 +58,7 @@ func (q *Queries) InsertAudit(ctx context.Context, arg InsertAuditParams) error 
 }
 
 const lastAuditHash = `-- name: LastAuditHash :one
-SELECT hash FROM audit_ereignis ORDER BY rowid DESC LIMIT 1
+SELECT hash FROM audit_ereignis ORDER BY nr DESC LIMIT 1
 `
 
 func (q *Queries) LastAuditHash(ctx context.Context) (string, error) {
@@ -68,7 +69,7 @@ func (q *Queries) LastAuditHash(ctx context.Context) (string, error) {
 }
 
 const listAudit = `-- name: ListAudit :many
-SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash FROM audit_ereignis ORDER BY rowid ASC
+SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash, nr FROM audit_ereignis ORDER BY nr ASC
 `
 
 func (q *Queries) ListAudit(ctx context.Context) ([]AuditEreigni, error) {
@@ -94,6 +95,7 @@ func (q *Queries) ListAudit(ctx context.Context) ([]AuditEreigni, error) {
 			&i.Ip,
 			&i.VorgaengerHash,
 			&i.Hash,
+			&i.Nr,
 		); err != nil {
 			return nil, err
 		}
@@ -109,7 +111,7 @@ func (q *Queries) ListAudit(ctx context.Context) ([]AuditEreigni, error) {
 }
 
 const listAuditFiltered = `-- name: ListAuditFiltered :many
-SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash FROM audit_ereignis
+SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash, nr FROM audit_ereignis
 WHERE (?1 IS NULL OR objekt_typ = ?1)
   AND (?2 IS NULL OR objekt_id = ?2)
 ORDER BY zeitpunkt DESC, id DESC
@@ -145,6 +147,7 @@ func (q *Queries) ListAuditFiltered(ctx context.Context, arg ListAuditFilteredPa
 			&i.Ip,
 			&i.VorgaengerHash,
 			&i.Hash,
+			&i.Nr,
 		); err != nil {
 			return nil, err
 		}
@@ -160,7 +163,7 @@ func (q *Queries) ListAuditFiltered(ctx context.Context, arg ListAuditFilteredPa
 }
 
 const listAuditForNutzer = `-- name: ListAuditForNutzer :many
-SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash FROM audit_ereignis
+SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash, nr FROM audit_ereignis
 WHERE akteur_nutzer_id = ?1
   AND (?2 IS NULL OR objekt_typ = ?2)
   AND (?3 IS NULL OR objekt_id = ?3)
@@ -203,6 +206,7 @@ func (q *Queries) ListAuditForNutzer(ctx context.Context, arg ListAuditForNutzer
 			&i.Ip,
 			&i.VorgaengerHash,
 			&i.Hash,
+			&i.Nr,
 		); err != nil {
 			return nil, err
 		}
