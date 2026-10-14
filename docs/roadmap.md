@@ -23,7 +23,7 @@ Resolved open points (history in SPEC §22): O2 (decided, see below), O3 veraPDF
 
 Backend config wiring done in `main` (through commit `fecc74c`): `EXPORT_TIMEOUT`, `BELEG_JPEG_QUALITY`, `EXPORT_PDF_STANDARD`, `FX_ECB_URL` and `FX_TIMEOUT` are read from the environment and applied; startup fails on a malformed boolean environment variable; `TZ_DEFAULT` defaults the zone of a new trip; stammdaten and profile store errors map through `writeStoreErr` ([#17](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/17)–[#21](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/21), [#31](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/31)).
 
-Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `GET /api/v1/admin/system` ([#32](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/32), [#33](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/33)), and the receipt capture in a side panel like the Fahrt form ([#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35)), plus a PWA install button with an iOS share-sheet hint ([#34](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/34)). Personal API tokens (stored only as a SHA-256 hash) with a bearer-authenticated receipt upload landed as the first #25 slice ([#25](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/25), design-note option d); and `POST /api/v1/eingang/mail` files a raw email's attachments into the Belegeingang (design-note a/c, reuses the upload path, dedupes by checksum, archives the `.eml`). The profile UI to mint a `mail:ingest` token (with its forwarding address) and to manage the sender allowlist landed too. Remaining for #25: SPF/DKIM verification on intake and a Beleg source field (source=email, link to the archived `.eml`). The IMAP transport itself still has no durable unit test; verify it against a containerized IMAP server (Dovecot/GreenMail).
+Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `GET /api/v1/admin/system` ([#32](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/32), [#33](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/33)), and the receipt capture in a side panel like the Fahrt form ([#35](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/35)), plus a PWA install button with an iOS share-sheet hint ([#34](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/34)). Personal API tokens (stored only as a SHA-256 hash) with a bearer-authenticated receipt upload landed as the first #25 slice ([#25](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/25), design-note option d); and `POST /api/v1/eingang/mail` files a raw email's attachments into the Belegeingang (design-note a/c, reuses the upload path, dedupes by checksum, archives the `.eml`). The profile UI to mint a `mail:ingest` token (with its forwarding address) and to manage the sender allowlist landed too. A Beleg now also carries its origin: `quelle` (`upload` or `mail`), the archive of the `.eml`, sender, subject and date, readable through `GET /api/v1/belege/{id}/mail` and shown in the Beleg detail and in the Belegeingang ([#38](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/38)). Remaining for #25: SPF/DKIM verification on intake. The IMAP transport itself still has no durable unit test; verify it against a containerized IMAP server (Dovecot/GreenMail).
 
 ## Open tasks
 
@@ -47,7 +47,7 @@ Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `G
 
 Watch only, no action planned: O10 Dreimonatsfrist heuristic, O11 German VAT in foreign currency, O13 Frühstück herausrechnen, O14 erste Tätigkeitsstätte not modelled.
 
-**Fixed:** the audit hash chain was linked in write order but verified by id order; with millisecond-resolution UUIDv7 ids, same-millisecond rows could verify out of order. `LastAuditHash` and `ListAudit` now order by rowid (insertion order), so the chain is consistent, and `TestApiTokenLifecycle` now verifies it.
+**Fixed:** the audit hash chain was linked in write order but verified by id order; with millisecond-resolution UUIDv7 ids, same-millisecond rows could verify out of order. The chain now orders by an explicit `nr` column filled in write order, so `LastAuditHash` and `ListAudit` agree without depending on rowid, which is SQLite-only and broke the Postgres probe; `TestApiTokenLifecycle` verifies it.
 
 ### Spec audit (10 October 2026)
 
@@ -59,7 +59,6 @@ Ideas, not committed. Larger items get a design note in [ideas/](ideas/).
 
 | Idea | Notes |
 |---|---|
-| **Email receipt intake** into the Belegeingang | [Design note](ideas/email-receipt-intake.md), [#25](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/25) |
 | Personal API tokens + upload endpoint (n8n, iOS Shortcuts, scanners) | [#26](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/26) |
 | PWA Web Share Target for PDFs and photos | [#27](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/27) |
 | E-Rechnung parsing (XRechnung/ZUGFeRD to fields) | SPEC §21 |
