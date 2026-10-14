@@ -29,6 +29,7 @@ jobs:
       go: ${{ steps.out.outputs.go }}
       web: ${{ steps.out.outputs.web }}
       image: ${{ steps.out.outputs.image }}
+      toolchain: ${{ steps.out.outputs.toolchain }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -73,6 +74,13 @@ jobs:
               - 'e2e/**'
               - 'deploy/**'
               - 'scripts/**'
+            toolchain:
+              - 'mise.toml'
+              - '.node-version'
+              - 'go.mod'
+              - 'package.json'
+              - 'scripts/mise-check.sh'
+              - '.github/workflows/ci.yml'
       - id: out
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -80,12 +88,14 @@ jobs:
               echo "go=${{ steps.filter.outputs.go }}"
               echo "web=${{ steps.filter.outputs.web }}"
               echo "image=${{ steps.filter.outputs.image }}"
+              echo "toolchain=${{ steps.filter.outputs.toolchain }}"
             } >> "$GITHUB_OUTPUT"
           else
             {
               echo "go=true"
               echo "web=true"
               echo "image=true"
+              echo "toolchain=true"
             } >> "$GITHUB_OUTPUT"
           fi
 
@@ -103,6 +113,18 @@ jobs:
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.14.0
+
+  toolchain-parity:
+    needs: changes
+    if: needs.changes.outputs.toolchain == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # No toolchain to install: the check only reads mise.toml and the files CI
+      # reads its versions from, so local and CI can never disagree silently.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: mise.toml matches the CI toolchain
+        run: bash scripts/mise-check.sh
 
   go-test:
     needs: changes

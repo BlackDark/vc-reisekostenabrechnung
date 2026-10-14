@@ -1,9 +1,22 @@
-# Tool versions for local development. CI reads go.mod, .node-version and the
-# pnpm version from package.json, so keep them in sync with this file.
+# Tool versions for local development. CI installs these exact versions; CI is
+# the source of truth and scripts/mise-check.sh fails the build on any drift,
+# so a local shell can never disagree with CI.
+#
+#   go             -> go.mod (the go directive; actions/setup-go go-version-file)
+#   node           -> .node-version (actions/setup-node node-version-file)
+#   pnpm           -> package.json packageManager
+#   golangci-lint  -> .github/workflows/ci.yml (golangci-lint-action version)
+#   govulncheck    -> .github/workflows/ci.yml (go install golang.org/x/vuln/...)
+#   typst          -> .github/workflows/ci.yml (ghcr.io/typst/typst image tag)
+#   actionlint     -> .github/workflows/ci.yml (release tarball version)
+#
+# Renovate keeps these in step: each tool is grouped with the file CI reads it
+# from (see renovate.json5), so mise.toml and CI move together.
 [tools]
-go = "1.27"
-node = "24"
+go = "1.27.2"
+node = "24.21.0"
 pnpm = "12.10.1"
 golangci-lint = "2.14.0"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.8.0"
 typst = "0.15.1"
 actionlint = "1.7.12"
