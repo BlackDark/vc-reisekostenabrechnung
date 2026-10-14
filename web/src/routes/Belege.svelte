@@ -11,7 +11,15 @@
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
 
-	type Row = { id: string; status: string; typ: string; belegnummer?: string | null; seiten: number };
+	type Row = {
+		id: string;
+		status: string;
+		typ: string;
+		belegnummer?: string | null;
+		seiten: number;
+		quelle?: string;
+		mail?: { absender: string; betreff: string; mail_datum?: string } | null;
+	};
 
 	let items = $state<Row[] | null>(null);
 	let status = $state("");
@@ -75,7 +83,14 @@
 					class="bg-card hover:bg-muted flex items-center justify-between gap-3 rounded-xl border px-4 py-3"
 					href={p("/belege/:id", { params: { id: item.id } })}
 				>
-					<span class="font-medium">{item.belegnummer || item.typ}</span>
+					<span class="min-w-0">
+						<span class="font-medium">{item.belegnummer || item.typ}</span>
+						{#if item.quelle === "mail" && item.mail}
+							<span class="text-muted-foreground block truncate text-xs" data-testid="beleg-quelle-mail">
+								{m.beleg_mail_from()}: {item.mail.absender}
+							</span>
+						{/if}
+					</span>
 					<StatusBadge status={item.status} />
 				</a>
 			</li>
