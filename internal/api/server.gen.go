@@ -453,22 +453,31 @@ type AuthConfigDefaultLocale string
 
 // Beleg defines model for Beleg.
 type Beleg struct {
-	Belegnummer     *string   `json:"belegnummer,omitempty"`
-	DuplikatVon     *string   `json:"duplikat_von,omitempty"`
-	ErstelltAm      time.Time `json:"erstellt_am"`
-	Id              string    `json:"id"`
-	PipelineVersion *string   `json:"pipeline_version,omitempty"`
-	Seiten          int       `json:"seiten"`
-	Sha256Original  string    `json:"sha256_original"`
-	Status          string    `json:"status"`
-	Typ             string    `json:"typ"`
-	Version         int       `json:"version"`
+	Belegnummer     *string    `json:"belegnummer,omitempty"`
+	DuplikatVon     *string    `json:"duplikat_von,omitempty"`
+	ErstelltAm      time.Time  `json:"erstellt_am"`
+	Id              string     `json:"id"`
+	Mail            *BelegMail `json:"mail,omitempty"`
+	PipelineVersion *string    `json:"pipeline_version,omitempty"`
+	Quelle          *string    `json:"quelle,omitempty"`
+	Seiten          int        `json:"seiten"`
+	Sha256Original  string     `json:"sha256_original"`
+	Status          string     `json:"status"`
+	Typ             string     `json:"typ"`
+	Version         int        `json:"version"`
 }
 
 // BelegListe defines model for BelegListe.
 type BelegListe struct {
 	Items      []Beleg `json:"items"`
 	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// BelegMail defines model for BelegMail.
+type BelegMail struct {
+	Absender  string     `json:"absender"`
+	Betreff   string     `json:"betreff"`
+	MailDatum *time.Time `json:"mail_datum,omitempty"`
 }
 
 // BelegStorno defines model for BelegStorno.
@@ -1794,6 +1803,9 @@ type ServerInterface interface {
 	// PostBelegKi Queue a KI suggestion for this Beleg
 	// (POST /api/v1/belege/{id}/ki-auslesen)
 	PostBelegKi(w http.ResponseWriter, r *http.Request, id Id)
+	// GetBelegMail The original email a mail-filed Beleg came from
+	// (GET /api/v1/belege/{id}/mail)
+	GetBelegMail(w http.ResponseWriter, r *http.Request, id Id)
 
 	// (POST /api/v1/belege/{id}/neu-aufbereiten)
 	PostBelegNeuAufbereiten(w http.ResponseWriter, r *http.Request, id Id, params PostBelegNeuAufbereitenParams)
@@ -3848,6 +3860,32 @@ func (siw *ServerInterfaceWrapper) PostBelegKi(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostBelegKi(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBelegMail operation middleware
+func (siw *ServerInterfaceWrapper) GetBelegMail(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBelegMail(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6057,6 +6095,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/bild", wrapper.GetBelegBild)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/seiten/{n}", wrapper.GetBelegSeite)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/original", wrapper.GetBelegOriginal)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/belege/{id}/mail", wrapper.GetBelegMail)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/neu-aufbereiten", wrapper.PostBelegNeuAufbereiten)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/bestaetigen", wrapper.PostBelegBestaetigen)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/belege/{id}/stornieren", wrapper.PostBelegStornieren)
@@ -9696,6 +9735,64 @@ func (response PostBelegKi429ApplicationProblemPlusJSONResponse) VisitPostBelegK
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegMailRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type GetBelegMailResponseObject interface {
+	VisitGetBelegMailResponse(w http.ResponseWriter) error
+}
+
+type GetBelegMail200Messagerfc822Response struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetBelegMail200Messagerfc822Response) VisitGetBelegMailResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "message/rfc822")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetBelegMail401ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetBelegMail401ApplicationProblemPlusJSONResponse) VisitGetBelegMailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBelegMail404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetBelegMail404ApplicationProblemPlusJSONResponse) VisitGetBelegMailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -13611,6 +13708,9 @@ type StrictServerInterface interface {
 	// PostBelegKi Queue a KI suggestion for this Beleg
 	// (POST /api/v1/belege/{id}/ki-auslesen)
 	PostBelegKi(ctx context.Context, request PostBelegKiRequestObject) (PostBelegKiResponseObject, error)
+	// GetBelegMail The original email a mail-filed Beleg came from
+	// (GET /api/v1/belege/{id}/mail)
+	GetBelegMail(ctx context.Context, request GetBelegMailRequestObject) (GetBelegMailResponseObject, error)
 
 	// (POST /api/v1/belege/{id}/neu-aufbereiten)
 	PostBelegNeuAufbereiten(ctx context.Context, request PostBelegNeuAufbereitenRequestObject) (PostBelegNeuAufbereitenResponseObject, error)
@@ -15381,6 +15481,32 @@ func (sh *strictHandler) PostBelegKi(w http.ResponseWriter, r *http.Request, id 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostBelegKiResponseObject); ok {
 		if err := validResponse.VisitPostBelegKiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBelegMail operation middleware
+func (sh *strictHandler) GetBelegMail(w http.ResponseWriter, r *http.Request, id Id) {
+	var request GetBelegMailRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBelegMail(ctx, request.(GetBelegMailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBelegMail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBelegMailResponseObject); ok {
+		if err := validResponse.VisitGetBelegMailResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

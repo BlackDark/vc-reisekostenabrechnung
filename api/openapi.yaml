@@ -1623,6 +1623,25 @@ paths:
           $ref: "#/components/responses/Problem"
         "404":
           $ref: "#/components/responses/Problem"
+  /api/v1/belege/{id}/mail:
+    get:
+      operationId: getBelegMail
+      tags: [belege]
+      summary: The original email a mail-filed Beleg came from
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Archived original email
+          content:
+            message/rfc822:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
   /api/v1/belege/{id}/neu-aufbereiten:
     post:
       operationId: postBelegNeuAufbereiten
@@ -3699,6 +3718,21 @@ components:
           format: date-time
         version:
           type: integer
+        quelle:
+          type: string
+        mail:
+          $ref: "#/components/schemas/BelegMail"
+    BelegMail:
+      type: object
+      required: [absender, betreff]
+      properties:
+        absender:
+          type: string
+        betreff:
+          type: string
+        mail_datum:
+          type: string
+          format: date-time
     BelegListe:
       type: object
       required: [items]

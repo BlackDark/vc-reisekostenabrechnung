@@ -55,7 +55,7 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	await page
 		.getByRole("link", { name: /Tätigkeitsstätten|Work locations/ })
 		.click();
-	await page.getByLabel(/Bezeichnung|^Name/).fill(`Kunde ${stamp}`);
+	await page.locator("#st-name").fill(`Kunde ${stamp}`);
 	const land = page.locator("#st-land");
 	await expect
 		.poll(async () => land.locator("option").count())

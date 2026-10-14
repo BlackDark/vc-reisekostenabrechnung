@@ -1,11 +1,11 @@
 -- name: InsertBeleg :one
 INSERT INTO beleg (
   id, nutzer_id, typ, status, seiten, sha256_original, pipeline_version, pipeline_parameter,
-  duplikat_von, erstellt_am, geaendert_am, version
+  quelle, duplikat_von, erstellt_am, geaendert_am, version
 ) VALUES (
   sqlc.arg(id), sqlc.arg(nutzer_id), sqlc.arg(typ), sqlc.arg(status), sqlc.arg(seiten),
   sqlc.arg(sha256_original), sqlc.arg(pipeline_version), sqlc.arg(pipeline_parameter),
-  sqlc.narg(duplikat_von), sqlc.arg(erstellt_am), sqlc.arg(geaendert_am), 1
+  sqlc.arg(quelle), sqlc.narg(duplikat_von), sqlc.arg(erstellt_am), sqlc.arg(geaendert_am), 1
 )
 RETURNING *;
 
@@ -139,6 +139,19 @@ INSERT INTO belegdatei (
   sqlc.arg(unveraenderbar)
 )
 RETURNING *;
+
+-- name: InsertBelegMail :exec
+INSERT INTO beleg_mail (beleg_id, absender, betreff, mail_datum, eml_schluessel, erstellt_am)
+VALUES (
+  sqlc.arg(beleg_id), sqlc.arg(absender), sqlc.arg(betreff),
+  sqlc.narg(mail_datum), sqlc.arg(eml_schluessel), sqlc.arg(erstellt_am)
+);
+
+-- name: GetBelegMail :one
+SELECT * FROM beleg_mail WHERE beleg_id = sqlc.arg(beleg_id);
+
+-- name: ListBelegMailByIDs :many
+SELECT * FROM beleg_mail WHERE beleg_id IN (sqlc.slice(beleg_ids));
 
 -- name: ListBelegdateien :many
 SELECT * FROM belegdatei

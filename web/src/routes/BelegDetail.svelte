@@ -5,6 +5,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
+	import { formatWhen } from "$lib/dates";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p, route } from "../router";
@@ -18,6 +19,12 @@
 		belegnummer?: string | null;
 		duplikat_von?: string | null;
 		pipeline_version?: string | null;
+		quelle?: string;
+		mail?: {
+			absender: string;
+			betreff: string;
+			mail_datum?: string;
+		} | null;
 	};
 
 	const id = $derived(route.params.id ?? "");
@@ -198,6 +205,17 @@
 				<Button variant="outline" class="mt-2" type="button" data-testid="ki-verwerfen" onclick={() => { ki = null; }}>{m.ki_discard()}</Button>
 			</section>
 		{/if}
+	{/if}
+	{#if beleg.mail}
+		<section class="mt-4 grid gap-1 bg-card rounded-xl border p-3 text-sm" data-testid="beleg-mail">
+			<h2 class="font-medium">{m.beleg_mail_title()}</h2>
+			<p>{m.beleg_mail_from()}: {beleg.mail.absender}</p>
+			<p>{m.beleg_mail_subject()}: {beleg.mail.betreff}</p>
+			{#if beleg.mail.mail_datum}
+				<p>{m.beleg_mail_date()}: {formatWhen(beleg.mail.mail_datum, session.locale, "auto")}</p>
+			{/if}
+			<a class="underline" data-testid="beleg-mail-eml" href={`/api/v1/belege/${beleg.id}/mail`}>{m.beleg_mail_eml()}</a>
+		</section>
 	{/if}
 	<p class="mt-4">
 		<a class="underline" href={`/api/v1/belege/${beleg.id}/original`}>{m.beleg_original()}</a>

@@ -156,6 +156,16 @@ type Beleg struct {
 	Version             int64
 	InhaltGeloeschtAm   *time.Time
 	LoeschGrund         *string
+	Quelle              string
+}
+
+type BelegMail struct {
+	BelegID       string
+	Absender      string
+	Betreff       string
+	MailDatum     *string
+	EmlSchluessel string
+	ErstelltAm    time.Time
 }
 
 type BelegNummer struct {
