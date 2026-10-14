@@ -880,6 +880,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/belege/{id}/mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The original email a mail-filed Beleg came from */
+        get: operations["getBelegMail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/belege/{id}/neu-aufbereiten": {
         parameters: {
             query?: never;
@@ -1946,6 +1963,14 @@ export interface components {
             /** Format: date-time */
             erstellt_am: string;
             version: number;
+            quelle?: string;
+            mail?: components["schemas"]["BelegMail"];
+        };
+        BelegMail: {
+            absender: string;
+            betreff: string;
+            /** Format: date-time */
+            mail_datum?: string;
         };
         BelegListe: {
             items: components["schemas"]["Beleg"][];
@@ -4251,6 +4276,30 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
+    getBelegMail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived original email */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "message/rfc822": string;
                 };
             };
             401: components["responses"]["Problem"];

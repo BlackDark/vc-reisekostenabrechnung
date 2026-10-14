@@ -106,7 +106,8 @@ func TestMailIntakeFilesIntoBelegeingang(t *testing.T) {
 	}
 	var out struct {
 		Items []struct {
-			Id string `json:"id"`
+			Id     string `json:"id"`
+			Quelle string `json:"quelle"`
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
@@ -116,6 +117,46 @@ func TestMailIntakeFilesIntoBelegeingang(t *testing.T) {
 		t.Fatalf("expected one receipt from the attachment, got %d: %s", len(out.Items), rec.Body)
 	}
 	createdID := out.Items[0].Id
+	if out.Items[0].Quelle != "mail" {
+		t.Fatalf("mail-filed receipt should carry quelle mail, got %q", out.Items[0].Quelle)
+	}
+
+	// The origin mail is attached to the detail view.
+	detail := httptest.NewRequest(http.MethodGet, "/api/v1/belege/"+createdID, nil)
+	detail.RemoteAddr = "192.0.0.1:1234"
+	detail.AddCookie(cookie)
+	drec := httptest.NewRecorder()
+	h.ServeHTTP(drec, detail)
+	if drec.Code != http.StatusOK {
+		t.Fatalf("detail %d %s", drec.Code, drec.Body)
+	}
+	var detailBody struct {
+		Quelle string `json:"quelle"`
+		Mail   *struct {
+			Absender string `json:"absender"`
+			Betreff  string `json:"betreff"`
+		} `json:"mail"`
+	}
+	if err := json.Unmarshal(drec.Body.Bytes(), &detailBody); err != nil {
+		t.Fatal(err)
+	}
+	if detailBody.Mail == nil || detailBody.Mail.Absender != "sender@example.com" ||
+		detailBody.Mail.Betreff != "Your receipt" {
+		t.Fatalf("origin mail missing or wrong: %s", drec.Body)
+	}
+
+	// The archived original email is downloadable.
+	eml := httptest.NewRequest(http.MethodGet, "/api/v1/belege/"+createdID+"/mail", nil)
+	eml.RemoteAddr = "192.0.2.10:1234"
+	eml.AddCookie(cookie)
+	erec := httptest.NewRecorder()
+	h.ServeHTTP(erec, eml)
+	if erec.Code != http.StatusOK {
+		t.Fatalf("eml download %d %s", erec.Code, erec.Body)
+	}
+	if !bytes.Contains(erec.Body.Bytes(), []byte("Receipt attached.")) {
+		t.Fatalf("downloaded eml is not the original message: %s", erec.Body)
+	}
 
 	list := httptest.NewRequest(http.MethodGet, "/api/v1/belege", nil)
 	list.RemoteAddr = "192.0.2.10:1234"

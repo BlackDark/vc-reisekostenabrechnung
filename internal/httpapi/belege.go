@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/api"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/belegpipe"
@@ -41,9 +42,16 @@ func (a *App) GetBelege(w http.ResponseWriter, r *http.Request, params api.GetBe
 		return
 	}
 	items := make([]api.Beleg, 0, len(rows))
+	ids := make([]string, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, toBeleg(row))
+		ids = append(ids, row.ID)
 	}
+	mail, err := a.store.ListBelegMailByIDs(r.Context(), ids)
+	if writeStoreErr(w, err) {
+		return
+	}
+	items = belegeMitMail(items, mail)
 	var next *string
 	if int64(len(rows)) == limit && len(rows) > 0 {
 		id := rows[len(rows)-1].ID
@@ -61,7 +69,13 @@ func (a *App) GetBeleg(w http.ResponseWriter, r *http.Request, id api.Id) {
 	if writeStoreErr(w, err) {
 		return
 	}
-	writeObject(w, http.StatusOK, row.Version, toBeleg(row))
+	mail, merr := a.store.GetBelegMail(r.Context(), id)
+	if merr != nil && !errors.Is(merr, store.ErrNotFound) {
+		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+		return
+	}
+	found := merr == nil
+	writeObject(w, http.StatusOK, row.Version, belegMitMail(toBeleg(row), mail, found))
 }
 
 func (a *App) GetBelegDuplikate(w http.ResponseWriter, r *http.Request, params api.GetBelegDuplikateParams) {
@@ -337,6 +351,30 @@ func (a *App) GetBelegOriginal(w http.ResponseWriter, r *http.Request, id api.Id
 	a.writeBlob(w, r, f, false)
 }
 
+func (a *App) GetBelegMail(w http.ResponseWriter, r *http.Request, id api.Id) {
+	user, ok := a.requireUser(w, r)
+	if !ok {
+		return
+	}
+	if _, err := a.store.GetBeleg(r.Context(), user.ID, id); writeStoreErr(w, err) {
+		return
+	}
+	mail, err := a.store.GetBelegMail(r.Context(), id)
+	if writeStoreErr(w, err) {
+		return
+	}
+	rc, err := a.blobs.Get(r.Context(), mail.EmlSchluessel)
+	if err != nil {
+		writeProblem(w, http.StatusNotFound, "nicht_gefunden", "Not found", "")
+		return
+	}
+	defer func() { _ = rc.Close() }()
+	w.Header().Set("Content-Type", "message/rfc822")
+	w.Header().Set("Content-Disposition", "attachment; filename=beleg.eml")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, rc)
+}
+
 func (a *App) serveDatei(w http.ResponseWriter, r *http.Request, id, variante string, seite int64, inline bool) {
 	user, ok := a.requireUser(w, r)
 	if !ok {
@@ -604,11 +642,55 @@ func toBeleg(row sqlitedb.Beleg) api.Beleg {
 	if row.PipelineVersion != "" {
 		pipe = &row.PipelineVersion
 	}
+	quelle := row.Quelle
+	if quelle == "" {
+		quelle = "upload"
+	}
 	return api.Beleg{
 		Id: row.ID, Belegnummer: row.Belegnummer, Typ: row.Typ, Status: row.Status,
 		Seiten: intFrom64(row.Seiten), Sha256Original: row.Sha256Original, PipelineVersion: pipe,
 		DuplikatVon: row.DuplikatVon, ErstelltAm: row.ErstelltAm.UTC(), Version: intFrom64(row.Version),
+		Quelle: &quelle,
 	}
+}
+
+// belegeMitMail attaches the origin mail to a page of Belege. Mail rows are keyed
+// by Beleg id, so Belege without one are left without a mail.
+func belegeMitMail(items []api.Beleg, rows []sqlitedb.BelegMail) []api.Beleg {
+	if len(rows) == 0 {
+		return items
+	}
+	mail := make(map[string]sqlitedb.BelegMail, len(rows))
+	for _, row := range rows {
+		mail[row.BelegID] = row
+	}
+	for i := range items {
+		row, ok := mail[items[i].Id]
+		if !ok {
+			continue
+		}
+		items[i].Mail = toMailInfo(row)
+	}
+	return items
+}
+
+// belegMitMail attaches one origin mail. A missing row leaves the Beleg alone.
+func belegMitMail(item api.Beleg, row sqlitedb.BelegMail, found bool) api.Beleg {
+	if !found {
+		return item
+	}
+	item.Mail = toMailInfo(row)
+	return item
+}
+
+func toMailInfo(row sqlitedb.BelegMail) *api.BelegMail {
+	mail := &api.BelegMail{Absender: row.Absender, Betreff: row.Betreff}
+	if row.MailDatum != nil {
+		if datum, err := time.Parse(time.RFC3339, *row.MailDatum); err == nil {
+			mail.MailDatum = &datum
+		}
+	}
+	return mail
 }
 
 func intFrom64(n int64) int {

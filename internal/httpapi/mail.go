@@ -173,9 +173,13 @@ func (a *App) ingestMailFor(ctx context.Context, nutzerID string, raw []byte, ac
 		return nil, errMailInvalid
 	}
 	sha := belegpipe.SHA256Hex(raw)
+	emlKey := ""
 	if err := a.blobs.PutIfAbsent(ctx, fmt.Sprintf("mail/%s/%s.eml", nutzerID, sha), bytes.NewReader(raw), sha); err != nil {
 		a.log.Error("archive mail", "err", err)
+	} else {
+		emlKey = fmt.Sprintf("mail/%s/%s.eml", nutzerID, sha)
 	}
+	origin := mailOrigin(msg)
 	items := make([]api.Beleg, 0)
 	for _, b := range a.extractMailAttachments(msg) {
 		kind, cerr := classifyOne(b)
@@ -200,6 +204,11 @@ func (a *App) ingestMailFor(ctx context.Context, nutzerID string, raw []byte, ac
 		row, cerr := a.store.CreateBeleg(ctx, nutzerID, store.NewBeleg{
 			ID: belegID, Typ: kind.typ, Seiten: int64(kind.pages), SHA256: original,
 			Status: kind.status, Dateien: dateien, JobArt: kind.job,
+			Quelle: "mail",
+			Mail: &store.BelegMailInput{
+				Absender: origin.absender, Betreff: origin.betreff,
+				MailDatum: origin.datum, EmlSchluessel: emlKey,
+			},
 		}, actor)
 		if cerr != nil {
 			a.dropKeys(ctx, stored, "mail.eingegangen")
@@ -208,4 +217,30 @@ func (a *App) ingestMailFor(ctx context.Context, nutzerID string, raw []byte, ac
 		items = append(items, toBeleg(row))
 	}
 	return items, nil
+}
+
+// mailInfo is the header summary a mail-filed Beleg records as its origin.
+type mailInfo struct {
+	absender string
+	betreff  string
+	datum    string
+}
+
+// mailOrigin reads the fields worth keeping about an email. A missing sender or
+// subject is left empty rather than dropped, because the attachments still belong
+// to the recipient's inbox.
+func mailOrigin(msg *mail.Message) mailInfo {
+	from := strings.TrimSpace(msg.Header.Get("From"))
+	if addr, err := mail.ParseAddress(from); err == nil {
+		from = addr.Address
+	}
+	datum := strings.TrimSpace(msg.Header.Get("Date"))
+	if parsed, err := msg.Header.Date(); err == nil {
+		datum = parsed.UTC().Format(time.RFC3339)
+	}
+	return mailInfo{
+		absender: from,
+		betreff:  strings.TrimSpace(msg.Header.Get("Subject")),
+		datum:    datum,
+	}
 }

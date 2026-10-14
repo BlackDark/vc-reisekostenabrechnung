@@ -46,6 +46,28 @@ type NewBeleg struct {
 	Dateien     []DateiIn
 	JobArt      string
 	JobAt       time.Time
+	// Quelle says where the Beleg came from: "upload" (default) or "mail".
+	Quelle string
+	// Mail is the origin mail for a mail-filed Beleg. It is stored in the same
+	// transaction so a Beleg never carries quelle "mail" without its provenance.
+	Mail *BelegMailInput
+}
+
+// BelegMailInput is the origin mail of a mail-filed Beleg: the sender, subject,
+// date and the storage key of the archived original .eml.
+type BelegMailInput struct {
+	Absender      string
+	Betreff       string
+	MailDatum     string
+	EmlSchluessel string
+}
+
+// optionalString maps an empty string to nil, matching sqlc's nullable TEXT.
+func optionalString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 // FindBelegDuplicate matches sha256_original or an Archivbeleg/original checksum.
@@ -89,19 +111,31 @@ func (s *Store) CreateBeleg(ctx context.Context, nutzerID string, in NewBeleg, a
 	if in.Parameter == "" {
 		in.Parameter = "{}"
 	}
+	if in.Quelle == "" {
+		in.Quelle = "upload"
+	}
 	var out sqlitedb.Beleg
 	err := s.tx(ctx, func(q *sqlitedb.Queries) error {
 		now := time.Now().UTC()
 		row, err := q.InsertBeleg(ctx, sqlitedb.InsertBelegParams{
 			ID: in.ID, NutzerID: nutzerID, Typ: in.Typ, Status: in.Status, Seiten: in.Seiten,
 			Sha256Original: in.SHA256, PipelineVersion: "", PipelineParameter: in.Parameter,
-			DuplikatVon: in.DuplikatVon, ErstelltAm: now, GeaendertAm: now,
+			Quelle: in.Quelle, DuplikatVon: in.DuplikatVon, ErstelltAm: now, GeaendertAm: now,
 		})
 		if err != nil {
 			return err
 		}
 		for _, d := range in.Dateien {
 			if _, err := q.InsertBelegdatei(ctx, dateiParams(row.ID, d)); err != nil {
+				return err
+			}
+		}
+		if in.Mail != nil {
+			if err := q.InsertBelegMail(ctx, sqlitedb.InsertBelegMailParams{
+				BelegID: row.ID, Absender: in.Mail.Absender, Betreff: in.Mail.Betreff,
+				MailDatum: optionalString(in.Mail.MailDatum), EmlSchluessel: in.Mail.EmlSchluessel,
+				ErstelltAm: now,
+			}); err != nil {
 				return err
 			}
 		}
@@ -151,6 +185,22 @@ func (s *Store) ListBelege(ctx context.Context, nutzerID, status, cursor string,
 // ListBelegdateien lists files of a Beleg.
 func (s *Store) ListBelegdateien(ctx context.Context, belegID string) ([]sqlitedb.Belegdatei, error) {
 	return s.readQ().ListBelegdateien(ctx, belegID)
+}
+
+// GetBelegMail returns the origin mail of a Beleg, or ErrNotFound.
+func (s *Store) GetBelegMail(ctx context.Context, belegID string) (sqlitedb.BelegMail, error) {
+	row, err := s.readQ().GetBelegMail(ctx, belegID)
+	return row, mapErr(err)
+}
+
+// ListBelegMailByIDs returns the origin mail of several Belege, keyed the same
+// way the caller listed them. It exists so a page of Belege costs one query, not
+// one per row.
+func (s *Store) ListBelegMailByIDs(ctx context.Context, ids []string) ([]sqlitedb.BelegMail, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	return s.readQ().ListBelegMailByIDs(ctx, ids)
 }
 
 // ListDuplikatBelege lists receipts explicitly kept despite a duplicate.

@@ -67,6 +67,7 @@ type Querier interface {
 	GetAusgabe(ctx context.Context, arg GetAusgabeParams) (Ausgabe, error)
 	GetBeleg(ctx context.Context, arg GetBelegParams) (Beleg, error)
 	GetBelegByID(ctx context.Context, id string) (Beleg, error)
+	GetBelegMail(ctx context.Context, belegID string) (BelegMail, error)
 	GetBelegdatei(ctx context.Context, arg GetBelegdateiParams) (Belegdatei, error)
 	GetDatei(ctx context.Context, arg GetDateiParams) (Datei, error)
 	GetEigenbeleg(ctx context.Context, ausgabeID string) (Eigenbeleg, error)
@@ -94,6 +95,7 @@ type Querier interface {
 	InsertAusgabeBeleg(ctx context.Context, arg InsertAusgabeBelegParams) error
 	InsertAuslandssatz(ctx context.Context, arg InsertAuslandssatzParams) error
 	InsertBeleg(ctx context.Context, arg InsertBelegParams) (Beleg, error)
+	InsertBelegMail(ctx context.Context, arg InsertBelegMailParams) error
 	InsertBelegdatei(ctx context.Context, arg InsertBelegdateiParams) (Belegdatei, error)
 	InsertBelegtext(ctx context.Context, arg InsertBelegtextParams) (Belegtext, error)
 	InsertDatei(ctx context.Context, arg InsertDateiParams) (Datei, error)
@@ -122,6 +124,7 @@ type Querier interface {
 	ListAusgabenByNutzer(ctx context.Context, nutzerID string) ([]Ausgabe, error)
 	ListAusgabenByReise(ctx context.Context, arg ListAusgabenByReiseParams) ([]Ausgabe, error)
 	ListAuslandssaetze(ctx context.Context, jahr int64) ([]Auslandssatz, error)
+	ListBelegMailByIDs(ctx context.Context, belegIds []string) ([]BelegMail, error)
 	ListBelegdateien(ctx context.Context, belegID string) ([]Belegdatei, error)
 	ListBelege(ctx context.Context, arg ListBelegeParams) ([]Beleg, error)
 	ListBelegeForAusgabe(ctx context.Context, arg ListBelegeForAusgabeParams) ([]ListBelegeForAusgabeRow, error)
