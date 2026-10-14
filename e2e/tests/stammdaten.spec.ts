@@ -23,7 +23,7 @@ const png = Buffer.from(
 	"base64",
 );
 
-test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
+test("arbeitgeber, tätigkeitsstätte and letterhead", async ({ page }) => {
 	const stamp = Date.now().toString(36);
 	await login(page);
 	await page.getByRole("link", { name: /Arbeitgeber|Employers/ }).click();
@@ -86,7 +86,11 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	const place = page.locator("li").filter({ hasText: `Kunde ${stamp}` });
 	await expect(place).toBeVisible();
 	await expect(place).toContainText(satzort || landISO);
+});
 
+test("satztabellen: search, override and import", async ({ page }) => {
+	const stamp = Date.now().toString(36);
+	await login(page);
 	await page.getByRole("link", { name: /Satztabellen|Rate tables/ }).click();
 	const year2026 = page.getByRole("link", { name: "2026", exact: true });
 	try {
