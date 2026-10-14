@@ -2,6 +2,8 @@
 
 Go 1.27, Node 24, pnpm 12, Svelte 5, SQLite. Lint with golangci-lint and Biome.
 
+`mise.toml` pins the exact tool versions CI installs and nothing else: CI is the source of truth. Go comes from the `go` directive in `go.mod`, Node from `.node-version`, pnpm from `packageManager`, and golangci-lint, govulncheck, Typst and actionlint from `.github/workflows/ci.yml`. Run `mise install` once after a version change; `scripts/mise-check.sh` fails when the two sides drift, and the `toolchain-parity` job runs it on every change to those files, so a local shell cannot quietly disagree with CI. Renovate groups each tool with the file CI reads it from, so both sides move together.
+
 ```sh
 make check
 ```

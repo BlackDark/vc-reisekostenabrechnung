@@ -82,10 +82,10 @@
 
     // ---------- Gruppen ----------
     {
-      description: 'Node.js überall gemeinsam (Docker-Image, .node-version, engines)',
+      description: 'Node.js überall gemeinsam (Docker-Image, .node-version, engines, mise.toml)',
       groupName: 'node',
       matchDepNames: ['node', 'nodejs/node'],
-      matchDatasources: ['docker', 'node-version', 'github-releases'],
+      matchDatasources: ['docker', 'node-version', 'github-releases', 'mise'],
     },
     {
       description: 'Nur Node-LTS-Linie 24 bis zum bewussten Wechsel',
@@ -93,9 +93,10 @@
       allowedVersions: '<25',
     },
     {
-      description: 'Go-Toolchain: go.mod (go/toolchain) und golang-Docker-Image gemeinsam',
+      description: 'Go-Toolchain: go.mod (go/toolchain), golang-Docker-Image und mise.toml gemeinsam',
       groupName: 'go toolchain',
       matchDepNames: ['go', 'golang'],
+      matchDatasources: ['gomod', 'docker', 'mise'],
     },
     {
       description: 'golang.org/x/* gemeinsam',
@@ -146,14 +147,34 @@
       matchPackageNames: ['@playwright/test', 'playwright', 'mcr.microsoft.com/playwright'],
     },
     {
+      description: 'pnpm: packageManager, action-setup und mise.toml gemeinsam',
+      groupName: 'pnpm',
+      matchPackageNames: ['pnpm', 'pnpm/action-setup'],
+    },
+    {
+      description: 'golangci-lint: mise.toml und Action-Version gemeinsam',
+      groupName: 'golangci-lint',
+      matchPackageNames: ['golangci-lint'],
+    },
+    {
+      description: 'govulncheck: mise.toml und go-install-Version gemeinsam',
+      groupName: 'govulncheck',
+      matchPackageNames: ['golang.org/x/vuln', 'golang.org/x/vuln/cmd/govulncheck', 'govulncheck'],
+    },
+    {
+      description: 'Actionlint: mise.toml und Release-Tarball gemeinsam',
+      groupName: 'actionlint',
+      matchPackageNames: ['actionlint', 'rhysd/actionlint'],
+    },
+    {
       description: 'Docker-Build-Actions gemeinsam',
       groupName: 'docker actions',
       matchManagers: ['github-actions'],
       matchPackageNames: ['docker/**'],
     },
     {
-      description: 'Typst (Image im Dockerfile) einzeln, Export-Golden-Tests müssen laufen',
-      matchPackageNames: ['ghcr.io/typst/typst'],
+      description: 'Typst (Image im Dockerfile und mise.toml) einzeln, Export-Golden-Tests müssen laufen',
+      matchPackageNames: ['typst', 'ghcr.io/typst/typst'],
       groupName: 'typst',
       automerge: false,
       addLabels: ['export'],
