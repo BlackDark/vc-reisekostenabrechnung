@@ -36,9 +36,7 @@ if (process.env.E2E_WEBKIT === "1") {
 export default defineConfig({
 	testDir: "./tests",
 	timeout: 60_000,
-	// The e2e job runs the image --read-only with a volume; the stammdaten tour is
-	// the longest spec and needs more wall-clock there than a bare local binary.
-	expect: { timeout: process.env.CI ? 30_000 : 15_000 },
+	expect: { timeout: 15_000 },
 	fullyParallel: false,
 	workers: 1,
 	retries: process.env.CI ? 1 : 0,
