@@ -14,6 +14,7 @@
 
 - [Roadmap](roadmap.md): done, open tasks, possible features
 - [Ideas](ideas/): design notes for possible features, e.g. [email receipt intake](ideas/email-receipt-intake.md)
+- [Code health](ideas/code-health.md): a findings pass over the repository, ordered by benefit
 - [Development](development.md)
 - [Changelog](../CHANGELOG.md)
 
