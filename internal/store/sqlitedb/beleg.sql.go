@@ -401,7 +401,7 @@ func (q *Queries) GetBelegByID(ctx context.Context, id string) (Beleg, error) {
 }
 
 const getBelegMail = `-- name: GetBelegMail :one
-SELECT beleg_id, absender, betreff, mail_datum, eml_schluessel, erstellt_am FROM beleg_mail WHERE beleg_id = ?1
+SELECT beleg_id, absender, betreff, mail_datum, eml_schluessel, erstellt_am, mail_auth FROM beleg_mail WHERE beleg_id = ?1
 `
 
 func (q *Queries) GetBelegMail(ctx context.Context, belegID string) (BelegMail, error) {
@@ -414,6 +414,7 @@ func (q *Queries) GetBelegMail(ctx context.Context, belegID string) (BelegMail, 
 		&i.MailDatum,
 		&i.EmlSchluessel,
 		&i.ErstelltAm,
+		&i.MailAuth,
 	)
 	return i, err
 }
@@ -517,10 +518,10 @@ func (q *Queries) InsertBeleg(ctx context.Context, arg InsertBelegParams) (Beleg
 }
 
 const insertBelegMail = `-- name: InsertBelegMail :exec
-INSERT INTO beleg_mail (beleg_id, absender, betreff, mail_datum, eml_schluessel, erstellt_am)
+INSERT INTO beleg_mail (beleg_id, absender, betreff, mail_datum, eml_schluessel, mail_auth, erstellt_am)
 VALUES (
   ?1, ?2, ?3,
-  ?4, ?5, ?6
+  ?4, ?5, ?6, ?7
 )
 `
 
@@ -530,6 +531,7 @@ type InsertBelegMailParams struct {
 	Betreff       string
 	MailDatum     *string
 	EmlSchluessel string
+	MailAuth      *string
 	ErstelltAm    time.Time
 }
 
@@ -540,6 +542,7 @@ func (q *Queries) InsertBelegMail(ctx context.Context, arg InsertBelegMailParams
 		arg.Betreff,
 		arg.MailDatum,
 		arg.EmlSchluessel,
+		arg.MailAuth,
 		arg.ErstelltAm,
 	)
 	return err
@@ -639,7 +642,7 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) (Job, erro
 }
 
 const listBelegMailByIDs = `-- name: ListBelegMailByIDs :many
-SELECT beleg_id, absender, betreff, mail_datum, eml_schluessel, erstellt_am FROM beleg_mail WHERE beleg_id IN (/*SLICE:beleg_ids*/?)
+SELECT beleg_id, absender, betreff, mail_datum, eml_schluessel, erstellt_am, mail_auth FROM beleg_mail WHERE beleg_id IN (/*SLICE:beleg_ids*/?)
 `
 
 func (q *Queries) ListBelegMailByIDs(ctx context.Context, belegIds []string) ([]BelegMail, error) {
@@ -668,6 +671,7 @@ func (q *Queries) ListBelegMailByIDs(ctx context.Context, belegIds []string) ([]
 			&i.MailDatum,
 			&i.EmlSchluessel,
 			&i.ErstelltAm,
+			&i.MailAuth,
 		); err != nil {
 			return nil, err
 		}

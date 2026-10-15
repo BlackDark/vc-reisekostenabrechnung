@@ -141,10 +141,10 @@ INSERT INTO belegdatei (
 RETURNING *;
 
 -- name: InsertBelegMail :exec
-INSERT INTO beleg_mail (beleg_id, absender, betreff, mail_datum, eml_schluessel, erstellt_am)
+INSERT INTO beleg_mail (beleg_id, absender, betreff, mail_datum, eml_schluessel, mail_auth, erstellt_am)
 VALUES (
   sqlc.arg(beleg_id), sqlc.arg(absender), sqlc.arg(betreff),
-  sqlc.narg(mail_datum), sqlc.arg(eml_schluessel), sqlc.arg(erstellt_am)
+  sqlc.narg(mail_datum), sqlc.arg(eml_schluessel), sqlc.narg(mail_auth), sqlc.arg(erstellt_am)
 );
 
 -- name: GetBelegMail :one
