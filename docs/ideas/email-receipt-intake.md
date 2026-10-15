@@ -1,6 +1,6 @@
 # Idea: email receipt intake
 
-Status: (d) and (a)+(c) are implemented in `main`; SPF/DKIM checking on intake and a durable IMAP transport test are still open. Issue [#25](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/25). Related: [#26](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/26) (API tokens), [#27](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/27) (Web Share Target).
+Status: (d) and (a)+(c) are implemented in `main`; the SPF/DKIM checking from the checklist below is in, and a durable IMAP transport test is still open. Issue [#25](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/25). Related: [#26](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/26) (API tokens), [#27](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/27) (Web Share Target).
 
 ## Goal
 
