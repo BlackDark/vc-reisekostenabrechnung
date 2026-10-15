@@ -690,6 +690,9 @@ func toMailInfo(row sqlitedb.BelegMail) *api.BelegMail {
 			mail.MailDatum = &datum
 		}
 	}
+	if row.MailAuth != nil {
+		mail.MailAuth = row.MailAuth
+	}
 	return mail
 }
 

@@ -17,6 +17,7 @@ import (
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/auth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/belegpipe"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/id"
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/mailauth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
 )
@@ -151,6 +152,10 @@ func (a *App) PostEingangMail(w http.ResponseWriter, r *http.Request) {
 			writeProblem(w, http.StatusUnprocessableEntity, "ungueltige_mail", "Not a valid email", "")
 			return
 		}
+		if errors.Is(ierr, errMailAuth) {
+			writeProblem(w, http.StatusUnprocessableEntity, "mail_auth", "Mail sender could not be verified", "")
+			return
+		}
 		writeStoreErr(w, ierr)
 		return
 	}
@@ -160,10 +165,20 @@ func (a *App) PostEingangMail(w http.ResponseWriter, r *http.Request) {
 // errMailInvalid marks an empty or unparsable email (a client error, 422).
 var errMailInvalid = errors.New("not a valid email")
 
+// errMailAuth marks an email whose sender could not be proven. The mail is
+// dropped rather than retried: no amount of re-fetching changes what the
+// receiving server already stamped into the header.
+var errMailAuth = errors.New("mail sender authentication failed")
+
 // ingestMailFor parses a raw email and files each attachment as a Beleg in the
 // given owner's Belegeingang, archiving the original .eml for GoBD and skipping
 // duplicate attachments by checksum. It is shared by the HTTP ingest endpoint and
 // the mail poller (design note options a/c); ctx is the request or job context.
+//
+// An email whose Authentication-Results verdict names an unproven sender is
+// refused with errMailAuth. The verdict is read from the header the mailbox's
+// own server wrote, never re-derived here, so a mail that arrives without the
+// header is filed as unverified rather than rejected.
 func (a *App) ingestMailFor(ctx context.Context, nutzerID string, raw []byte, actor store.Actor) ([]api.Beleg, error) {
 	if len(raw) == 0 {
 		return nil, errMailInvalid
@@ -171,6 +186,10 @@ func (a *App) ingestMailFor(ctx context.Context, nutzerID string, raw []byte, ac
 	msg, err := mail.ReadMessage(bytes.NewReader(raw))
 	if err != nil {
 		return nil, errMailInvalid
+	}
+	auth := mailauth.Parse(msg)
+	if auth.Rejected() {
+		return nil, fmt.Errorf("%w: %s", errMailAuth, auth.Summary())
 	}
 	sha := belegpipe.SHA256Hex(raw)
 	emlKey := ""
@@ -208,6 +227,7 @@ func (a *App) ingestMailFor(ctx context.Context, nutzerID string, raw []byte, ac
 			Mail: &store.BelegMailInput{
 				Absender: origin.absender, Betreff: origin.betreff,
 				MailDatum: origin.datum, EmlSchluessel: emlKey,
+				MailAuth: auth.Summary(),
 			},
 		}, actor)
 		if cerr != nil {

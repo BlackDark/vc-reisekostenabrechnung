@@ -60,6 +60,9 @@ type BelegMailInput struct {
 	Betreff       string
 	MailDatum     string
 	EmlSchluessel string
+	// MailAuth is the summary of the sender authentication verdicts the
+	// receiving mail server recorded; empty when the email carried none.
+	MailAuth string
 }
 
 // optionalString maps an empty string to nil, matching sqlc's nullable TEXT.
@@ -134,6 +137,7 @@ func (s *Store) CreateBeleg(ctx context.Context, nutzerID string, in NewBeleg, a
 			if err := q.InsertBelegMail(ctx, sqlitedb.InsertBelegMailParams{
 				BelegID: row.ID, Absender: in.Mail.Absender, Betreff: in.Mail.Betreff,
 				MailDatum: optionalString(in.Mail.MailDatum), EmlSchluessel: in.Mail.EmlSchluessel,
+				MailAuth:   optionalString(in.Mail.MailAuth),
 				ErstelltAm: now,
 			}); err != nil {
 				return err

@@ -18,6 +18,7 @@
 	"beleg_mail_subject": "Betreff",
 	"beleg_mail_date": "Datum",
 	"beleg_mail_eml": "Original-E-Mail herunterladen",
+	"beleg_mail_auth": "Absenderprüfung",
 	"token_scope": "Zweck",
 	"token_scope_upload": "Belege hochladen",
 	"token_scope_mail": "E-Mail-Eingang (Weiterleitung)",

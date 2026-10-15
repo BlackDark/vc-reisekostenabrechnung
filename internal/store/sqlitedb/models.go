@@ -166,6 +166,7 @@ type BelegMail struct {
 	MailDatum     *string
 	EmlSchluessel string
 	ErstelltAm    time.Time
+	MailAuth      *string
 }
 
 type BelegNummer struct {

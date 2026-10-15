@@ -1971,6 +1971,8 @@ export interface components {
             betreff: string;
             /** Format: date-time */
             mail_datum?: string;
+            /** @description Sender authentication verdicts the receiving mail server recorded for the original email, for example "spf=pass dkim=fail dmarc=none". Absent when the email carried no Authentication-Results header. */
+            mail_auth?: string;
         };
         BelegListe: {
             items: components["schemas"]["Beleg"][];

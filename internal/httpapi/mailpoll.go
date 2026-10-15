@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -106,6 +107,15 @@ func (a *App) pollMailOnce(ctx context.Context) (int, error) {
 			continue
 		}
 		if _, ierr := a.ingestMailFor(ctx, nutzerID, body, store.Actor{Art: "mail"}); ierr != nil {
+			// A dropped message must not stay unseen, or the next poll would
+			// fetch it again and the same verdict would refuse it forever.
+			if errors.Is(ierr, errMailAuth) {
+				a.log.Warn("mail intake: refusing an email whose sender could not be verified",
+					"seq", msg.SeqNum, "err", ierr)
+				seq := uint32(msg.SeqNum)
+				processed = append(processed, imap.SeqRange{Start: seq, Stop: seq})
+				continue
+			}
 			a.log.Error("mail ingest failed; leaving the message unseen for retry", "err", ierr)
 			continue
 		}

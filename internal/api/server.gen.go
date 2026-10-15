@@ -475,8 +475,11 @@ type BelegListe struct {
 
 // BelegMail defines model for BelegMail.
 type BelegMail struct {
-	Absender  string     `json:"absender"`
-	Betreff   string     `json:"betreff"`
+	Absender string `json:"absender"`
+	Betreff  string `json:"betreff"`
+
+	// MailAuth Sender authentication verdicts the receiving mail server recorded for the original email, for example "spf=pass dkim=fail dmarc=none". Absent when the email carried no Authentication-Results header.
+	MailAuth  *string    `json:"mail_auth,omitempty"`
 	MailDatum *time.Time `json:"mail_datum,omitempty"`
 }
 
