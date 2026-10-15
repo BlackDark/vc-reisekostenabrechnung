@@ -18,6 +18,7 @@
 	"beleg_mail_subject": "Subject",
 	"beleg_mail_date": "Date",
 	"beleg_mail_eml": "Download original email",
+	"beleg_mail_auth": "Sender verification",
 	"token_scope": "Purpose",
 	"token_scope_upload": "Upload receipts",
 	"token_scope_mail": "Email intake (forwarding)",

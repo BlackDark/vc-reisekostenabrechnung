@@ -24,6 +24,7 @@
 			absender: string;
 			betreff: string;
 			mail_datum?: string;
+			mail_auth?: string;
 		} | null;
 	};
 
@@ -213,6 +214,9 @@
 			<p>{m.beleg_mail_subject()}: {beleg.mail.betreff}</p>
 			{#if beleg.mail.mail_datum}
 				<p>{m.beleg_mail_date()}: {formatWhen(beleg.mail.mail_datum, session.locale, "auto")}</p>
+			{/if}
+			{#if beleg.mail.mail_auth}
+				<p data-testid="beleg-mail-auth">{m.beleg_mail_auth()}: {beleg.mail.mail_auth}</p>
 			{/if}
 			<a class="underline" data-testid="beleg-mail-eml" href={`/api/v1/belege/${beleg.id}/mail`}>{m.beleg_mail_eml()}</a>
 		</section>

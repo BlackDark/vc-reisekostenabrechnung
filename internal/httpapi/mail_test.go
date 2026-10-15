@@ -33,6 +33,12 @@ func createTokenScope(t *testing.T, h http.Handler, cookie *http.Cookie, name, s
 }
 
 func buildMail(t *testing.T, jpg []byte) []byte {
+	return buildMailHeaders(t, jpg, "")
+}
+
+// buildMailHeaders is buildMail with extra raw header lines prepended before the
+// content type, which is how an email carries Authentication-Results.
+func buildMailHeaders(t *testing.T, jpg []byte, extraHeader string) []byte {
 	t.Helper()
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
@@ -70,6 +76,7 @@ func buildMail(t *testing.T, jpg []byte) []byte {
 		"To: belege+token@example.com\r\n" +
 		"Subject: Your receipt\r\n" +
 		"MIME-Version: 1.0\r\n" +
+		extraHeader +
 		"Content-Type: multipart/mixed; boundary=RKMAILBOUNDARY\r\n\r\n"
 	return append([]byte(head), body.Bytes()...)
 }
@@ -181,5 +188,99 @@ func TestMailIntakeFilesIntoBelegeingang(t *testing.T) {
 	uploadToken := createTokenScope(t, h, cookie, "uploader", "belege:upload")
 	if r := postMailBearer(t, h, uploadToken, raw); r.Code != http.StatusUnauthorized {
 		t.Fatalf("upload token on ingest endpoint %d", r.Code)
+	}
+}
+
+func TestMailIntakeRefusesAnUnprovenSender(t *testing.T) {
+	app := newTestApp(t, nil)
+	seedUser(t, app, "ada", "correct-horse-1", false)
+	h := app.Handler()
+	cookie := loginCookie(t, h)
+	jpg := jpegBytesMarked(t, 11)
+	ingestToken := createTokenScope(t, h, cookie, "inbox", "mail:ingest")
+
+	tests := []struct {
+		name   string
+		verify string
+	}{
+		{"spf fail", "mx.example.com; spf=fail smtp.mailfrom=evil.example\r\n"},
+		{"spf softfail", "mx.example.com; spf=softfail\r\n"},
+		{"dkim fail alongside a passing spf", "mx.example.com; spf=pass; dkim=fail header.d=evil.example\r\n"},
+		{"dmarc fail", "mx.example.com; spf=pass; dkim=pass; dmarc=fail\r\n"},
+		{"permerror", "mx.example.com; spf=permerror\r\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := postMailBearer(t, h, ingestToken, buildMailHeaders(t, jpg,
+				"Authentication-Results: "+tt.verify))
+			if rec.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("auth %d %s", rec.Code, rec.Body)
+			}
+			if !strings.Contains(rec.Body.String(), "mail_auth") {
+				t.Fatalf("refusal should name mail_auth: %s", rec.Body)
+			}
+		})
+	}
+
+	// Nothing was filed, and the Belegeingang stays empty.
+	list := httptest.NewRequest(http.MethodGet, "/api/v1/belege", nil)
+	list.RemoteAddr = "192.0.2.10:1234"
+	list.AddCookie(cookie)
+	lrec := httptest.NewRecorder()
+	h.ServeHTTP(lrec, list)
+	if strings.Contains(lrec.Body.String(), "sender@example.com") {
+		t.Fatalf("a refused mail must not file a receipt: %s", lrec.Body)
+	}
+
+	// The same mailbox still files a mail whose sender was proven, which shows
+	// the refusal above is authentication and not a broken fixture.
+	ok := postMailBearer(t, h, ingestToken, buildMailHeaders(t, jpegBytesMarked(t, 12),
+		"Authentication-Results: mx.example.com; spf=pass smtp.mailfrom=example.com; dkim=pass\r\n"))
+	if ok.Code != http.StatusAccepted {
+		t.Fatalf("verified mail should file: %d %s", ok.Code, ok.Body)
+	}
+}
+
+func TestMailIntakeKeepsTheVerdictWithTheReceipt(t *testing.T) {
+	app := newTestApp(t, nil)
+	seedUser(t, app, "ada", "correct-horse-1", false)
+	h := app.Handler()
+	cookie := loginCookie(t, h)
+	jpg := jpegBytesMarked(t, 13)
+	ingestToken := createTokenScope(t, h, cookie, "inbox", "mail:ingest")
+
+	rec := postMailBearer(t, h, ingestToken, buildMailHeaders(t, jpg,
+		"Authentication-Results: mx.example.com; spf=pass smtp.mailfrom=example.com; dkim=pass; dmarc=pass\r\n"))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("ingest %d %s", rec.Code, rec.Body)
+	}
+	var out struct {
+		Items []struct {
+			Id string `json:"id"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Items) != 1 {
+		t.Fatalf("expected one receipt, got %d", len(out.Items))
+	}
+
+	detail := httptest.NewRequest(http.MethodGet, "/api/v1/belege/"+out.Items[0].Id, nil)
+	detail.RemoteAddr = "192.0.0.1:1234"
+	detail.AddCookie(cookie)
+	drec := httptest.NewRecorder()
+	h.ServeHTTP(drec, detail)
+	var detailBody struct {
+		Mail *struct {
+			MailAuth string `json:"mail_auth"`
+		} `json:"mail"`
+	}
+	if err := json.Unmarshal(drec.Body.Bytes(), &detailBody); err != nil {
+		t.Fatal(err)
+	}
+	want := "spf=pass dkim=pass dmarc=pass"
+	if detailBody.Mail == nil || detailBody.Mail.MailAuth != want {
+		t.Fatalf("mail_auth = %+v, want %q", detailBody.Mail, want)
 	}
 }
