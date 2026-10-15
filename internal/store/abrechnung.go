@@ -111,9 +111,6 @@ func (s *Store) GetAbrechnungBundle(ctx context.Context, nutzerID, abrechnungID 
 
 // ListAbrechnungen returns a page of Abrechnungen.
 func (s *Store) ListAbrechnungen(ctx context.Context, nutzerID string, cursor *string, limit int64) ([]sqlitedb.Abrechnung, error) {
-	if limit <= 0 || limit > 200 {
-		limit = 50
-	}
 	return s.readQ().ListAbrechnungen(ctx, sqlitedb.ListAbrechnungenParams{
 		NutzerID: nutzerID, Cursor: cursor, LimitN: limit,
 	})

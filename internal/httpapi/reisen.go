@@ -19,27 +19,22 @@ func (a *App) GetReisen(w http.ResponseWriter, r *http.Request, params api.GetRe
 	if !ok {
 		return
 	}
+	limit := limitOf(params.Limit)
 	rows, err := a.store.ListReisen(r.Context(), n.ID, store.ReiseFilter{
 		Status: deref(params.Status), ArbeitgeberID: deref(params.ArbeitgeberId), Projekt: deref(params.Projekt),
 		Q: deref(params.Q), Von: dayBound(deref(params.Von), false), Bis: dayBound(deref(params.Bis), true),
-		Cursor: params.Cursor, Limit: limitOf(params.Limit) + 1,
+		Cursor: params.Cursor, Limit: limit + 1,
 	})
 	if err != nil {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	limit := int(limitOf(params.Limit))
-	var next *string
-	if len(rows) > limit {
-		id := rows[limit-1].Reise.ID
-		next = &id
-		rows = rows[:limit]
-	}
-	items := make([]api.Reise, 0, len(rows))
-	for _, row := range rows {
+	page := page(rows, limit, func(row store.ReiseBundle) string { return row.Reise.ID })
+	items := make([]api.Reise, 0, len(page.Rows))
+	for _, row := range page.Rows {
 		items = append(items, toReise(row))
 	}
-	writeJSON(w, http.StatusOK, api.ReiseListe{Items: items, NextCursor: next})
+	writeJSON(w, http.StatusOK, api.ReiseListe{Items: items, NextCursor: page.Next})
 }
 
 func (a *App) PostReise(w http.ResponseWriter, r *http.Request) {
@@ -218,23 +213,18 @@ func (a *App) GetVorlagen(w http.ResponseWriter, r *http.Request, params api.Get
 	if !ok {
 		return
 	}
-	rows, err := a.store.ListVorlagen(r.Context(), n.ID, deref(params.Art), params.Cursor, limitOf(params.Limit)+1)
+	limit := limitOf(params.Limit)
+	rows, err := a.store.ListVorlagen(r.Context(), n.ID, deref(params.Art), params.Cursor, limit+1)
 	if err != nil {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	limit := int(limitOf(params.Limit))
-	var next *string
-	if len(rows) > limit {
-		id := rows[limit-1].ID
-		next = &id
-		rows = rows[:limit]
-	}
-	items := make([]api.Vorlage, 0, len(rows))
-	for _, row := range rows {
+	page := page(rows, limit, func(row sqlitedb.Vorlage) string { return row.ID })
+	items := make([]api.Vorlage, 0, len(page.Rows))
+	for _, row := range page.Rows {
 		items = append(items, toVorlage(row))
 	}
-	writeJSON(w, http.StatusOK, api.VorlageListe{Items: items, NextCursor: next})
+	writeJSON(w, http.StatusOK, api.VorlageListe{Items: items, NextCursor: page.Next})
 }
 
 func (a *App) PostVorlage(w http.ResponseWriter, r *http.Request) {
