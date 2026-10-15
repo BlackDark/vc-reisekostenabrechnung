@@ -44,7 +44,7 @@ Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `G
 | Measure AVIF encode time in the container, then accept ADR 0005 or switch to WebP | O7, [#29](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/29) |
 | Track JStG 2026 and ship the 2027 Satztabelle when the BMF letter is out (expected Nov/Dec 2026) | O12, [#28](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/28) |
 | O1: authoritative basis for the meal deduction confirmed in the research (BMF-RK 2020 + § 9 Abs. 4a); verbatim Rz. 64–86 wording still pending a fetchable HTML source (PDF not parseable here, researcher unavailable) | O1 |
-| Work through the [code health pass](ideas/code-health.md): the `deploy/.env.example` quality defaults that contradict `internal/config`, the pagination "next page" guess, and the missing indexes are the first three | [ideas/code-health.md](ideas/code-health.md) |
+| Work through the [code health pass](ideas/code-health.md). Done: the pagination "next page" guess ([#42](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/42)) and the missing indexes ([#43](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/43)). Left of the first three: the `deploy/.env.example` quality defaults | [ideas/code-health.md](ideas/code-health.md) |
 
 Watch only, no action planned: O10 Dreimonatsfrist heuristic, O11 German VAT in foreign currency, O13 Frühstück herausrechnen, O14 erste Tätigkeitsstätte not modelled.
 
