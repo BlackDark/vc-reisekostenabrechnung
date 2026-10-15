@@ -37,13 +37,14 @@ func (a *App) GetBelege(w http.ResponseWriter, r *http.Request, params api.GetBe
 	}
 	eingang := params.Eingang != nil && *params.Eingang
 	limit := limitOf(params.Limit)
-	rows, err := a.store.ListBelege(r.Context(), n.ID, status, cursor, eingang, limit)
+	rows, err := a.store.ListBelege(r.Context(), n.ID, status, cursor, eingang, limit+1)
 	if writeStoreErr(w, err) {
 		return
 	}
-	items := make([]api.Beleg, 0, len(rows))
-	ids := make([]string, 0, len(rows))
-	for _, row := range rows {
+	page := page(rows, limit, func(row sqlitedb.Beleg) string { return row.ID })
+	items := make([]api.Beleg, 0, len(page.Rows))
+	ids := make([]string, 0, len(page.Rows))
+	for _, row := range page.Rows {
 		items = append(items, toBeleg(row))
 		ids = append(ids, row.ID)
 	}
@@ -52,12 +53,7 @@ func (a *App) GetBelege(w http.ResponseWriter, r *http.Request, params api.GetBe
 		return
 	}
 	items = belegeMitMail(items, mail)
-	var next *string
-	if int64(len(rows)) == limit && len(rows) > 0 {
-		id := rows[len(rows)-1].ID
-		next = &id
-	}
-	writeJSON(w, http.StatusOK, api.BelegListe{Items: items, NextCursor: next})
+	writeJSON(w, http.StatusOK, api.BelegListe{Items: items, NextCursor: page.Next})
 }
 
 func (a *App) GetBeleg(w http.ResponseWriter, r *http.Request, id api.Id) {

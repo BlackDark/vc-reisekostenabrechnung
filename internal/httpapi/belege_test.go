@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
@@ -370,3 +371,105 @@ func (r readerNop) Read(p []byte) (int, error) { return r.r.Read(p) }
 func (r readerNop) Close() error               { return nil }
 
 func ioNopCloser(r *strings.Reader) readerNop { return readerNop{r: r} }
+
+// A page whose last item is also the last item overall must not report a next
+// cursor, and a page that is one short must. Both branches only hold when the
+// handler fetches one row more than it returns and trims.
+func TestBelegListPaginationBoundary(t *testing.T) {
+	app := newTestApp(t, nil)
+	seedUser(t, app, "ada", "correct-horse-1", true)
+	h := app.Handler()
+	cookie := loginCookie(t, h)
+
+	const total = 3
+	for mark := range total {
+		if rec := uploadBeleg(t, h, cookie, distinctJpeg(t, mark), "seite.jpg", "image/jpeg", false); rec.Code != http.StatusAccepted {
+			t.Fatalf("upload %d %s", rec.Code, rec.Body)
+		}
+	}
+
+	tests := []struct {
+		name     string
+		limit    int
+		wantMore bool // is a next cursor expected?
+	}{
+		{"page exactly the full set", total, false},
+		{"page one short of the full set", total - 1, true},
+		{"page beyond the full set", total + 6, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := fmt.Sprintf("/api/v1/belege?limit=%d", tt.limit)
+			rec := authed(t, h, cookie, http.MethodGet, path, nil, "")
+			if rec.Code != http.StatusOK {
+				t.Fatalf("list %d %s", rec.Code, rec.Body)
+			}
+			var out struct {
+				Items      []map[string]any `json:"items"`
+				NextCursor *string          `json:"next_cursor"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+				t.Fatal(err)
+			}
+			wantItems := total
+			if tt.limit < wantItems {
+				wantItems = tt.limit
+			}
+			if len(out.Items) != wantItems {
+				t.Fatalf("got %d items, want %d: %s", len(out.Items), wantItems, rec.Body)
+			}
+			if (out.NextCursor != nil) != tt.wantMore {
+				t.Fatalf("next_cursor = %v, want present=%v", out.NextCursor != nil, tt.wantMore)
+			}
+		})
+	}
+
+	// Following the reported cursor then reaches the end of the list.
+	rec := authed(t, h, cookie, http.MethodGet, "/api/v1/belege?limit=2", nil, "")
+	var page1 struct {
+		NextCursor *string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &page1); err != nil {
+		t.Fatal(err)
+	}
+	if page1.NextCursor == nil {
+		t.Fatal("first page should report a cursor")
+	}
+	page2 := authed(t, h, cookie, http.MethodGet, "/api/v1/belege?limit=2&cursor="+*page1.NextCursor, nil, "")
+	var out2 struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor *string          `json:"next_cursor"`
+	}
+	if err := json.Unmarshal(page2.Body.Bytes(), &out2); err != nil {
+		t.Fatal(err)
+	}
+	if len(out2.Items) != 1 {
+		t.Fatalf("last page should hold the remaining receipt, got %d", len(out2.Items))
+	}
+	if out2.NextCursor != nil {
+		t.Fatalf("last page should not report a cursor, got %q", *out2.NextCursor)
+	}
+}
+
+// distinctJpeg builds a receipt whose bytes differ per mark. A uniform field of
+// constant colour compresses to the same JPEG whatever its value, so the upload
+// dedupe would collapse them into one receipt; the dark stripe keeps them apart.
+func distinctJpeg(t *testing.T, mark int) []byte {
+	t.Helper()
+	img := image.NewNRGBA(image.Rect(0, 0, 16, 16))
+	for i := range img.Pix {
+		img.Pix[i] = 235
+	}
+	for y := range img.Rect.Dy() {
+		for x := 0; x < 1+mark%8; x++ {
+			off := img.PixOffset(x, y)
+			img.Pix[off] = byte(20 + mark)
+			img.Pix[off+3] = 255
+		}
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90}); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}

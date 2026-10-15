@@ -16,6 +16,7 @@ import (
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/api"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/auth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store"
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
 )
 
 func (a *App) GetAuthConfig(w http.ResponseWriter, r *http.Request) {
@@ -346,17 +347,12 @@ func (a *App) GetAdminNutzer(w http.ResponseWriter, r *http.Request, params api.
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	var next *string
-	if int64(len(rows)) > limit {
-		rows = rows[:limit]
-		id := rows[len(rows)-1].ID
-		next = &id
-	}
-	items := make([]api.Nutzer, 0, len(rows))
-	for _, row := range rows {
+	page := page(rows, limit, func(row sqlitedb.Nutzer) string { return row.ID })
+	items := make([]api.Nutzer, 0, len(page.Rows))
+	for _, row := range page.Rows {
 		items = append(items, toNutzer(row))
 	}
-	writeJSON(w, http.StatusOK, api.NutzerListe{Items: items, NextCursor: next})
+	writeJSON(w, http.StatusOK, api.NutzerListe{Items: items, NextCursor: page.Next})
 }
 
 func (a *App) PostAdminNutzer(w http.ResponseWriter, r *http.Request) {

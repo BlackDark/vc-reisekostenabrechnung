@@ -14,17 +14,15 @@ func (a *App) GetAbrechnungen(w http.ResponseWriter, r *http.Request, params api
 	if !ok {
 		return
 	}
-	var limit int64
-	if params.Limit != nil && *params.Limit > 0 && *params.Limit <= 200 {
-		limit = int64(*params.Limit)
-	}
-	rows, err := a.store.ListAbrechnungen(r.Context(), n.ID, params.Cursor, limit)
+	limit := limitOf(params.Limit)
+	rows, err := a.store.ListAbrechnungen(r.Context(), n.ID, params.Cursor, limit+1)
 	if err != nil {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	items := make([]api.Abrechnung, 0, len(rows))
-	for _, row := range rows {
+	page := page(rows, limit, func(row sqlitedb.Abrechnung) string { return row.ID })
+	items := make([]api.Abrechnung, 0, len(page.Rows))
+	for _, row := range page.Rows {
 		b, err := a.store.GetAbrechnungBundle(r.Context(), n.ID, row.ID)
 		if err != nil {
 			writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
@@ -32,12 +30,7 @@ func (a *App) GetAbrechnungen(w http.ResponseWriter, r *http.Request, params api
 		}
 		items = append(items, toAbrechnung(b))
 	}
-	var next *string
-	if params.Limit != nil && len(rows) == *params.Limit && len(rows) > 0 {
-		id := rows[len(rows)-1].ID
-		next = &id
-	}
-	writeJSON(w, http.StatusOK, api.AbrechnungListe{Items: items, NextCursor: next})
+	writeJSON(w, http.StatusOK, api.AbrechnungListe{Items: items, NextCursor: page.Next})
 }
 
 func (a *App) PostAbrechnung(w http.ResponseWriter, r *http.Request) {

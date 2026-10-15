@@ -27,8 +27,12 @@ func (a *App) GetArbeitgeber(w http.ResponseWriter, r *http.Request, params api.
 	if writeStoreErr(w, err) {
 		return
 	}
-	items, next := pageArbeitgeber(rows, limit)
-	writeJSON(w, http.StatusOK, api.ArbeitgeberListe{Items: items, NextCursor: next})
+	page := page(rows, limit, func(row sqlitedb.Arbeitgeber) string { return row.ID })
+	items := make([]api.Arbeitgeber, 0, len(page.Rows))
+	for _, row := range page.Rows {
+		items = append(items, toArbeitgeber(row))
+	}
+	writeJSON(w, http.StatusOK, api.ArbeitgeberListe{Items: items, NextCursor: page.Next})
 }
 
 func (a *App) PostArbeitgeber(w http.ResponseWriter, r *http.Request) {
@@ -218,17 +222,12 @@ func (a *App) GetTaetigkeitsstaetten(w http.ResponseWriter, r *http.Request, par
 	if writeStoreErr(w, err) {
 		return
 	}
-	items := make([]api.Taetigkeitsstaette, 0, len(rows))
-	var next *string
-	if int64(len(rows)) > limit {
-		rows = rows[:limit]
-		id := rows[len(rows)-1].ID
-		next = &id
-	}
-	for _, row := range rows {
+	page := page(rows, limit, func(row sqlitedb.Taetigkeitsstaette) string { return row.ID })
+	items := make([]api.Taetigkeitsstaette, 0, len(page.Rows))
+	for _, row := range page.Rows {
 		items = append(items, toTaetigkeit(row))
 	}
-	writeJSON(w, http.StatusOK, api.TaetigkeitsstaetteListe{Items: items, NextCursor: next})
+	writeJSON(w, http.StatusOK, api.TaetigkeitsstaetteListe{Items: items, NextCursor: page.Next})
 }
 
 func (a *App) PostTaetigkeitsstaette(w http.ResponseWriter, r *http.Request) {
@@ -754,20 +753,6 @@ func toIdentitaet(row sqlitedb.NutzerIdentitaet) api.Identitaet {
 	return api.Identitaet{Id: row.ID, Art: api.IdentitaetArt(row.Art), Aussteller: row.Aussteller, Subjekt: row.Subjekt}
 }
 
-func pageArbeitgeber(rows []sqlitedb.Arbeitgeber, limit int64) ([]api.Arbeitgeber, *string) {
-	var next *string
-	if int64(len(rows)) > limit {
-		rows = rows[:limit]
-		id := rows[len(rows)-1].ID
-		next = &id
-	}
-	items := make([]api.Arbeitgeber, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, toArbeitgeber(row))
-	}
-	return items, next
-}
-
 func writeObject(w http.ResponseWriter, status int, version int64, body any) {
 	w.Header().Set("ETag", strconv.FormatInt(version, 10))
 	writeJSON(w, status, body)
@@ -778,6 +763,26 @@ func limitOf(limit *int) int64 {
 		return 50
 	}
 	return int64(*limit)
+}
+
+// nextPage is a page of results plus the cursor for the page after it.
+type nextPage[T any] struct {
+	Rows []T
+	Next *string
+}
+
+// page turns a limit+1 fetch into the page to return and the cursor for the
+// next one. Fetching one row more than is returned is what lets a cursor be
+// reported only when a further page really exists, so a final page that happens
+// to be exactly full does not report one and a following request does not come
+// back empty.
+func page[T any](rows []T, limit int64, id func(T) string) nextPage[T] {
+	if int64(len(rows)) > limit {
+		rows = rows[:limit]
+		next := id(rows[len(rows)-1])
+		return nextPage[T]{Rows: rows, Next: &next}
+	}
+	return nextPage[T]{Rows: rows}
 }
 
 func textOK(s string, max int) bool {
