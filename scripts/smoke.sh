@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+. "$(dirname "$0")/lib/wait.sh"
 image=${1:-vc-reisekosten:ci}
 name=rk-smoke
 vol=rk-smoke-data
@@ -34,15 +35,7 @@ fail() {
   docker logs "$name" >&2 || true
   exit 1
 }
-for i in $(seq 1 30); do
-  if curl -fsS http://127.0.0.1:8080/healthz >/dev/null 2>&1; then
-    break
-  fi
-  if [ "$i" -eq 30 ]; then
-    fail "healthz"
-  fi
-  sleep 1
-done
+wait_until 30 1 healthz curl -fsS http://127.0.0.1:8080/healthz || fail "healthz"
 curl -fsS http://127.0.0.1:8080/readyz >/dev/null || fail "readyz"
 curl -fsS http://127.0.0.1:8080/login | grep -q 'name="rk-app"' || fail "login html"
 code=$(curl -sS -o /tmp/login.json -w '%{http_code}' \
@@ -58,24 +51,13 @@ docker exec "$name" /usr/local/bin/reisekosten export-sample --out /data/sample.
 docker cp "$name":/data/sample.pdf /tmp/sample.pdf || fail "pdf copy"
 head -c 5 /tmp/sample.pdf | grep -q '%PDF' || fail "pdf magic"
 # The image probes every 60s, so allow two probe intervals before giving up.
-healthy=0
-for i in $(seq 1 40); do
+# container_healthy leaves the status it saw last in status, for the message below.
+container_healthy() {
   status=$(docker inspect --format '{{.State.Health.Status}}' "$name" 2>/dev/null || true)
-  if [ "$status" = "healthy" ]; then
-    healthy=1
-    break
-  fi
-  sleep 3
-done
-if [ "$healthy" != "1" ]; then
-  fail "health status ${status:-missing}"
-fi
+  [ "$status" = "healthy" ]
+}
+wait_until 40 3 "the container health probe" container_healthy || fail "health status ${status:-missing}"
 docker restart "$name" >/dev/null
-for i in $(seq 1 30); do
-  if curl -fsS http://127.0.0.1:8080/healthz >/dev/null 2>&1; then
-    echo "smoke ok"
-    exit 0
-  fi
-  sleep 1
-done
-fail "healthz after restart"
+wait_until 30 1 "healthz after the restart" curl -fsS http://127.0.0.1:8080/healthz \
+  || fail "healthz after restart"
+echo "smoke ok"
