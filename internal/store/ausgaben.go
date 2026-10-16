@@ -440,9 +440,12 @@ func (s *Store) Rates(ctx context.Context, waehrung string) ([]fx.Rate, error) {
 	return out, nil
 }
 
-// AllRates lists every cached daily rate.
-func (s *Store) AllRates(ctx context.Context) ([]fx.Rate, error) {
-	rows, err := s.readQ().ListWechselkurseAll(ctx)
+// RatesFor lists the cached daily rates of one currency. The calculation looks a
+// rate up per expense line and only ever wants the line's own currency, so a
+// caller that needs several reads once per currency instead of reading the whole
+// table; the table holds a row per currency and business day and grows with both.
+func (s *Store) RatesFor(ctx context.Context, waehrung string) ([]fx.Rate, error) {
+	rows, err := s.readQ().ListWechselkurse(ctx, waehrung)
 	if err != nil {
 		return nil, err
 	}

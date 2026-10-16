@@ -76,19 +76,9 @@ type Arbeitgeber struct {
 
 // SatzJahr is the rate snapshot used at submit time (I11).
 type SatzJahr struct {
-	Jahr    int              `json:"jahr"`
-	Quelle  string           `json:"quelle"`
-	Werte   map[string]int64 `json:"werte"`
-	Laender []SatzLand       `json:"laender,omitempty"`
-}
-
-// SatzLand is one foreign rate that a trip day used.
-type SatzLand struct {
-	LandISO       string `json:"land_iso"`
-	Satzort       string `json:"satzort"`
-	VMA24hCent    int64  `json:"vma_24h_cent"`
-	VMA8hCent     int64  `json:"vma_8h_cent"`
-	Uebernachtung int64  `json:"uebernachtung_cent"`
+	Jahr   int              `json:"jahr"`
+	Quelle string           `json:"quelle"`
+	Werte  map[string]int64 `json:"werte"`
 }
 
 // Reise is one trip inside the export.

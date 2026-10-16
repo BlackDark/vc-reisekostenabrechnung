@@ -34,11 +34,6 @@ func SampleLang(typstPath, lang, outPath string) error {
 	return os.WriteFile(outPath, doc.PDF, 0o644)
 }
 
-// Sample writes the German inland PDF/A-3b for the container smoke test.
-func Sample(typstPath, outPath string) error {
-	return SampleLang(typstPath, "de", outPath)
-}
-
 // Samples writes the veraPDF variants (Inland, Ausland, PDF receipt, XML, Bewirtung, en).
 func Samples(typstPath, dir string) error {
 	set, err := sampleSet(typstPath)

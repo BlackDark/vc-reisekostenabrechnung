@@ -22,13 +22,37 @@ Baseline when this was written: `go build ./...`, `go vet ./...` and `go test ./
 Landed since, newest first. The item bodies below are left as they were found, so the
 measurement that justified each one is still readable:
 
+- **1.10** the rate-limiter map sheds the keys whose bucket has refilled, so it stops
+  growing for the life of the process ([#53](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/53)).
+- **2.2** one path-traversal guard, in `internal/files`, called by the directory store and
+  held there by the storage contract test ([#53](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/53)).
+- **2.5** six unused UI component trees, one unused dependency and four dead re-exports
+  removed ([#53](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/53)).
+- **2.6** seven exported declarations with no caller removed, among them the export
+  snapshot's rate list that nothing ever filled in ([#53](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/53)).
+- **1.5** the loaders that only read moved to the read pool, so a trip read no longer waits
+  behind an upload or an export, and the read pool refuses writes
+  ([#52](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/52)).
+- **1.12** the VAT month rate is asked once per currency and month, the stored daily rates are
+  read per currency in the calculation and only when a line is in one
+  ([#51](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/51),
+  [#53](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/53)).
+- **1.7** the audit chain is verified in pages of 500 rows, so memory no longer scales with
+  the length of the history ([#50](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/50)).
+- **1.9** the meal recalculation runs inside the expense write, so a failed recalculation
+  rolls the expense back instead of leaving the meal flags describing a row that changed
+  ([#49](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/49)).
+- **1.8** the error-safety half: the external login path propagates the writes it makes and
+  refuses a login it could not record
+  ([#48](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/48)).
 - **1.11** one typst run per batch of receipt pages, 306ms per page down to 175ms on a
   ten-page receipt ([#46](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/46)).
 - **1.4** batched bundle load: a page of trips went from four statements plus three per
   expense to seven statements per batch
   ([#45](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/45)).
 - **1.3** the whole-history load became about seven times faster as a side effect of the
-  batched loader; the recomputation behind the single-expense read is still open.
+  batched loader. The recomputation it still does per request is measured and not worth a
+  cache: see [Checked and rejected](#checked-and-rejected).
 - **1.1** `deploy/.env.example` now states the quality the code and the docs use
   ([#44](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/44)).
 - **1.2** one pagination helper that fetches `limit + 1`, trims and returns the cursor
@@ -290,12 +314,16 @@ That is 1,114 lines, about 21% of the 5,267 lines in the `web/src/lib/components
 not just dead bytes: `svelte-check` and Biome still process these trees, and two select APIs
 sit side by side, so a contributor picks the wrong one.
 
-Also unused, and verified with no import anywhere in `web/src`, `e2e` or `scripts`:
+Also unused, verified with no import anywhere in `web/src`, `e2e` or `scripts`:
 
-- `workbox-window` (`web/package.json:27`); service-worker registration goes through
-  `virtual:pwa-register/svelte` (`web/src/lib/ReloadPrompt.svelte:2`).
 - `@testing-library/svelte` (`web/package.json:34`); all six Vitest files import only
   `vitest`.
+
+`workbox-window` (`web/package.json:27`) looked like a third one and is not: the generated
+`virtual:pwa-register/svelte` module imports it, and Vite resolves that import from the
+`web` package, so removing it fails the production build. Nothing in this repository
+names it, which is exactly why the removal looked safe; only a build from a clean
+`pnpm install` shows the difference.
 - Four dead re-exports in `web/src/lib/beleg/corners.ts:3-8` (`detectFromRGBA`,
   `profileWidth`, `suggestProfil`, `warpRGBA`); every real consumer imports `./geometry`
   directly, so the barrel is a second public surface for the same code.
@@ -458,6 +486,29 @@ untranslated-value checks while it is open.
 
 Recorded so nobody re-opens them.
 
+- **A whole-table read of the stored daily rates (1.12, second half).** The calculation reads
+  the rate of a line's own currency and never another currency's, so the unbounded read of
+  every row is gone: with 10,000 stored rows (20 currencies over 500 business days) it cost
+  41ms per call against 2.1ms for the 500 rows of one currency, and it ran on every endpoint
+  that calculates. The bounded read stays, because a foreign line does need its currency's
+  rates.
+- **A per-user day-index cache in front of the calculation (1.3).** Measured on 20 trips
+  with 100 expense lines: `ListReisenAll` alone is 6.6ms and a full `calculate` is
+  10.4-16.6ms, so the recomputation a cache would remove is a few milliseconds at that
+  size, while the cache would have to be invalidated on every trip and expense write of that
+  user. Revisit when an account reaches hundreds of trips, and key the index by calendar day
+  then, since that is all the rule needs.
+- **Batching `checkBelege`'s per-id `GetBeleg` (1.12).** The ids come from the expense in
+  hand, so the loop is one primary-key lookup per linked receipt, one to three of them, in a
+  write transaction that is open anyway. An `IN` list would save microseconds.
+- **Reducing the audit row to one per changed identity (1.8, the performance half).** The
+  login path writes an audit row per authenticated request. Dropping it is a data-safety
+  decision and not a performance one, so it stays until the maintainer calls it; the check
+  that the Nutzer is still active stays per request either way.
+- **Sharing `deref` and `emptyNil` (2.2).** `internal/store` and `internal/httpapi` each
+  declare them with identical bodies, and a single home would mean one package owning a
+  helper the other has no business reaching into (a pointer dereference is not a store
+  concern). The bodies are two to five lines with no branching to drift.
 - **`belegdatei_sha_idx` looks duplicated** across `db/migrations/00004_belege.sql:45` and
   `00008_beleg_bild.sql:26`. It is not: 00008 rebuilds the table
   (`DROP TABLE belegdatei` at `:24`), and dropping a table drops its indexes, so recreating

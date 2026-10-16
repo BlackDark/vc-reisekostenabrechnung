@@ -1,13 +1,5 @@
 import { detectFromRGBA, type Profil, type Pt, warpRGBA } from "./geometry";
 
-export {
-	detectFromRGBA,
-	profileWidth,
-	suggestProfil,
-	warpRGBA,
-} from "./geometry";
-export type { Profil, Pt };
-
 function frame(w: number, h: number): Pt[] {
 	const x = Math.max(0, w - 1);
 	const y = Math.max(0, h - 1);

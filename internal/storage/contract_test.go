@@ -88,6 +88,28 @@ func exercise(t *testing.T, s Store) {
 	if err := s.Ready(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	exerciseEscapingKeys(t, s)
+}
+
+// A key is built from user input, and one that leaves the storage root would
+// read and write files outside it. Both stores refuse such a key instead of
+// normalising it, and this is the one place that holds them to it.
+func exerciseEscapingKeys(t *testing.T, s Store) {
+	t.Helper()
+	ctx := t.Context()
+	body := []byte("receipt-bytes")
+	sum := sha256.Sum256(body)
+	hexSum := hex.EncodeToString(sum[:])
+	for _, key := range []string{
+		"", "../escape.bin", "nutzer/../../escape.bin", "/etc/passwd",
+	} {
+		if err := s.PutIfAbsent(ctx, key, bytes.NewReader(body), hexSum); err == nil {
+			t.Errorf("PutIfAbsent accepted the key %q", key)
+		}
+		if _, err := s.Get(ctx, key); err == nil {
+			t.Errorf("Get accepted the key %q", key)
+		}
+	}
 }
 
 func readAll(r io.ReadCloser) ([]byte, error) {

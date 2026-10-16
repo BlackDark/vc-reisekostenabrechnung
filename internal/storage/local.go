@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/files"
 )
 
 // Local is a directory tree. Writes land in a temp file, are fsynced, then renamed.
@@ -28,7 +30,7 @@ func OpenLocal(root string) (*Local, error) {
 }
 
 func (l *Local) PutIfAbsent(_ context.Context, key string, r io.Reader, sha256hex string) error {
-	path, err := safe(l.root, key)
+	path, err := files.SafePath(l.root, key)
 	if err != nil {
 		return err
 	}
@@ -86,7 +88,7 @@ func (l *Local) PutIfAbsent(_ context.Context, key string, r io.Reader, sha256he
 }
 
 func (l *Local) Get(_ context.Context, key string) (io.ReadCloser, error) {
-	path, err := safe(l.root, key)
+	path, err := files.SafePath(l.root, key)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +100,7 @@ func (l *Local) Get(_ context.Context, key string) (io.ReadCloser, error) {
 }
 
 func (l *Local) Stat(_ context.Context, key string) (Info, error) {
-	path, err := safe(l.root, key)
+	path, err := files.SafePath(l.root, key)
 	if err != nil {
 		return Info{}, err
 	}
@@ -121,7 +123,7 @@ func (l *Local) Stat(_ context.Context, key string) (Info, error) {
 }
 
 func (l *Local) DeleteForRetention(_ context.Context, key, _ string) error {
-	path, err := safe(l.root, key)
+	path, err := files.SafePath(l.root, key)
 	if err != nil {
 		return err
 	}
@@ -162,16 +164,4 @@ func hashFile(path string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-func safe(root, key string) (string, error) {
-	if key == "" || strings.Contains(key, "..") || filepath.IsAbs(key) {
-		return "", errors.New("invalid storage key")
-	}
-	root = filepath.Clean(root)
-	path := filepath.Clean(filepath.Join(root, filepath.FromSlash(key)))
-	if path != root && !strings.HasPrefix(path, root+string(os.PathSeparator)) {
-		return "", errors.New("invalid storage key")
-	}
-	return path, nil
 }

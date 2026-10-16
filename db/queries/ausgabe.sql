@@ -173,10 +173,6 @@ SELECT * FROM wechselkurs
 WHERE waehrung = sqlc.arg(waehrung)
 ORDER BY datum;
 
--- name: ListWechselkurseAll :many
-SELECT * FROM wechselkurs
-ORDER BY datum, waehrung;
-
 -- name: UpsertUstMonatskurs :exec
 INSERT INTO ust_monatskurs (jahr, monat, waehrung, kurs, abgerufen_am)
 VALUES (sqlc.arg(jahr), sqlc.arg(monat), sqlc.arg(waehrung), sqlc.arg(kurs), sqlc.arg(abgerufen_am))
