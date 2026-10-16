@@ -250,24 +250,24 @@ func (a *App) pdfJPEGs(ctx context.Context, row sqlitedb.Beleg, files []sqlitedb
 		quality = 70
 	}
 	var out [][]byte
-	for page := 1; page <= pages; page++ {
-		png, err := belegpipe.RenderPDFPage(ctx, bin, pdf, page)
-		if err != nil {
-			return nil, err
-		}
+	err = belegpipe.RenderPDFPages(ctx, bin, pdf, pages, func(page int, png []byte) error {
 		img, _, err := image.Decode(bytes.NewReader(png))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		var buf bytes.Buffer
 		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
-			return nil, err
+			return err
 		}
 		fitted, err := ki.FitJPEG(buf.Bytes(), a.kiMaxEdge())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		out = append(out, fitted)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }

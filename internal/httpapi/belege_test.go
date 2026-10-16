@@ -11,11 +11,13 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/config"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/storage"
+	"golang.org/x/image/webp"
 )
 
 func TestBelegPhotoLifecycle(t *testing.T) {
@@ -100,6 +102,108 @@ func TestBelegPhotoLifecycle(t *testing.T) {
 	warn := authed(t, h, cookie, http.MethodGet, "/api/v1/warnungen", nil, "")
 	if !strings.Contains(warn.Body.String(), "W04") {
 		t.Fatalf("warn %s", warn.Body)
+	}
+}
+
+// A multi-page PDF keeps one image per page, numbered from the first. The pages
+// are rasterised several at a time now, so this walks every page of a three-page
+// document through the real pipeline and checks that each page arrives once, in
+// order and under its own number.
+func TestBelegPDFKeepsEveryPage(t *testing.T) {
+	typst := os.Getenv("TYPST_PATH")
+	if typst == "" {
+		typst = "/usr/local/bin/typst"
+	}
+	if _, err := os.Stat(typst); err != nil {
+		t.Skip("typst not installed")
+	}
+	app := newTestApp(t, func(cfg *config.Config) { cfg.TypstPath = typst })
+	seedUser(t, app, "ada", "correct-horse-1", true)
+	h := app.Handler()
+	cookie := loginCookie(t, h)
+	// The pages differ only in their media box, so the rendered shape says which
+	// page an image came from.
+	shapes := []struct{ box, name string }{
+		{"0 0 30 30", "square"},
+		{"0 0 90 10", "wide"},
+		{"0 0 10 90", "tall"},
+	}
+	var b strings.Builder
+	b.WriteString("%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n")
+	fmt.Fprintf(&b, "2 0 obj<</Type/Pages/Count %d/Kids[", len(shapes))
+	for i := range shapes {
+		fmt.Fprintf(&b, "%d 0 R ", 3+i)
+	}
+	b.WriteString("]>>endobj\n")
+	for i, shape := range shapes {
+		fmt.Fprintf(&b, "%d 0 obj<</Type/Page/Parent 2 0 R/MediaBox[%s]>>endobj\n", 3+i, shape.box)
+	}
+	b.WriteString("trailer<</Root 1 0 R>>\n%%EOF\n")
+
+	res := uploadBeleg(t, h, cookie, []byte(b.String()), "rechnung.pdf", "application/pdf", false)
+	if res.Code != http.StatusAccepted {
+		t.Fatalf("pdf %d %s", res.Code, res.Body)
+	}
+	for {
+		more, err := app.ProcessNext(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !more {
+			break
+		}
+	}
+	var doc map[string]any
+	_ = json.Unmarshal(res.Body.Bytes(), &doc)
+	id, _ := doc["id"].(string)
+
+	files, err := app.store.ListBelegdateien(t.Context(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pages := int64(0)
+	for _, f := range files {
+		if f.Seite > pages {
+			pages = f.Seite
+		}
+	}
+	if pages != int64(len(shapes)) {
+		t.Fatalf("%d pages stored, want %d", pages, len(shapes))
+	}
+	for i, shape := range shapes {
+		page := int64(i + 1)
+		for _, variante := range []string{"vorschau", "bild", "export_jpeg"} {
+			f, ok := findDatei(files, variante, page)
+			if !ok {
+				t.Fatalf("page %d: no %s rendition", page, variante)
+			}
+			if f.Bytes == 0 {
+				t.Fatalf("page %d: empty %s rendition", page, variante)
+			}
+		}
+		f, _ := findDatei(files, "bild", page)
+		rc, err := app.blobs.Get(t.Context(), f.SpeicherSchluessel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(rc)
+		_ = rc.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		img, err := webp.Decode(bytes.NewReader(body))
+		if err != nil {
+			t.Fatalf("page %d: %v", page, err)
+		}
+		w, h2 := img.Bounds().Dx(), img.Bounds().Dy()
+		ok := map[string]bool{
+			"square": w == h2,
+			"wide":   w > 5*h2,
+			"tall":   h2 > 5*w,
+		}[shape.name]
+		if !ok {
+			t.Fatalf("page %d rendered %dx%d, which is not the %s page: the pages came back out of order", page, w, h2, shape.name)
+		}
 	}
 }
 
