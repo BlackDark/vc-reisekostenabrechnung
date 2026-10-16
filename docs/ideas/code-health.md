@@ -19,6 +19,23 @@ How to read the tiers:
 
 Baseline when this was written: `go build ./...`, `go vet ./...` and `go test ./...` all pass.
 
+Landed since, newest first. The item bodies below are left as they were found, so the
+measurement that justified each one is still readable:
+
+- **1.11** one typst run per batch of receipt pages, 306ms per page down to 175ms on a
+  ten-page receipt ([#46](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/46)).
+- **1.4** batched bundle load: a page of trips went from four statements plus three per
+  expense to seven statements per batch
+  ([#45](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/45)).
+- **1.3** the whole-history load became about seven times faster as a side effect of the
+  batched loader; the recomputation behind the single-expense read is still open.
+- **1.1** `deploy/.env.example` now states the quality the code and the docs use
+  ([#44](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/44)).
+- **1.2** one pagination helper that fetches `limit + 1`, trims and returns the cursor
+  ([#42](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/42)).
+- The indexes the pass itself asked for, in `db/migrations/00015_read_indexes.sql`
+  ([#43](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/43)).
+
 ## Tier 1: correctness and per-request cost
 
 ### 1.1 The deploy example contradicts the code and the docs on receipt quality
@@ -27,7 +44,7 @@ Baseline when this was written: `go build ./...`, `go vet ./...` and `go test ./
 defaults, the documentation and the e2e setup all disagree:
 
 | Source | Quality | Speed |
-|---|---|---|
+| --- | --- | --- |
 | `internal/config/config.go:166-167` | 70 | 8 |
 | `internal/belegpipe/pipe.go:63-67` (the zero-value fallback) | 70 | 8 |
 | `docs/configuration.md:71-72` | 70 | 8 |
@@ -260,7 +277,7 @@ Verified by `rg` with the component's own directory excluded; each has zero impo
 `web/src` and `e2e`:
 
 | Directory | Files | Lines |
-|---|---|---|
+| --- | --- | --- |
 | `web/src/lib/components/ui/alert/` | 5 | 127 |
 | `web/src/lib/components/ui/avatar/` | 7 | 157 |
 | `web/src/lib/components/ui/checkbox/` | 2 | 46 |
@@ -293,7 +310,7 @@ only the wrappers themselves go.
 Verified declaration-only, tests included:
 
 | Symbol | Declared at |
-|---|---|
+| --- | --- |
 | `store.SessionByToken` | `internal/store/store.go:373` |
 | `store.DeleteSessions` | `internal/store/store.go:460` |
 | `store.SetGroupAdmin` | `internal/store/store.go:336` |
