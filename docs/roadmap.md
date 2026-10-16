@@ -6,7 +6,7 @@ The open points table in [SPEC §22](SPEC.md#22-offene-punkte) and the later lis
 ## Done
 
 | # | Milestone | Release | Result |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | M1 | [Walking skeleton](MILESTONES.md#m1--walking-skeleton-010) | 0.1.0 | Sign-in (password, OIDC, header), PWA shell, multi-arch image, release-please |
 | M2 | [Arbeitgeber, Tätigkeitsstätten, Satztabellen](MILESTONES.md#m2--arbeitgeber-tätigkeitsstätten-satztabellen-020) | 0.2.0 | Employers, places of work, rate tables 2024–2026 with admin overrides and CSV import |
 | M3 | [Reisen und Pauschalen](MILESTONES.md#m3--reisen-und-pauschalen-030) | 0.3.0 | Trips with Ortswechsel, Reisetage, Fahrten; calculation core with golden tests |
@@ -30,7 +30,7 @@ Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `G
 ### Maintainer (Eduard)
 
 | Task | Reference |
-|---|---|
+| --- | --- |
 | Re-run `release.yml` on `main` with `tag=v1.0.0`; the v1.0.0 release is still a **draft** because the `notes` job failed in the first run | [#24](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/24) |
 | Make the GHCR package `ghcr.io/blackdark/vc-reisekostenabrechnung` public (then switch the image size badge to a live one) | O6 |
 | Install the Renovate GitHub app for the repo | O15, [#2](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/2) |
@@ -40,11 +40,11 @@ Also done: the own audit log `GET /api/v1/protokoll`, the admin system status `G
 ### Code
 
 | Task | Reference |
-|---|---|
+| --- | --- |
 | Measure AVIF encode time in the container, then accept ADR 0005 or switch to WebP | O7, [#29](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/29) |
 | Track JStG 2026 and ship the 2027 Satztabelle when the BMF letter is out (expected Nov/Dec 2026) | O12, [#28](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/28) |
 | O1: authoritative basis for the meal deduction confirmed in the research (BMF-RK 2020 + § 9 Abs. 4a); verbatim Rz. 64–86 wording still pending a fetchable HTML source (PDF not parseable here, researcher unavailable) | O1 |
-| Work through the [code health pass](ideas/code-health.md). Done: the pagination "next page" guess ([#42](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/42)) and the missing indexes ([#43](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/43)). Left of the first three: the `deploy/.env.example` quality defaults | [ideas/code-health.md](ideas/code-health.md) |
+| Work through the [code health pass](ideas/code-health.md). Done: the `deploy/.env.example` quality defaults ([#44](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/44)), the batched bundle load ([#45](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/45)) and the batched receipt rasteriser ([#46](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/46)), plus the pagination "next page" guess ([#42](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/42)) and the missing indexes ([#43](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/43)). Left of Tier 1: the recomputation behind the single-expense read (1.3), read-only loads on the write pool (1.5), the unbounded audit list (1.7), the write per authenticated request (1.8), the recalculation written after a change (1.9), the rate-limiter map that never evicts (1.10) and the repeated scans in the calculation (1.12) | [ideas/code-health.md](ideas/code-health.md) |
 
 Watch only, no action planned: O10 Dreimonatsfrist heuristic, O11 German VAT in foreign currency, O13 Frühstück herausrechnen, O14 erste Tätigkeitsstätte not modelled.
 
@@ -59,7 +59,7 @@ Every decision in SPEC §0 (Q1–Q35), the calculation rules with golden tests G
 Ideas, not committed. Larger items get a design note in [ideas/](ideas/).
 
 | Idea | Notes |
-|---|---|
+| --- | --- |
 | Personal API tokens + upload endpoint (n8n, iOS Shortcuts, scanners) | [#26](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/26) |
 | PWA Web Share Target for PDFs and photos | [#27](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/27) |
 | E-Rechnung parsing (XRechnung/ZUGFeRD to fields) | SPEC §21 |
