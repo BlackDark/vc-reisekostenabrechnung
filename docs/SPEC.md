@@ -1024,7 +1024,7 @@ vc-reisekostenabrechnung/
 ├─ renovate.json5, Makefile (Entwickler-Kurzbefehle), GLOSSARY.md, README.md, LICENSE
 ```
 
-Lokale Entwicklung: `make dev` startet das Go-Backend (`go run ./cmd/reisekosten serve`) und `pnpm --filter web dev` (Vite-Proxy `/api` → `:8080`); der generierte TypeScript-Client liegt eingecheckt unter `web/src/lib/api/`; `make check` = alle Linter und Tests wie im CI.
+Lokale Entwicklung: `go run ./cmd/reisekosten serve` startet das Go-Backend, `pnpm --filter web dev` den Vite-Server (Proxy `/api` → `:8080`); der generierte TypeScript-Client liegt eingecheckt unter `web/src/lib/api/`. `make check` = `make test` (Go-Tests) plus `make web` (Biome, svelte-check, Vitest, Build, i18n-Abgleich, Bundle-Größen); `golangci-lint` und `govulncheck` laufen nur im CI.
 
 ## 17. Docker und Betrieb
 
@@ -1164,7 +1164,7 @@ changes ─┬─► go ────────┐
 
 | Job | Läuft wenn | Inhalt | Timeout |
 |---|---|---|---|
-| `changes` | immer | Filter `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `satztabellen/**`, `internal/**`), `web` (`web/**`, `pnpm-lock.yaml`, `biome.json`), `image` (go ∪ web ∪ `Dockerfile`, `assets/**`, `e2e/**`, `deploy/**`) | 2 |
+| `changes` | immer | Filter `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `satztabellen/**`, `internal/**`), `web` (`web/**`, `pnpm-lock.yaml`, `biome.json`), `toolchain` (alle Dateien, aus denen `scripts/mise-check.sh` Versionen liest), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `image` (go ∪ web ∪ `Dockerfile`, `assets/**`, `e2e/**`, `deploy/**`) | 2 |
 | `go` | go | `setup-go` (`go-version-file: go.mod`, Cache), `golangci-lint-action` (v2.14.0), `go test -race -shuffle=on -coverprofile` (inkl. Golden-Tests 4.16, Storage-Contract-Tests gegen MinIO-Service-Container), `govulncheck` | 10 |
 | `codegen` | go | `sqlc generate`, `oapi-codegen`, `openapi-typescript` → `git diff --exit-code`; Postgres-Probe: sqlc-Engine `postgresql` in Temp-Verzeichnis generieren und kompilieren (3.6) | 5 |
 | `web` | web | `pnpm/action-setup`, `setup-node` (`node-version-file: .node-version`, `cache: pnpm`), `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich de/en, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 10 |
@@ -1173,6 +1173,7 @@ changes ─┬─► go ────────┐
 | `e2e` | image | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go`/`web` | 10 |
 | `pdfa` | image | Validator-Job (18.6) | 5 |
 | `scan` | image | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
+| `backup` | backup | Compose-Rendering (`compose-config.sh`) und Litestream-Restore als UID 65532 (O16) – ohne Image-Artefakt | 10 |
 | `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 2 |
 | `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 2 |
 | `publish-edge` | nur `push` auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert wie Release | 10 |
@@ -1188,7 +1189,7 @@ Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go` (
 
 ### 18.4 E2E und Screenshot-Durchlauf
 
-- Umgebung (`e2e/compose.ci.yml`): das geladene Image `vc-reisekosten:ci`, `mock-oauth2-server` (OIDC mit konfigurierbarem `groups`-Claim), MinIO für einen S3-Lauf (eigener Playwright-Projekt-Durchlauf mit `STORAGE_BACKEND=s3`). Playwright läuft im Container `mcr.microsoft.com/playwright:v1.64.0-noble` (Browser vorinstalliert, kein Download).
+- Umgebung (`scripts/e2e-up.sh`): das geladene Image `vc-reisekosten:ci`, `mock-oauth2-server` (OIDC mit konfigurierbarem `groups`-Claim), MinIO für einen S3-Lauf (eigener Playwright-Projekt-Durchlauf mit `STORAGE_BACKEND=s3`). Playwright läuft im Container `mcr.microsoft.com/playwright:v1.64.0-noble` (Browser vorinstalliert, kein Download).
 - Projekte: `desktop` (Chromium 1280×800), `mobile` (Chromium, Pixel-7-Emulation 412×915) und `mobile-webkit` (iPhone-Emulation). Dieselben Projekte und dieselbe Umgebung laufen auf Pull Requests und auf `main`.
 - **Fachliche Flows**: Passwort-Login, OIDC-Login mit Auto-Provisioning und Admin-Gruppe, Header-Auth (nur von vertrauenswürdiger Quelle), Reise anlegen (Inland, Ausland mit Ortswechseln), Beleg hochladen (Fixture-Foto → Ecken → Bestätigen), KI-Vorschlag gegen einen Mock-Endpunkt, Abrechnung anlegen/prüfen/einreichen, PDF/ZIP herunterladen (Inhalt geprüft), Entsperrung mit Grund, als bezahlt markieren, Sprache umschalten, Satztabellen-Override als Admin.
 - **Screenshot-Durchlauf** (`e2e/tests/seiten.spec.ts`): eine Routenliste mit **jeder Seite** der App (inkl. Leer- und gefüllter Zustände über Seed-Daten). Je Route und Viewport (desktop + mobile): Seite öffnen, auf geladene Hauptüberschrift warten (Assertion „Seite lädt“), **keine** `console.error`- oder `pageerror`-Ereignisse (Test schlägt fehl), auf mobile `document.documentElement.scrollWidth <= window.innerWidth` (**kein horizontales Scrollen**), Full-Page-Screenshot nach `screenshots/<viewport>/<route>.png`. Eine Prüfung stellt sicher, dass jede im Router registrierte Route in der Liste steht.

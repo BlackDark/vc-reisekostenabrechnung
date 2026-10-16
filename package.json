@@ -5,9 +5,6 @@
 		"@biomejs/biome": "2.5.15"
 	},
 	"scripts": {
-		"codegen": "pnpm --filter web codegen",
-		"check": "pnpm --filter web check",
-		"build": "pnpm --filter web build",
 		"screenshots:readme": "node scripts/screenshots-readme.mjs"
 	}
 }

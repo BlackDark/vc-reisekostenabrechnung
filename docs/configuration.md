@@ -113,7 +113,7 @@ Forward or redirect receipts to a mailbox the app polls; their attachments then 
 | `MAIL_IMAP_HOST` | | IMAP host. Empty disables the poller; when set, `MAIL_FORWARD_DOMAIN` is also required |
 | `MAIL_IMAP_PORT` | `993` | IMAP port (implicit TLS) |
 | `MAIL_IMAP_USERNAME` | | Mailbox login (required with `MAIL_IMAP_HOST`) |
-| `MAIL_IMAP_PASSWORD` | | Mailbox password; also as `MAIL_IMAP_PASSWORD_FILE` |
+| `MAIL_IMAP_PASSWORD` (`_FILE`) | | Mailbox password |
 | `MAIL_IMAP_FOLDER` | `INBOX` | Mailbox folder to poll |
 | `MAIL_IMAP_INTERVAL` | `5m` | Poll interval; must be positive |
 | `MAIL_IMAP_PROCESSED_ACTION` | `flag` | After filing: `flag`, `delete`, or `move:<mailbox>` |

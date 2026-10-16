@@ -30,6 +30,7 @@ jobs:
       web: ${{ steps.out.outputs.web }}
       image: ${{ steps.out.outputs.image }}
       toolchain: ${{ steps.out.outputs.toolchain }}
+      backup: ${{ steps.out.outputs.backup }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -79,8 +80,14 @@ jobs:
               - '.node-version'
               - 'go.mod'
               - 'package.json'
+              - 'Dockerfile'
+              - 'e2e/package.json'
               - 'scripts/mise-check.sh'
               - '.github/workflows/ci.yml'
+            backup:
+              - 'deploy/**'
+              - 'scripts/compose-config.sh'
+              - 'scripts/litestream-smoke.sh'
       - id: out
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -89,6 +96,7 @@ jobs:
               echo "web=${{ steps.filter.outputs.web }}"
               echo "image=${{ steps.filter.outputs.image }}"
               echo "toolchain=${{ steps.filter.outputs.toolchain }}"
+              echo "backup=${{ steps.filter.outputs.backup }}"
             } >> "$GITHUB_OUTPUT"
           else
             {
@@ -96,6 +104,7 @@ jobs:
               echo "web=true"
               echo "image=true"
               echo "toolchain=true"
+              echo "backup=true"
             } >> "$GITHUB_OUTPUT"
           fi
 
@@ -440,7 +449,7 @@ jobs:
 
   backup:
     needs: changes
-    if: needs.changes.outputs.image == 'true'
+    if: needs.changes.outputs.backup == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
