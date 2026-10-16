@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+. "$(dirname "$0")/lib/wait.sh"
 docker rm -f rk-e2e rk-mock >/dev/null 2>&1 || true
 pkill -f scripts/ki-stub.py >/dev/null 2>&1 || true
 docker volume rm rk-e2e-data >/dev/null 2>&1 || true
@@ -38,15 +39,15 @@ docker run -d --name rk-e2e --network host \
   -e AI_RESPONSE_FORMAT=json_object \
   vc-reisekosten:ci
 nohup python3 scripts/ki-stub.py >/tmp/ki-stub.log 2>&1 &
-for i in $(seq 1 40); do
-  if curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1 \
+stack_ready() {
+  curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1 \
     && curl -fsS http://127.0.0.1:8089/default/.well-known/openid-configuration >/dev/null 2>&1 \
-    && curl -fsS http://127.0.0.1:8091/health >/dev/null 2>&1; then
-    echo "e2e stack ready"
-    exit 0
-  fi
-  sleep 1
-done
+    && curl -fsS http://127.0.0.1:8091/health >/dev/null 2>&1
+}
+if wait_until 40 1 "the end-to-end stack" stack_ready; then
+  echo "e2e stack ready"
+  exit 0
+fi
 docker logs rk-e2e >&2 || true
 docker logs rk-mock >&2 || true
 cat /tmp/ki-stub.log >&2 || true
