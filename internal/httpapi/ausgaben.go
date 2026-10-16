@@ -439,18 +439,33 @@ func (a *App) ustRate(ctx context.Context, waehrung string, jahr, monat int) (st
 	return kurs, ok, nil
 }
 
+// ustMonth identifies one VAT month rate. A month holds one rate per currency, so
+// a run that asks twice wants the same answer back.
+type ustMonth struct {
+	waehrung string
+	jahr     int
+	monat    int
+}
+
 func (a *App) attachMoney(r *http.Request, nutzerID string, in *berechnung.Eingabe) error {
-	rates, err := a.store.AllRates(r.Context())
-	if err != nil {
-		return err
-	}
-	for _, rate := range rates {
-		in.Kurse = append(in.Kurse, berechnung.Kurs{Waehrung: rate.Waehrung, Datum: rate.Datum, Kurs: rate.Kurs})
+	// A rate is only looked up for a line in a currency other than the euro, so a
+	// run with none leaves the stored table alone instead of reading all of it.
+	if hasForeignLine(in) {
+		rates, err := a.store.AllRates(r.Context())
+		if err != nil {
+			return err
+		}
+		for _, rate := range rates {
+			in.Kurse = append(in.Kurse, berechnung.Kurs{Waehrung: rate.Waehrung, Datum: rate.Datum, Kurs: rate.Kurs})
+		}
 	}
 	for _, rate := range fx.EmbeddedECB() {
 		in.Kurse = append(in.Kurse, berechnung.Kurs{Waehrung: rate.Waehrung, Datum: rate.Datum, Kurs: rate.Kurs})
 	}
 	employers := map[string]string{}
+	// A trip usually holds several lines in the same month and currency, and each
+	// repeat of the lookup would also repeat the fetch behind it on a miss.
+	months := map[ustMonth]string{}
 	for i := range in.Reisen {
 		trip := &in.Reisen[i]
 		if nutzerID != "" && trip.ArbeitgeberID != "" {
@@ -473,16 +488,37 @@ func (a *App) attachMoney(r *http.Request, nutzerID string, in *berechnung.Einga
 			if err != nil {
 				continue
 			}
-			kurs, ok, err := a.store.MonthRate(r.Context(), line.Waehrung, when.Year(), int(when.Month()))
-			if err != nil {
-				return err
+			key := ustMonth{waehrung: line.Waehrung, jahr: when.Year(), monat: int(when.Month())}
+			kurs, asked := months[key]
+			if !asked {
+				kurs, _, err = a.ustRate(r.Context(), key.waehrung, key.jahr, key.monat)
+				if err != nil {
+					return err
+				}
+				// An empty rate is the answer that there is none, and is cached
+				// as such.
+				months[key] = kurs
 			}
-			if ok {
+			if kurs != "" {
 				line.Monatskurs = kurs
 			}
 		}
 	}
 	return nil
+}
+
+// hasForeignLine reports whether any expense line is in a currency other than the
+// euro. The calculation only consults a rate for such a line, so this decides
+// whether the stored rates have to be read at all.
+func hasForeignLine(in *berechnung.Eingabe) bool {
+	for i := range in.Reisen {
+		for j := range in.Reisen[i].Ausgaben {
+			if w := in.Reisen[i].Ausgaben[j].Waehrung; w != "" && w != "EUR" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (a *App) lineIndex(r *http.Request, nutzerID string) map[string]berechnung.AusgabeErgebnis {
