@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestProtokollOwn(t *testing.T) {
@@ -44,21 +45,39 @@ func TestProtokollOwn(t *testing.T) {
 	}
 	var out struct {
 		Items []struct {
-			ID        string `json:"id"`
-			Aktion    string `json:"aktion"`
-			AkteurArt string `json:"akteur_art"`
+			ID        string    `json:"id"`
+			Zeitpunkt time.Time `json:"zeitpunkt"`
+			Aktion    string    `json:"aktion"`
+			ObjektTyp string    `json:"objekt_typ"`
+			ObjektID  string    `json:"objekt_id"`
+			AkteurArt string    `json:"akteur_art"`
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
 	}
+	var me struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(login.Body.Bytes(), &me); err != nil {
+		t.Fatal(err)
+	}
 	saw := false
 	for _, it := range out.Items {
+		if it.ID == "" {
+			t.Fatalf("event without an id: %s", rec.Body)
+		}
 		if it.AkteurArt != "nutzer" {
 			t.Fatalf("unexpected actor %q in own protokoll: %s", it.AkteurArt, rec.Body)
 		}
+		if it.Zeitpunkt.Location() != time.UTC {
+			t.Fatalf("event %s reported in %s, want UTC", it.Aktion, it.Zeitpunkt.Location())
+		}
 		if it.Aktion == "nutzer.profil" {
 			saw = true
+			if it.ObjektTyp != "nutzer" || it.ObjektID != me.ID {
+				t.Fatalf("profile event names %s/%s, want nutzer/%s", it.ObjektTyp, it.ObjektID, me.ID)
+			}
 		}
 	}
 	if !saw {

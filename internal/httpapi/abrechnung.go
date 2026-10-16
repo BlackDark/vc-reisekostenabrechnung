@@ -386,9 +386,11 @@ func toExport(row sqlitedb.Export) api.Export {
 	}
 }
 
+// toProtokoll maps one stored audit row to the event the API reports. The audit
+// chain seals the row in UTC, so the event is reported in UTC as well.
 func toProtokoll(row sqlitedb.AuditEreigni) api.ProtokollEreignis {
 	return api.ProtokollEreignis{
-		Id: row.ID, Zeitpunkt: row.Zeitpunkt, Aktion: row.Aktion, ObjektTyp: row.ObjektTyp,
+		Id: row.ID, Zeitpunkt: row.Zeitpunkt.UTC(), Aktion: row.Aktion, ObjektTyp: row.ObjektTyp,
 		ObjektId: row.ObjektID, AkteurArt: row.AkteurArt, Grund: row.Grund,
 	}
 }
