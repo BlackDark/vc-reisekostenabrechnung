@@ -589,6 +589,15 @@ Recorded so nobody re-opens them.
   Both run on every change to the files they read, so a disagreement between them shows up
   as a red job rather than as a silent difference.
 
+- **The image serialization (3.4).** Every consumer runs on its own runner, so its
+  `docker load` stays whether the artifact is a docker-archive or an OCI archive, and the
+  image job needs a daemon anyway because it runs the built image to read its version back.
+  What the item would remove is one `docker save` pass, since `skopeo copy` can write the
+  docker-archive straight from the OCI archive; what an amd64-only `type=docker` output
+  would cost is the arm64 half of the build, and after the cross-build job went away
+  ([#54](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/54)) the image build is
+  the only place in pull request CI that compiles for arm64.
+
 ## Suggested order
 
 1. 1.1 and 1.2 (behaviour fixes, no design work), each with its own test.
