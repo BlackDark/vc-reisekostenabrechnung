@@ -182,7 +182,7 @@ func (s *Store) UpdateReise(ctx context.Context, nutzerID, reiseID string, versi
 // GetReiseBundle loads one Reise for its Nutzer.
 func (s *Store) GetReiseBundle(ctx context.Context, nutzerID, reiseID string) (ReiseBundle, error) {
 	var out ReiseBundle
-	err := s.tx(ctx, func(q *sqlitedb.Queries) error {
+	err := s.rtx(ctx, func(q *sqlitedb.Queries) error {
 		var err error
 		out, err = loadBundle(ctx, q, nutzerID, reiseID)
 		return err
@@ -193,7 +193,7 @@ func (s *Store) GetReiseBundle(ctx context.Context, nutzerID, reiseID string) (R
 // ListReisen returns a page of Reisen with legs and days.
 func (s *Store) ListReisen(ctx context.Context, nutzerID string, f ReiseFilter) ([]ReiseBundle, error) {
 	var out []ReiseBundle
-	err := s.tx(ctx, func(q *sqlitedb.Queries) error {
+	err := s.rtx(ctx, func(q *sqlitedb.Queries) error {
 		rows, err := q.ListReisen(ctx, sqlitedb.ListReisenParams{
 			NutzerID: nutzerID, Status: f.Status, ArbeitgeberID: f.ArbeitgeberID, Projekt: f.Projekt,
 			Q: f.Q, QLike: likePat(f.Q), Von: f.Von, Bis: f.Bis, Cursor: f.Cursor, LimitN: f.Limit,
@@ -210,7 +210,7 @@ func (s *Store) ListReisen(ctx context.Context, nutzerID string, f ReiseFilter) 
 // ListReisenAll loads every Reise of a Nutzer for the day rule (4.5).
 func (s *Store) ListReisenAll(ctx context.Context, nutzerID string) ([]ReiseBundle, error) {
 	var out []ReiseBundle
-	err := s.tx(ctx, func(q *sqlitedb.Queries) error {
+	err := s.rtx(ctx, func(q *sqlitedb.Queries) error {
 		rows, err := q.ListReisenAll(ctx, nutzerID)
 		if err != nil {
 			return err
@@ -408,7 +408,7 @@ func (s *Store) DeleteFahrt(ctx context.Context, nutzerID, fahrtID string, actor
 // ListFahrten lists Fahrten of one Reise.
 func (s *Store) ListFahrten(ctx context.Context, nutzerID, reiseID string) ([]sqlitedb.Fahrt, error) {
 	var out []sqlitedb.Fahrt
-	err := s.tx(ctx, func(q *sqlitedb.Queries) error {
+	err := s.rtx(ctx, func(q *sqlitedb.Queries) error {
 		if _, err := q.GetReise(ctx, sqlitedb.GetReiseParams{ID: reiseID, NutzerID: nutzerID}); err != nil {
 			return mapErr(err)
 		}

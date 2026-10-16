@@ -101,7 +101,7 @@ func (s *Store) CreateAbrechnung(ctx context.Context, nutzerID string, in Abrech
 // GetAbrechnungBundle loads one Abrechnung for its Nutzer.
 func (s *Store) GetAbrechnungBundle(ctx context.Context, nutzerID, abrechnungID string) (AbrechnungBundle, error) {
 	var out AbrechnungBundle
-	err := s.tx(ctx, func(q *sqlitedb.Queries) error {
+	err := s.rtx(ctx, func(q *sqlitedb.Queries) error {
 		var err error
 		out, err = loadAbrechnung(ctx, q, nutzerID, abrechnungID)
 		return err
