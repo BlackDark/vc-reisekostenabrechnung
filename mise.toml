@@ -4,11 +4,15 @@
 #
 #   go             -> go.mod (the go directive; actions/setup-go go-version-file)
 #   node           -> .node-version (actions/setup-node node-version-file)
-#   pnpm           -> package.json packageManager
+#   pnpm           -> package.json packageManager, the workflow steps, the Dockerfile
 #   golangci-lint  -> .github/workflows/ci.yml (golangci-lint-action version)
-#   govulncheck    -> .github/workflows/ci.yml (go install golang.org/x/vuln/...)
-#   typst          -> .github/workflows/ci.yml (ghcr.io/typst/typst image tag)
+#   govulncheck    -> .github/workflows/ci.yml (cache key and go install tag)
+#   typst          -> .github/workflows/ci.yml and Dockerfile (ghcr.io/typst/typst tag)
 #   actionlint     -> .github/workflows/ci.yml (release tarball version)
+#
+# Playwright is not a tool mise installs: the end-to-end workspace pins it in
+# e2e/package.json, and scripts/mise-check.sh holds the workflow's container
+# image to that version.
 #
 # Renovate keeps these in step: each tool is grouped with the file CI reads it
 # from (see renovate.json5), so mise.toml and CI move together.
