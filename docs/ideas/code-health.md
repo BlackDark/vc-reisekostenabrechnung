@@ -36,13 +36,15 @@ defaults, the documentation and the e2e setup all disagree:
 
 `docs/configuration.md:72` even explains why 8 is the right speed ("8 encodes all-intra about
 four times faster than 6"), so the shipped example selects the slower and lower-quality
-profile the docs argue against. Anyone who follows the README quickstart gets it. The same
-file also pins `HEADER_AUTH_ADMIN_GROUP` and `HEADER_AUTH_ALLOWED_GROUP` to empty
-(`deploy/.env.example:47-48`), which silently overrides the documented fallback to
-`OIDC_ADMIN_GROUP` / `OIDC_ALLOWED_GROUP` described at `docs/configuration.md:53-54`.
+profile the docs argue against. Anyone who follows the README quickstart gets it.
 
-Fix: make the example agree with the defaults that the code and the docs already state, and
-leave the group fallbacks commented out rather than empty.
+Fix: make the example agree with the defaults that the code and the docs already state.
+
+Checked and **not** a defect: the empty `HEADER_AUTH_ADMIN_GROUP` and `HEADER_AUTH_ALLOWED_GROUP`
+in the same file look like they override the documented `${OIDC_ADMIN_GROUP}` fallback. They do
+not. `internal/config/config.go:231` reads them with `lookupDefault`, which substitutes the
+OIDC group when the value is empty, so the empty lines already produce the documented
+behaviour.
 
 ### 1.2 Three pagination rules, and the newest one cannot report a next page
 
