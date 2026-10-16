@@ -120,6 +120,9 @@ func (s *Store) CreateAusgabe(ctx context.Context, nutzerID, reiseID string, in 
 		if err := appendAudit(ctx, q, actor, "ausgabe.angelegt", "ausgabe", row.ID, nil, mustJSON(row), nil); err != nil {
 			return err
 		}
+		if err := applyMealSuggestions(ctx, q, nutzerID, reiseID, actor); err != nil {
+			return err
+		}
 		out, err = loadAusgabe(ctx, q, nutzerID, row)
 		if err != nil {
 			return err
@@ -161,6 +164,9 @@ func (s *Store) UpdateAusgabe(ctx context.Context, nutzerID, ausgabeID string, v
 			}
 		}
 		if err := appendAudit(ctx, q, actor, "ausgabe.geaendert", "ausgabe", row.ID, mustJSON(prev), mustJSON(row), nil); err != nil {
+			return err
+		}
+		if err := applyMealSuggestions(ctx, q, nutzerID, prev.ReiseID, actor); err != nil {
 			return err
 		}
 		out, err = loadAusgabe(ctx, q, nutzerID, row)
@@ -206,7 +212,10 @@ func (s *Store) DeleteAusgabe(ctx context.Context, nutzerID, ausgabeID string, v
 		if n == 0 {
 			return ErrNotFound
 		}
-		return appendAudit(ctx, q, actor, "ausgabe.geloescht", "ausgabe", ausgabeID, mustJSON(prev), nil, nil)
+		if err := appendAudit(ctx, q, actor, "ausgabe.geloescht", "ausgabe", ausgabeID, mustJSON(prev), nil, nil); err != nil {
+			return err
+		}
+		return applyMealSuggestions(ctx, q, nutzerID, prev.ReiseID, actor)
 	})
 }
 
@@ -329,71 +338,72 @@ func (s *Store) ConfirmBewirtung(ctx context.Context, nutzerID, ausgabeID string
 	return out, err
 }
 
-// ApplyMealSuggestions sets Gestellte Mahlzeiten from Ausgaben unless the day was edited by hand.
-func (s *Store) ApplyMealSuggestions(ctx context.Context, nutzerID, reiseID string, actor Actor) error {
-	return s.tx(ctx, func(q *sqlitedb.Queries) error {
-		bundle, err := loadBundle(ctx, q, nutzerID, reiseID)
-		if err != nil {
-			return err
+// applyMealSuggestions sets the Gestellte Mahlzeiten from the Ausgaben, unless the
+// day was edited by hand. It runs in the transaction of the Ausgabe write that
+// caused the change, so a failure rolls that write back instead of leaving the
+// meals describing an expense that was never stored.
+func applyMealSuggestions(ctx context.Context, q *sqlitedb.Queries, nutzerID, reiseID string, actor Actor) error {
+	bundle, err := loadBundle(ctx, q, nutzerID, reiseID)
+	if err != nil {
+		return err
+	}
+	suggestions := berechnung.SuggestMeals(CalcReise(bundle))
+	byDay := map[string][]berechnung.Vorschlag{}
+	for _, v := range suggestions {
+		byDay[v.Datum] = append(byDay[v.Datum], v)
+	}
+	for _, day := range bundle.Tage {
+		if day.MahlzeitQuelle == "manuell" {
+			continue
 		}
-		suggestions := berechnung.SuggestMeals(CalcReise(bundle))
-		byDay := map[string][]berechnung.Vorschlag{}
-		for _, v := range suggestions {
-			byDay[v.Datum] = append(byDay[v.Datum], v)
+		fr, mi, ab := day.FruehstueckGestellt, day.MittagGestellt, day.AbendGestellt
+		prev := parseMealQuelle(day.MahlzeitQuelle)
+		if _, ok := prev["fruehstueck"]; ok {
+			fr = false
 		}
-		for _, day := range bundle.Tage {
-			if day.MahlzeitQuelle == "manuell" {
+		if _, ok := prev["mittag"]; ok {
+			mi = false
+		}
+		if _, ok := prev["abend"]; ok {
+			ab = false
+		}
+		next := map[string]string{}
+		for _, v := range byDay[day.Datum] {
+			switch v.Mahlzeit {
+			case "fruehstueck":
+				fr = true
+			case "mittag":
+				mi = true
+			case "abend":
+				ab = true
+			default:
 				continue
 			}
-			fr, mi, ab := day.FruehstueckGestellt, day.MittagGestellt, day.AbendGestellt
-			prev := parseMealQuelle(day.MahlzeitQuelle)
-			if _, ok := prev["fruehstueck"]; ok {
-				fr = false
-			}
-			if _, ok := prev["mittag"]; ok {
-				mi = false
-			}
-			if _, ok := prev["abend"]; ok {
-				ab = false
-			}
-			next := map[string]string{}
-			for _, v := range byDay[day.Datum] {
-				switch v.Mahlzeit {
-				case "fruehstueck":
-					fr = true
-				case "mittag":
-					mi = true
-				case "abend":
-					ab = true
-				default:
-					continue
-				}
-				next[v.Mahlzeit] = v.Quelle
-			}
-			raw := ""
-			if len(next) > 0 {
-				b, err := json.Marshal(next)
-				if err != nil {
-					return err
-				}
-				raw = string(b)
-			}
-			if fr == day.FruehstueckGestellt && mi == day.MittagGestellt && ab == day.AbendGestellt && raw == day.MahlzeitQuelle {
-				continue
-			}
-			updated, err := q.UpdateReisetagMeals(ctx, sqlitedb.UpdateReisetagMealsParams{
-				FruehstueckGestellt: fr, MittagGestellt: mi, AbendGestellt: ab, MahlzeitQuelle: raw,
-				ReiseID: reiseID, Datum: day.Datum,
-			})
+			next[v.Mahlzeit] = v.Quelle
+		}
+		raw := ""
+		if len(next) > 0 {
+			b, err := json.Marshal(next)
 			if err != nil {
 				return err
 			}
-			if err := appendAudit(ctx, q, actor, "reisetag.vorschlag", "reisetag", day.ID, mustJSON(day), mustJSON(updated), nil); err != nil {
-				return err
-			}
+			raw = string(b)
 		}
-		return nil
-	})
+		if fr == day.FruehstueckGestellt && mi == day.MittagGestellt && ab == day.AbendGestellt && raw == day.MahlzeitQuelle {
+			continue
+		}
+		updated, err := q.UpdateReisetagMeals(ctx, sqlitedb.UpdateReisetagMealsParams{
+			FruehstueckGestellt: fr, MittagGestellt: mi, AbendGestellt: ab, MahlzeitQuelle: raw,
+			ReiseID: reiseID, Datum: day.Datum,
+		})
+		if err != nil {
+			return err
+		}
+		if err := appendAudit(ctx, q, actor, "reisetag.vorschlag", "reisetag", day.ID, mustJSON(day), mustJSON(updated), nil); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // RememberRates caches ECB rates.

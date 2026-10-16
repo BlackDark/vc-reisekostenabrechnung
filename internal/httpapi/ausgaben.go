@@ -48,7 +48,6 @@ func (a *App) PostAusgabe(w http.ResponseWriter, r *http.Request, id api.Id) {
 	if writeStoreErr(w, err) {
 		return
 	}
-	_ = a.store.ApplyMealSuggestions(r.Context(), n.ID, id, a.actor(r, n))
 	writeObject(w, http.StatusCreated, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
 }
 
@@ -85,7 +84,6 @@ func (a *App) PatchAusgabe(w http.ResponseWriter, r *http.Request, id api.Id, pa
 	if writeStoreErr(w, err) {
 		return
 	}
-	_ = a.store.ApplyMealSuggestions(r.Context(), n.ID, row.Row.ReiseID, a.actor(r, n))
 	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
 }
 
@@ -98,14 +96,9 @@ func (a *App) DeleteAusgabe(w http.ResponseWriter, r *http.Request, id api.Id, p
 	if !ok {
 		return
 	}
-	prev, err := a.store.GetAusgabe(r.Context(), n.ID, id)
-	if writeStoreErr(w, err) {
-		return
-	}
 	if writeStoreErr(w, a.store.DeleteAusgabe(r.Context(), n.ID, id, version, a.actor(r, n))) {
 		return
 	}
-	_ = a.store.ApplyMealSuggestions(r.Context(), n.ID, prev.Row.ReiseID, a.actor(r, n))
 	w.WriteHeader(http.StatusNoContent)
 }
 

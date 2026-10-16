@@ -58,9 +58,6 @@ func TestPersistGoldenAusgaben(t *testing.T) {
 	}, actor); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.ApplyMealSuggestions(ctx, ada.ID, g15.Reise.ID, actor); err != nil {
-		t.Fatal(err)
-	}
 	reloaded, err := s.GetReiseBundle(ctx, ada.ID, g15.Reise.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -217,6 +214,72 @@ func TestPersistGoldenAusgaben(t *testing.T) {
 	if pay != -8760 {
 		t.Fatalf("repay %d", pay)
 	}
+}
+
+// The meal flags are derived from the expenses, so the write that changes an
+// expense has to move them in the same call. The recalculation used to run in a
+// separate transaction whose failure the caller dropped, which could leave a
+// night's breakfast deducted with no hotel left to justify it.
+func TestAusgabeWriteKeepsTheMealFlagsInStep(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t)
+	ada := mustNutzer(t, s, "ada")
+	actor := Actor{Art: "nutzer", NutzerID: &ada.ID}
+	ag, err := s.CreateArbeitgeber(ctx, ada.ID, ArbeitgeberInput{Name: "ACME", Anschrift: "Weg 1"}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reise := mustReise(t, s, ada.ID, actor, ReiseInput{
+		ArbeitgeberID: ag.ID, Anlass: "Hotelbeleg",
+		BeginnLokal: "2026-04-13T18:00:00", BeginnZone: "Europe/Berlin",
+		EndeLokal: "2026-04-14T10:00:00", EndeZone: "Europe/Berlin",
+		Ortswechsel: []OrtswechselInput{{
+			AnkunftLokal: "2026-04-13T20:00:00", AnkunftZone: "Europe/Berlin",
+			Verkehrsmittel: "bahn", LandISO: "DE",
+		}},
+	})
+	if _, err := s.PatchReisetag(ctx, ada.ID, reise.Reise.ID, "2026-04-13", reise.Reise.Version,
+		ReisetagInput{Unterkunft: "beleg"}, actor); err != nil {
+		t.Fatal(err)
+	}
+	ausgabe, err := s.CreateAusgabe(ctx, ada.ID, reise.Reise.ID, AusgabeInput{
+		Kostenart: "uebernachtung", Datum: "2026-04-13", Betrag: 12127, Waehrung: "EUR",
+		Naechte: []string{"2026-04-13"}, Fruehstueck: true,
+		Anteile: []AnteilInput{
+			{Satz: 700, Steuerland: "DE", Brutto: 11770},
+			{Satz: 1900, Steuerland: "DE", Brutto: 357},
+		},
+	}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !breakfastOn(t, s, ada.ID, reise.Reise.ID, "2026-04-14") {
+		t.Fatal("the hotel breakfast never reached the day it is eaten on")
+	}
+
+	if err := s.DeleteAusgabe(ctx, ada.ID, ausgabe.Row.ID, ausgabe.Row.Version, actor); err != nil {
+		t.Fatal(err)
+	}
+	if breakfastOn(t, s, ada.ID, reise.Reise.ID, "2026-04-14") {
+		t.Fatal("the breakfast outlived the hotel expense it came from")
+	}
+}
+
+// breakfastOn reports whether the day carries the breakfast flag, which is how
+// the meal suggestions reach the calculation.
+func breakfastOn(t *testing.T, s *Store, nutzerID, reiseID, datum string) bool {
+	t.Helper()
+	bundle, err := s.GetReiseBundle(context.Background(), nutzerID, reiseID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, day := range bundle.Tage {
+		if day.Datum == datum {
+			return day.FruehstueckGestellt
+		}
+	}
+	t.Fatalf("reise has no day %s", datum)
+	return false
 }
 
 func mustReise(t *testing.T, s *Store, nutzerID string, actor Actor, in ReiseInput) ReiseBundle {
