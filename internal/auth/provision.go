@@ -41,10 +41,10 @@ func ParseGroups(raw []byte) ([]string, bool) {
 		if err := unmarshalStringList(s, &items); err != nil {
 			return nil, true
 		}
-		return compact(items), true
+		return trimNonEmpty(items), true
 	}
 	s = strings.Trim(s, `"`)
-	return compact(strings.Split(s, ",")), true
+	return trimNonEmpty(strings.Split(s, ",")), true
 }
 
 func unmarshalStringList(s string, dst *[]string) error {
@@ -52,7 +52,9 @@ func unmarshalStringList(s string, dst *[]string) error {
 	return jsonUnmarshal([]byte(s), dst)
 }
 
-func compact(in []string) []string {
+// trimNonEmpty trims each entry and drops the ones that end up empty, so a list
+// typed into one field arrives as the entries it names and nothing else.
+func trimNonEmpty(in []string) []string {
 	out := make([]string, 0, len(in))
 	for _, s := range in {
 		s = strings.TrimSpace(s)

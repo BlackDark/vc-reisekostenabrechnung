@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 	_ "time/tzdata"
@@ -54,7 +55,7 @@ func (s *Store) RetentionReport(ctx context.Context, today string) ([]RetentionI
 	for _, row := range exporte {
 		name := row.Bezeichnung
 		if row.Version > 0 {
-			name = name + " v" + itoa(row.Version)
+			name = name + " v" + strconv.FormatInt(row.Version, 10)
 		}
 		items = append(items, RetentionItem{
 			Art: "export", ID: row.ID, NutzerID: row.NutzerID, Bezeichnung: name,
@@ -230,7 +231,7 @@ func (s *Store) FailPlainJob(ctx context.Context, job sqlitedb.Job, cause error)
 // RetentionDeadline is 31 December of year+8 in Europe/Berlin (SPEC 12.4).
 func RetentionDeadline(now time.Time) string {
 	loc := berlin()
-	return itoa(int64(now.In(loc).Year()+8)) + "-12-31"
+	return strconv.Itoa(now.In(loc).Year()+8) + "-12-31"
 }
 
 // BerlinDate is the civil date in Europe/Berlin.
@@ -246,30 +247,4 @@ func monthStartBerlin(now time.Time) time.Time {
 func nextRetentionAt(now time.Time) time.Time {
 	t := now.In(berlin())
 	return time.Date(t.Year(), t.Month()+1, 1, 6, 0, 0, 0, berlin())
-}
-
-func itoa(n int64) string {
-	return fmtInt(n)
-}
-
-func fmtInt(n int64) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var buf [20]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-	return string(buf[i:])
 }
