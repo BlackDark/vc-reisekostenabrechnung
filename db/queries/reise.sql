@@ -73,10 +73,10 @@ INSERT INTO ortswechsel (
 )
 RETURNING *;
 
--- name: ListOrtswechsel :many
+-- name: ListOrtswechselByReisen :many
 SELECT * FROM ortswechsel
-WHERE reise_id = sqlc.arg(reise_id)
-ORDER BY reihenfolge;
+WHERE reise_id IN (sqlc.slice(reise_ids))
+ORDER BY reise_id, reihenfolge;
 
 -- name: DeleteOrtswechsel :exec
 DELETE FROM ortswechsel WHERE reise_id = sqlc.arg(reise_id);
@@ -99,6 +99,11 @@ RETURNING *;
 SELECT * FROM reisetag
 WHERE reise_id = sqlc.arg(reise_id)
 ORDER BY datum;
+
+-- name: ListReisetageByReisen :many
+SELECT * FROM reisetag
+WHERE reise_id IN (sqlc.slice(reise_ids))
+ORDER BY reise_id, datum;
 
 -- name: GetReisetag :one
 SELECT * FROM reisetag
@@ -150,6 +155,16 @@ RETURNING *;
 SELECT * FROM fahrt
 WHERE reise_id = sqlc.arg(reise_id) AND nutzer_id = sqlc.arg(nutzer_id)
 ORDER BY datum, id;
+
+-- The named argument comes before the slice in the text on purpose. sqlc numbers
+-- a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+-- and SQLite then numbers those from one, so the two collide and the filter
+-- silently matches nothing. With the named argument first, the numbering lines
+-- up with the order the generated code binds. Do not reorder the WHERE clause.
+-- name: ListFahrtenByReisen :many
+SELECT * FROM fahrt
+WHERE nutzer_id = sqlc.arg(nutzer_id) AND reise_id IN (sqlc.slice(reise_ids))
+ORDER BY reise_id, datum, id;
 
 -- name: ListFahrtenByNutzer :many
 SELECT * FROM fahrt

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/berechnung"
@@ -234,4 +235,123 @@ func berechneOne(t *testing.T, cat *satz.Catalog, trip berechnung.Reise, kurse [
 		t.Fatal(err)
 	}
 	return got.Reisen[0]
+}
+
+// The bundle loader answers a whole page of trips with batched lookups, so it
+// has to group shares, receipt links and Eigenbelege back onto the right trip and
+// the right expense. A mistake there is invisible with a single trip, which is
+// why this covers several.
+func TestReiseBundlesKeepEveryPartAcrossTrips(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t)
+	ada := mustNutzer(t, s, "ada")
+	actor := Actor{Art: "nutzer", NutzerID: &ada.ID}
+	ag, err := s.CreateArbeitgeber(ctx, ada.ID, ArbeitgeberInput{Name: "ACME", Anschrift: "Weg 1"}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beleg, err := s.CreateBeleg(ctx, ada.ID, NewBeleg{
+		Typ: "foto", Seiten: 1, SHA256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Status: "bestaetigt",
+	}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const trips = 3
+	const perTrip = 2
+	for i := range trips {
+		trip := mustReise(t, s, ada.ID, actor, ReiseInput{
+			ArbeitgeberID: ag.ID, Anlass: "Kundentermin", Projekt: fmt.Sprintf("P%d", i),
+			BeginnLokal: "2026-04-13T18:00:00", BeginnZone: "Europe/Berlin",
+			EndeLokal: "2026-04-15T10:00:00", EndeZone: "Europe/Berlin",
+			Ortswechsel: []OrtswechselInput{{
+				AnkunftLokal: "2026-04-13T20:00:00", AnkunftZone: "Europe/Berlin",
+				Verkehrsmittel: "bahn", LandISO: "DE",
+			}},
+		})
+		for j := range perTrip {
+			item, err := s.CreateAusgabe(ctx, ada.ID, trip.Reise.ID, AusgabeInput{
+				Kostenart: "reisenebenkosten", Datum: "2026-04-14", Betrag: int64(1000 + j),
+				Waehrung: "EUR", BelegIDs: []string{beleg.ID},
+				Anteile: []AnteilInput{{Satz: 1900, Steuerland: "DE", Brutto: int64(1000 + j)}},
+			}, actor)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := s.PutEigenbeleg(ctx, ada.ID, item.Row.ID, item.Row.Version, EigenbelegInput{
+				Grund: "Barzahlung", Zahlungsempfaenger: "Taxi", Art: "quittung",
+			}, actor); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	// Another Nutzer's line on their own trip must never surface here.
+	bob := mustNutzer(t, s, "bob")
+	bobActor := Actor{Art: "nutzer", NutzerID: &bob.ID}
+	bobAg, err := s.CreateArbeitgeber(ctx, bob.ID, ArbeitgeberInput{Name: "Bob AG", Anschrift: "Weg 2"}, bobActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bobTrip := mustReise(t, s, bob.ID, bobActor, ReiseInput{
+		ArbeitgeberID: bobAg.ID, Anlass: "Fremd",
+		BeginnLokal: "2026-04-13T18:00:00", BeginnZone: "Europe/Berlin",
+		EndeLokal: "2026-04-14T10:00:00", EndeZone: "Europe/Berlin",
+		Ortswechsel: []OrtswechselInput{{
+			AnkunftLokal: "2026-04-13T20:00:00", AnkunftZone: "Europe/Berlin",
+			Verkehrsmittel: "bahn", LandISO: "DE",
+		}},
+	})
+	if _, err := s.CreateAusgabe(ctx, bob.ID, bobTrip.Reise.ID, AusgabeInput{
+		Kostenart: "reisenebenkosten", Datum: "2026-04-13", Betrag: 999, Waehrung: "EUR",
+	}, bobActor); err != nil {
+		t.Fatal(err)
+	}
+
+	loaders := map[string]func() []ReiseBundle{
+		"ListReisen": func() []ReiseBundle {
+			out, err := s.ListReisen(ctx, ada.ID, ReiseFilter{Limit: trips + 1})
+			if err != nil {
+				t.Fatal(err)
+			}
+			return out
+		},
+		"ListReisenAll": func() []ReiseBundle {
+			out, err := s.ListReisenAll(ctx, ada.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return out
+		},
+	}
+	for name, load := range loaders {
+		t.Run(name, func(t *testing.T) {
+			got := load()
+			if len(got) != trips {
+				t.Fatalf("trips %d, want %d", len(got), trips)
+			}
+			for _, trip := range got {
+				if len(trip.Legs) != 1 || len(trip.Tage) != 3 {
+					t.Fatalf("trip %s: legs %d days %d", trip.Reise.ID, len(trip.Legs), len(trip.Tage))
+				}
+				if len(trip.Ausgaben) != perTrip {
+					t.Fatalf("trip %s: expenses %d, want %d", trip.Reise.ID, len(trip.Ausgaben), perTrip)
+				}
+				for _, item := range trip.Ausgaben {
+					if item.Row.ReiseID != trip.Reise.ID {
+						t.Fatalf("expense %s filed under %s but carried by %s", item.Row.ID, item.Row.ReiseID, trip.Reise.ID)
+					}
+					if len(item.Anteile) != 1 || item.Anteile[0].AusgabeID != item.Row.ID {
+						t.Fatalf("expense %s: shares %+v", item.Row.ID, item.Anteile)
+					}
+					if len(item.Belege) != 1 || item.Belege[0].ID != beleg.ID {
+						t.Fatalf("expense %s: receipt links %+v", item.Row.ID, item.Belege)
+					}
+					if item.Eigen == nil || item.Eigen.AusgabeID != item.Row.ID {
+						t.Fatalf("expense %s: substitute receipt %+v", item.Row.ID, item.Eigen)
+					}
+				}
+			}
+		})
+	}
 }

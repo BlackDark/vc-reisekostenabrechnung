@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 
@@ -200,14 +201,8 @@ func (s *Store) ListReisen(ctx context.Context, nutzerID string, f ReiseFilter) 
 		if err != nil {
 			return err
 		}
-		for _, row := range rows {
-			b, err := loadParts(ctx, q, nutzerID, row)
-			if err != nil {
-				return err
-			}
-			out = append(out, b)
-		}
-		return nil
+		out, err = loadBundles(ctx, q, nutzerID, rows)
+		return err
 	})
 	return out, err
 }
@@ -220,14 +215,8 @@ func (s *Store) ListReisenAll(ctx context.Context, nutzerID string) ([]ReiseBund
 		if err != nil {
 			return err
 		}
-		for _, row := range rows {
-			b, err := loadParts(ctx, q, nutzerID, row)
-			if err != nil {
-				return err
-			}
-			out = append(out, b)
-		}
-		return nil
+		out, err = loadBundles(ctx, q, nutzerID, rows)
+		return err
 	})
 	return out, err
 }
@@ -324,8 +313,12 @@ func (s *Store) PatchReisetag(ctx context.Context, nutzerID, reiseID, datum stri
 		if err := appendAudit(ctx, q, actor, "reisetag.geaendert", "reisetag", day.ID, mustJSON(day), mustJSON(updated), auditGrund); err != nil {
 			return err
 		}
-		out, err = loadParts(ctx, q, nutzerID, row)
-		return err
+		got, err := loadBundles(ctx, q, nutzerID, []sqlitedb.Reise{row})
+		if err != nil {
+			return err
+		}
+		out = got[0]
+		return nil
 	})
 	return out, err
 }
@@ -569,27 +562,119 @@ func loadBundle(ctx context.Context, q *sqlitedb.Queries, nutzerID, reiseID stri
 	if err != nil {
 		return ReiseBundle{}, mapErr(err)
 	}
-	return loadParts(ctx, q, nutzerID, row)
+	got, err := loadBundles(ctx, q, nutzerID, []sqlitedb.Reise{row})
+	if err != nil {
+		return ReiseBundle{}, err
+	}
+	return got[0], nil
 }
 
-func loadParts(ctx context.Context, q *sqlitedb.Queries, nutzerID string, row sqlitedb.Reise) (ReiseBundle, error) {
-	legs, err := q.ListOrtswechsel(ctx, row.ID)
-	if err != nil {
-		return ReiseBundle{}, err
+// bundleChunk bounds how many ids one batched lookup carries, because a single
+// statement may not bind an unbounded number of values. The day-rule path asks
+// for every trip of a Nutzer, so the batch is bounded here rather than at the
+// callers.
+const bundleChunk = 500
+
+// loadBundles assembles whole Reise bundles, including every expense with its
+// shares, receipts and Eigenbeleg. It issues a constant number of statements per
+// batch of trips, whatever the trips carry. Loading one trip at a time cost four
+// statements plus three per expense, so a page of fifty trips with eight
+// expenses each ran about 1400 statements for one request.
+func loadBundles(ctx context.Context, q *sqlitedb.Queries, nutzerID string, rows []sqlitedb.Reise) ([]ReiseBundle, error) {
+	if len(rows) == 0 {
+		return nil, nil
 	}
-	days, err := q.ListReisetage(ctx, row.ID)
-	if err != nil {
-		return ReiseBundle{}, err
+	reiseIDs := make([]string, len(rows))
+	for i, row := range rows {
+		reiseIDs[i] = row.ID
 	}
-	fahrten, err := q.ListFahrten(ctx, sqlitedb.ListFahrtenParams{ReiseID: row.ID, NutzerID: nutzerID})
-	if err != nil {
-		return ReiseBundle{}, err
+
+	legs := make(map[string][]sqlitedb.Ortswechsel)
+	days := make(map[string][]sqlitedb.Reisetag)
+	fahrten := make(map[string][]sqlitedb.Fahrt)
+	ausgaben := make(map[string][]sqlitedb.Ausgabe)
+	var ausgabeIDs []string
+	for chunk := range slices.Chunk(reiseIDs, bundleChunk) {
+		gotLegs, err := q.ListOrtswechselByReisen(ctx, chunk)
+		if err != nil {
+			return nil, err
+		}
+		for _, leg := range gotLegs {
+			legs[leg.ReiseID] = append(legs[leg.ReiseID], leg)
+		}
+		gotDays, err := q.ListReisetageByReisen(ctx, chunk)
+		if err != nil {
+			return nil, err
+		}
+		for _, day := range gotDays {
+			days[day.ReiseID] = append(days[day.ReiseID], day)
+		}
+		gotFahrten, err := q.ListFahrtenByReisen(ctx, sqlitedb.ListFahrtenByReisenParams{ReiseIds: chunk, NutzerID: nutzerID})
+		if err != nil {
+			return nil, err
+		}
+		for _, fahrt := range gotFahrten {
+			fahrten[fahrt.ReiseID] = append(fahrten[fahrt.ReiseID], fahrt)
+		}
+		gotAusgaben, err := q.ListAusgabenByReisen(ctx, sqlitedb.ListAusgabenByReisenParams{ReiseIds: chunk, NutzerID: nutzerID})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range gotAusgaben {
+			ausgaben[item.ReiseID] = append(ausgaben[item.ReiseID], item)
+			ausgabeIDs = append(ausgabeIDs, item.ID)
+		}
 	}
-	ausgaben, err := loadAusgabeBundles(ctx, q, nutzerID, row.ID)
-	if err != nil {
-		return ReiseBundle{}, err
+
+	anteile := make(map[string][]sqlitedb.Steueranteil)
+	belege := make(map[string][]sqlitedb.ListBelegeForAusgabeRow)
+	eigen := make(map[string]sqlitedb.Eigenbeleg)
+	for chunk := range slices.Chunk(ausgabeIDs, bundleChunk) {
+		gotAnteile, err := q.ListSteueranteileByAusgaben(ctx, chunk)
+		if err != nil {
+			return nil, err
+		}
+		for _, anteil := range gotAnteile {
+			anteile[anteil.AusgabeID] = append(anteile[anteil.AusgabeID], anteil)
+		}
+		gotBelege, err := q.ListBelegeForAusgaben(ctx, sqlitedb.ListBelegeForAusgabenParams{AusgabeIds: chunk, NutzerID: nutzerID})
+		if err != nil {
+			return nil, err
+		}
+		for _, beleg := range gotBelege {
+			belege[beleg.AusgabeID] = append(belege[beleg.AusgabeID], sqlitedb.ListBelegeForAusgabeRow{ID: beleg.ID, Status: beleg.Status})
+		}
+		gotEigen, err := q.ListEigenbelegeByAusgaben(ctx, chunk)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range gotEigen {
+			eigen[item.AusgabeID] = item
+		}
 	}
-	return ReiseBundle{Reise: row, Legs: legs, Tage: days, Fahrten: fahrten, Ausgaben: ausgaben}, nil
+
+	out := make([]ReiseBundle, 0, len(rows))
+	for _, row := range rows {
+		items := make([]AusgabeBundle, 0, len(ausgaben[row.ID]))
+		for _, item := range ausgaben[row.ID] {
+			bundle := AusgabeBundle{Row: item, Anteile: anteile[item.ID], Belege: belege[item.ID]}
+			if bundle.Anteile == nil {
+				bundle.Anteile = []sqlitedb.Steueranteil{}
+			}
+			if bundle.Belege == nil {
+				bundle.Belege = []sqlitedb.ListBelegeForAusgabeRow{}
+			}
+			if item, ok := eigen[item.ID]; ok {
+				bundle.Eigen = &item
+			}
+			items = append(items, bundle)
+		}
+		out = append(out, ReiseBundle{
+			Reise: row, Legs: legs[row.ID], Tage: days[row.ID],
+			Fahrten: fahrten[row.ID], Ausgaben: items,
+		})
+	}
+	return out, nil
 }
 
 func insertLegs(ctx context.Context, q *sqlitedb.Queries, reiseID string, legs []OrtswechselInput) ([]sqlitedb.Ortswechsel, error) {

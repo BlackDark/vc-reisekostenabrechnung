@@ -51,6 +51,16 @@ SELECT * FROM ausgabe
 WHERE reise_id = sqlc.arg(reise_id) AND nutzer_id = sqlc.arg(nutzer_id)
 ORDER BY datum, id;
 
+-- The named argument comes before the slice in the text on purpose. sqlc numbers
+-- a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+-- and SQLite then numbers those from one, so the two collide and the filter
+-- silently matches nothing. With the named argument first, the numbering lines
+-- up with the order the generated code binds. Do not reorder the WHERE clause.
+-- name: ListAusgabenByReisen :many
+SELECT * FROM ausgabe
+WHERE nutzer_id = sqlc.arg(nutzer_id) AND reise_id IN (sqlc.slice(reise_ids))
+ORDER BY reise_id, datum, id;
+
 -- name: ListAusgabenByNutzer :many
 SELECT * FROM ausgabe
 WHERE nutzer_id = sqlc.arg(nutzer_id)
@@ -95,6 +105,11 @@ SELECT * FROM steueranteil
 WHERE ausgabe_id = sqlc.arg(ausgabe_id)
 ORDER BY position;
 
+-- name: ListSteueranteileByAusgaben :many
+SELECT * FROM steueranteil
+WHERE ausgabe_id IN (sqlc.slice(ausgabe_ids))
+ORDER BY ausgabe_id, position;
+
 -- name: DeleteAusgabeBelege :exec
 DELETE FROM ausgabe_beleg
 WHERE ausgabe_id = sqlc.arg(ausgabe_id);
@@ -109,6 +124,18 @@ FROM ausgabe_beleg
 JOIN beleg ON beleg.id = ausgabe_beleg.beleg_id
 WHERE ausgabe_beleg.ausgabe_id = sqlc.arg(ausgabe_id) AND beleg.nutzer_id = sqlc.arg(nutzer_id)
 ORDER BY beleg.id;
+
+-- The named argument comes before the slice in the text on purpose. sqlc numbers
+-- a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+-- and SQLite then numbers those from one, so the two collide and the filter
+-- silently matches nothing. With the named argument first, the numbering lines
+-- up with the order the generated code binds. Do not reorder the WHERE clause.
+-- name: ListBelegeForAusgaben :many
+SELECT ausgabe_beleg.ausgabe_id, beleg.id, beleg.status
+FROM ausgabe_beleg
+JOIN beleg ON beleg.id = ausgabe_beleg.beleg_id
+WHERE beleg.nutzer_id = sqlc.arg(nutzer_id) AND ausgabe_beleg.ausgabe_id IN (sqlc.slice(ausgabe_ids))
+ORDER BY ausgabe_beleg.ausgabe_id, beleg.id;
 
 -- name: UpsertEigenbeleg :one
 INSERT INTO eigenbeleg (
@@ -128,6 +155,10 @@ RETURNING *;
 -- name: GetEigenbeleg :one
 SELECT * FROM eigenbeleg
 WHERE ausgabe_id = sqlc.arg(ausgabe_id);
+
+-- name: ListEigenbelegeByAusgaben :many
+SELECT * FROM eigenbeleg
+WHERE ausgabe_id IN (sqlc.slice(ausgabe_ids));
 
 -- name: UpsertWechselkurs :exec
 INSERT INTO wechselkurs (datum, waehrung, kurs, quelle, abgerufen_am)
