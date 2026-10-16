@@ -68,48 +68,6 @@ func (q *Queries) LastAuditHash(ctx context.Context) (string, error) {
 	return hash, err
 }
 
-const listAudit = `-- name: ListAudit :many
-SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash, nr FROM audit_ereignis ORDER BY nr ASC
-`
-
-func (q *Queries) ListAudit(ctx context.Context) ([]AuditEreigni, error) {
-	rows, err := q.db.QueryContext(ctx, listAudit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []AuditEreigni
-	for rows.Next() {
-		var i AuditEreigni
-		if err := rows.Scan(
-			&i.ID,
-			&i.Zeitpunkt,
-			&i.AkteurNutzerID,
-			&i.AkteurArt,
-			&i.Aktion,
-			&i.ObjektTyp,
-			&i.ObjektID,
-			&i.Vorher,
-			&i.Nachher,
-			&i.Grund,
-			&i.Ip,
-			&i.VorgaengerHash,
-			&i.Hash,
-			&i.Nr,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listAuditFiltered = `-- name: ListAuditFiltered :many
 SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash, nr FROM audit_ereignis
 WHERE (?1 IS NULL OR objekt_typ = ?1)
@@ -185,6 +143,56 @@ func (q *Queries) ListAuditForNutzer(ctx context.Context, arg ListAuditForNutzer
 		arg.ObjektID,
 		arg.LimitN,
 	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuditEreigni
+	for rows.Next() {
+		var i AuditEreigni
+		if err := rows.Scan(
+			&i.ID,
+			&i.Zeitpunkt,
+			&i.AkteurNutzerID,
+			&i.AkteurArt,
+			&i.Aktion,
+			&i.ObjektTyp,
+			&i.ObjektID,
+			&i.Vorher,
+			&i.Nachher,
+			&i.Grund,
+			&i.Ip,
+			&i.VorgaengerHash,
+			&i.Hash,
+			&i.Nr,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAuditFrom = `-- name: ListAuditFrom :many
+SELECT id, zeitpunkt, akteur_nutzer_id, akteur_art, aktion, objekt_typ, objekt_id, vorher, nachher, grund, ip, vorgaenger_hash, hash, nr FROM audit_ereignis
+WHERE nr > ?1
+ORDER BY nr ASC
+LIMIT ?2
+`
+
+type ListAuditFromParams struct {
+	AfterNr int64
+	LimitN  int64
+}
+
+func (q *Queries) ListAuditFrom(ctx context.Context, arg ListAuditFromParams) ([]AuditEreigni, error) {
+	rows, err := q.db.QueryContext(ctx, listAuditFrom, arg.AfterNr, arg.LimitN)
 	if err != nil {
 		return nil, err
 	}

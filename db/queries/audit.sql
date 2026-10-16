@@ -12,8 +12,11 @@ INSERT INTO audit_ereignis (
   (SELECT COALESCE(MAX(nr), 0) + 1 FROM audit_ereignis)
 );
 
--- name: ListAudit :many
-SELECT * FROM audit_ereignis ORDER BY nr ASC;
+-- name: ListAuditFrom :many
+SELECT * FROM audit_ereignis
+WHERE nr > sqlc.arg(after_nr)
+ORDER BY nr ASC
+LIMIT sqlc.arg(limit_n);
 
 -- name: ListAuditFiltered :many
 SELECT * FROM audit_ereignis

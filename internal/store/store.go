@@ -461,38 +461,59 @@ func (s *Store) DeleteSessions(ctx context.Context, nutzerID string) error {
 	return sqlitedb.New(s.write).DeleteSessionsForNutzer(ctx, &nutzerID)
 }
 
-func (s *Store) AuditAll(ctx context.Context) ([]audit.Event, error) {
-	rows, err := s.readQ().ListAudit(ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]audit.Event, 0, len(rows))
-	for _, r := range rows {
-		ev := audit.Event{
-			ID: r.ID, Zeitpunkt: r.Zeitpunkt.UTC(), AkteurNutzerID: r.AkteurNutzerID, AkteurArt: r.AkteurArt,
-			Aktion: r.Aktion, ObjektTyp: r.ObjektTyp, ObjektID: r.ObjektID, Grund: r.Grund,
-			VorgaengerHash: r.VorgaengerHash, Hash: r.Hash,
-		}
-		if r.Vorher != nil {
-			ev.Vorher = json.RawMessage(*r.Vorher)
-		}
-		if r.Nachher != nil {
-			ev.Nachher = json.RawMessage(*r.Nachher)
-		}
-		if r.Ip != nil {
-			ev.IP = *r.Ip
-		}
-		out = append(out, ev)
-	}
-	return out, nil
+// auditPageSize bounds how much of the audit chain is read at once. The chain
+// gains a row per write, and each row carries its before and after image, so a
+// long-lived installation would otherwise hold its whole history to read it.
+const auditPageSize = 500
+
+// WalkAudit hands every audit event to fn in chain order, in pages of
+// auditPageSize rows. Reading the chain costs time linear in its length however
+// it is read; paging is what keeps the memory independent of that length.
+func (s *Store) WalkAudit(ctx context.Context, fn func(audit.Event) error) error {
+	return s.walkAudit(ctx, auditPageSize, fn)
 }
 
-func (s *Store) VerifyAudit(ctx context.Context) error {
-	ev, err := s.AuditAll(ctx)
-	if err != nil {
-		return err
+func (s *Store) walkAudit(ctx context.Context, pageSize int, fn func(audit.Event) error) error {
+	after := int64(0)
+	for {
+		rows, err := s.readQ().ListAuditFrom(ctx, sqlitedb.ListAuditFromParams{
+			AfterNr: after, LimitN: int64(pageSize),
+		})
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			ev := audit.Event{
+				ID: r.ID, Zeitpunkt: r.Zeitpunkt.UTC(), AkteurNutzerID: r.AkteurNutzerID, AkteurArt: r.AkteurArt,
+				Aktion: r.Aktion, ObjektTyp: r.ObjektTyp, ObjektID: r.ObjektID, Grund: r.Grund,
+				VorgaengerHash: r.VorgaengerHash, Hash: r.Hash,
+			}
+			if r.Vorher != nil {
+				ev.Vorher = json.RawMessage(*r.Vorher)
+			}
+			if r.Nachher != nil {
+				ev.Nachher = json.RawMessage(*r.Nachher)
+			}
+			if r.Ip != nil {
+				ev.IP = *r.Ip
+			}
+			if err := fn(ev); err != nil {
+				return err
+			}
+			after = r.Nr
+		}
+		if len(rows) < pageSize {
+			return nil
+		}
 	}
-	return audit.Verify(ev)
+}
+
+// VerifyAudit re-derives the audit chain and checks that every event links to the
+// one written before it. It is load-bearing: the chain is what makes a tampered
+// history detectable, so a failure here must stop the caller from serving.
+func (s *Store) VerifyAudit(ctx context.Context) error {
+	var checker audit.Checker
+	return s.WalkAudit(ctx, checker.Add)
 }
 
 func appendAudit(ctx context.Context, q *sqlitedb.Queries, actor Actor, aktion, objektTyp, objektID string, vorher, nachher json.RawMessage, grund *string) error {
