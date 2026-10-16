@@ -1165,7 +1165,7 @@ changes ─┬─► go ────────┐
 | Job | Läuft wenn | Inhalt | Timeout |
 |---|---|---|---|
 | `changes` | immer | Filter `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `satztabellen/**`, `internal/**`), `web` (`web/**`, `pnpm-lock.yaml`, `biome.json`), `image` (go ∪ web ∪ `Dockerfile`, `assets/**`, `e2e/**`, `deploy/**`) | 2 |
-| `go` | go | `setup-go` (`go-version-file: go.mod`, Cache), `golangci-lint-action` (v2.14.0), `go test -race -shuffle=on -coverprofile` (inkl. Golden-Tests 4.16, Storage-Contract-Tests gegen MinIO-Service-Container), `govulncheck`, Cross-Compile-Probe `GOOS=linux GOARCH=arm64 go build ./...` | 10 |
+| `go` | go | `setup-go` (`go-version-file: go.mod`, Cache), `golangci-lint-action` (v2.14.0), `go test -race -shuffle=on -coverprofile` (inkl. Golden-Tests 4.16, Storage-Contract-Tests gegen MinIO-Service-Container), `govulncheck` | 10 |
 | `codegen` | go | `sqlc generate`, `oapi-codegen`, `openapi-typescript` → `git diff --exit-code`; Postgres-Probe: sqlc-Engine `postgresql` in Temp-Verzeichnis generieren und kompilieren (3.6) | 5 |
 | `web` | web | `pnpm/action-setup`, `setup-node` (`node-version-file: .node-version`, `cache: pnpm`), `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich de/en, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 10 |
 | `image` | image | `setup-buildx`, `buildkit-cache-dance` (pnpm-Store, Go-Caches), `build-push-action` **ohne Push** für `linux/amd64,linux/arm64` (beweist Multi-Arch), danach `linux/amd64` mit `load: true` (Cache-Treffer), `docker save \| zstd` → Artefakt `image-amd64` | 10 |

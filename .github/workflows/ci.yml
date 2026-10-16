@@ -199,19 +199,6 @@ jobs:
           govulncheck -version
           govulncheck ./...
 
-  go-crossbuild:
-    needs: changes
-    if: needs.changes.outputs.go == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags nodynamic -o /tmp/reisekosten-arm64 ./cmd/reisekosten
-
   codegen:
     needs: changes
     if: needs.changes.outputs.go == 'true'
@@ -539,7 +526,6 @@ jobs:
         toolchain-parity,
         go-test,
         go-vuln,
-        go-crossbuild,
         codegen,
         web,
         image,
@@ -562,7 +548,6 @@ jobs:
           TOOLCHAIN: ${{ needs.toolchain-parity.result }}
           GO_TEST: ${{ needs.go-test.result }}
           GO_VULN: ${{ needs.go-vuln.result }}
-          GO_CROSSBUILD: ${{ needs.go-crossbuild.result }}
           CODEGEN: ${{ needs.codegen.result }}
           WEB: ${{ needs.web.result }}
           IMAGE: ${{ needs.image.result }}
@@ -577,7 +562,7 @@ jobs:
           python3 - << 'PY'
           import os, sys
           names = [
-              "CHANGES", "GO_LINT", "TOOLCHAIN", "GO_TEST", "GO_VULN", "GO_CROSSBUILD",
+              "CHANGES", "GO_LINT", "TOOLCHAIN", "GO_TEST", "GO_VULN",
               "CODEGEN", "WEB", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "SCAN",
               "TITLE", "ACTIONLINT",
           ]
