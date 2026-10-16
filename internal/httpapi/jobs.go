@@ -252,11 +252,7 @@ func (a *App) jobPDF(ctx context.Context, jobID, belegID string) error {
 		param["vorschau"] = "uebersprungen"
 	} else {
 		settings := a.pipeSettings()
-		for page := 1; page <= pages; page++ {
-			png, err := belegpipe.RenderPDFPage(ctx, bin, pdf, page)
-			if err != nil {
-				return err
-			}
+		err = belegpipe.RenderPDFPages(ctx, bin, pdf, pages, func(page int, png []byte) error {
 			img, _, err := image.Decode(bytes.NewReader(png))
 			if err != nil {
 				return err
@@ -283,6 +279,10 @@ func (a *App) jobPDF(ctx context.Context, jobID, belegID string) error {
 					Variante: p.variante, Seite: seite, Key: key, MIME: p.mime, Bytes: int64(len(p.body)), SHA256: sum,
 				})
 			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 		param["vorschau"] = "typst"
 	}
