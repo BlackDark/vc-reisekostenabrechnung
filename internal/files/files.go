@@ -10,7 +10,7 @@ import (
 
 // Write creates key under root, replacing any existing file.
 func Write(root, key string, body []byte) error {
-	path, err := safe(root, key)
+	path, err := SafePath(root, key)
 	if err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func Write(root, key string, body []byte) error {
 
 // Read returns the bytes stored at key.
 func Read(root, key string) ([]byte, error) {
-	path, err := safe(root, key)
+	path, err := SafePath(root, key)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func Read(root, key string) ([]byte, error) {
 
 // Remove deletes key. A missing file is not an error.
 func Remove(root, key string) error {
-	path, err := safe(root, key)
+	path, err := SafePath(root, key)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,12 @@ func Remove(root, key string) error {
 	return err
 }
 
-func safe(root, key string) (string, error) {
+// SafePath resolves a slash-separated key below root and refuses a key that
+// would leave root, so a caller can act on the result without checking it
+// again. An empty key, an absolute one and any key with a ".." part are refused
+// rather than normalised, because a key is built from user input and a
+// normalised one would hide the attempt.
+func SafePath(root, key string) (string, error) {
 	if key == "" || strings.Contains(key, "..") || filepath.IsAbs(key) {
 		return "", errors.New("invalid storage key")
 	}
