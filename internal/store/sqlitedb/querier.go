@@ -118,9 +118,9 @@ type Querier interface {
 	ListAbrechnungReiseIDs(ctx context.Context, abrechnungID string) ([]string, error)
 	ListAbrechnungen(ctx context.Context, arg ListAbrechnungenParams) ([]Abrechnung, error)
 	ListArbeitgeber(ctx context.Context, arg ListArbeitgeberParams) ([]Arbeitgeber, error)
-	ListAudit(ctx context.Context) ([]AuditEreigni, error)
 	ListAuditFiltered(ctx context.Context, arg ListAuditFilteredParams) ([]AuditEreigni, error)
 	ListAuditForNutzer(ctx context.Context, arg ListAuditForNutzerParams) ([]AuditEreigni, error)
+	ListAuditFrom(ctx context.Context, arg ListAuditFromParams) ([]AuditEreigni, error)
 	ListAusgabenByNutzer(ctx context.Context, nutzerID string) ([]Ausgabe, error)
 	ListAusgabenByReise(ctx context.Context, arg ListAusgabenByReiseParams) ([]Ausgabe, error)
 	// The named argument comes before the slice in the text on purpose. sqlc numbers

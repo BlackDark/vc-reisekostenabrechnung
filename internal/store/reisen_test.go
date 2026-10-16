@@ -85,10 +85,7 @@ func TestReiseDaysAndTenant(t *testing.T) {
 	if !found {
 		t.Fatal("override missing")
 	}
-	ev, err := s.AuditAll(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ev := allAudit(t, s)
 	logged := false
 	for _, e := range ev {
 		if e.Aktion == "reisetag.geaendert" && e.Grund != nil && *e.Grund == "Grenzort" {

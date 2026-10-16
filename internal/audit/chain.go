@@ -88,21 +88,39 @@ func Seal(prev string, e *Event) error {
 	return nil
 }
 
+// Checker verifies a hash chain one event at a time. The chain is as long as the
+// installation is old, so the caller can read it in pages and hand over what it
+// has rather than holding every event at once.
+type Checker struct {
+	prev string
+	seen int
+}
+
+// Add checks that e continues the chain from the events already added, and
+// remembers its hash for the next call.
+func (c *Checker) Add(e Event) error {
+	if e.VorgaengerHash != c.prev {
+		return fmt.Errorf("audit chain broken at %s: predecessor mismatch", e.ID)
+	}
+	want := e
+	if err := Seal(c.prev, &want); err != nil {
+		return err
+	}
+	if want.Hash != e.Hash {
+		return fmt.Errorf("audit chain broken at %s (index %d): hash mismatch", e.ID, c.seen)
+	}
+	c.prev = e.Hash
+	c.seen++
+	return nil
+}
+
 // Verify checks that every event links to the previous hash.
 func Verify(events []Event) error {
-	prev := ""
-	for i, e := range events {
-		if e.VorgaengerHash != prev {
-			return fmt.Errorf("audit chain broken at %s: predecessor mismatch", e.ID)
-		}
-		want := e
-		if err := Seal(prev, &want); err != nil {
+	var c Checker
+	for _, e := range events {
+		if err := c.Add(e); err != nil {
 			return err
 		}
-		if want.Hash != e.Hash {
-			return fmt.Errorf("audit chain broken at %s (index %d): hash mismatch", e.ID, i)
-		}
-		prev = e.Hash
 	}
 	return nil
 }
