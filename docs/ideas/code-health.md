@@ -22,6 +22,27 @@ Baseline when this was written: `go build ./...`, `go vet ./...` and `go test ./
 Landed since, newest first. The item bodies below are left as they were found, so the
 measurement that justified each one is still readable:
 
+- **3.10** the i18n check compares flattened keys and the placeholders of each key
+  ([#56](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/56)).
+- **3.8** the unused end-to-end Compose file and four forwarding scripts removed
+  ([#56](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/56)).
+- **3.6** every copy of a tool version is checked, not one file per tool
+  ([#56](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/56)).
+- **3.3** the backup job runs on the files it reads instead of on the image filter
+  ([#56](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/56)).
+- **3.2** the toolchain filter lists what the parity check reads; the overlap half is
+  decided against, see [Checked and rejected](#checked-and-rejected)
+  ([#56](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/56)).
+- **3.11** the `make dev` claim, the `make check` claim, the IMAP password file form and
+  the job named in the parity script's header
+  ([#56](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/56)).
+- **2.1** one helper answers a stale write version, including the ordering the handlers
+  used to decide between themselves
+  ([#55](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/55)).
+- **2.4** the stored audit row is mapped to its response in one place
+  ([#55](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/55)).
+- **2.3** the helpers named for what they do
+  ([#55](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/55)).
 - **1.10** the rate-limiter map sheds the keys whose bucket has refilled, so it stops
   growing for the life of the process ([#53](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/53)).
 - **2.2** one path-traversal guard, in `internal/files`, called by the directory store and
@@ -529,6 +550,26 @@ Recorded so nobody re-opens them.
 - **`pr-titel` checking out the repository.** It does not; `.github/workflows/ci.yml:506-515`
   has a single `run` step that greps the PR title from the environment. (It still costs a
   full runner for a regex.)
+
+- **The image filter's overlap with `go` and `web` (3.2, the overlap half).** The filter
+  lists `scripts/**` although `.dockerignore` keeps `scripts` out of the build context. It
+  has to: `smoke` and `e2e` load the built image and run the shell suites under `scripts/`,
+  so a script change must rebuild it. The other direction is no gap either:
+  `.golangci.yml`, `.node-version`, `biome.json` and `mise.toml` change no image content,
+  and each one already gates the job that reads it.
+- **Making the bundle budget a hard gate (3.9).** The item asks for it, but SPEC 13 keeps
+  it a budget: the shadcn surface takes precedence over the earlier 150 KB target for the
+  initial JS, and the script logs the sizes instead of failing. A gate would turn an
+  unrelated UI change red for a number the SPEC deliberately left open, so the decision is
+  the maintainer's and not a cleanup's.
+- **Dropping the tools the export guard needs (3.5).** `go-test` extracts Typst and installs
+  poppler so `internal/export/export_test.go` runs instead of self-skipping. Removing the
+  install saves a small image pull per Go change and costs the PDF export coverage, which is
+  the wrong trade for the only job that exercises it.
+- **The end-to-end environment in SPEC 18.4.** The section names MinIO and a
+  `STORAGE_BACKEND=s3` Playwright project; neither the workflow nor `scripts/e2e-up.sh` has
+  either. The file reference was corrected while the dead Compose file was removed; the
+  claim itself is a spec question, not drift a cleanup can settle.
 
 ## Suggested order
 
