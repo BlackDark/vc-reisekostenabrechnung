@@ -1164,7 +1164,7 @@ changes ─┬─► go ────────┐
 
 | Job | Läuft wenn | Inhalt | Timeout |
 |---|---|---|---|
-| `changes` | immer | Filter `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `satztabellen/**`, `internal/**`), `web` (`web/**`, `pnpm-lock.yaml`, `biome.json`), `image` (go ∪ web ∪ `Dockerfile`, `assets/**`, `e2e/**`, `deploy/**`) | 2 |
+| `changes` | immer | Filter `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `satztabellen/**`, `internal/**`), `web` (`web/**`, `pnpm-lock.yaml`, `biome.json`), `toolchain` (alle Dateien, aus denen `scripts/mise-check.sh` Versionen liest), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `image` (go ∪ web ∪ `Dockerfile`, `assets/**`, `e2e/**`, `deploy/**`) | 2 |
 | `go` | go | `setup-go` (`go-version-file: go.mod`, Cache), `golangci-lint-action` (v2.14.0), `go test -race -shuffle=on -coverprofile` (inkl. Golden-Tests 4.16, Storage-Contract-Tests gegen MinIO-Service-Container), `govulncheck` | 10 |
 | `codegen` | go | `sqlc generate`, `oapi-codegen`, `openapi-typescript` → `git diff --exit-code`; Postgres-Probe: sqlc-Engine `postgresql` in Temp-Verzeichnis generieren und kompilieren (3.6) | 5 |
 | `web` | web | `pnpm/action-setup`, `setup-node` (`node-version-file: .node-version`, `cache: pnpm`), `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich de/en, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 10 |
@@ -1173,6 +1173,7 @@ changes ─┬─► go ────────┐
 | `e2e` | image | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go`/`web` | 10 |
 | `pdfa` | image | Validator-Job (18.6) | 5 |
 | `scan` | image | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
+| `backup` | backup | Compose-Rendering (`compose-config.sh`) und Litestream-Restore als UID 65532 (O16) – ohne Image-Artefakt | 10 |
 | `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 2 |
 | `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 2 |
 | `publish-edge` | nur `push` auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert wie Release | 10 |
