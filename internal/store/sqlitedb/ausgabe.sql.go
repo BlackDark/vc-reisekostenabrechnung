@@ -913,40 +913,6 @@ func (q *Queries) ListWechselkurse(ctx context.Context, waehrung string) ([]Wech
 	return items, nil
 }
 
-const listWechselkurseAll = `-- name: ListWechselkurseAll :many
-SELECT datum, waehrung, kurs, quelle, abgerufen_am FROM wechselkurs
-ORDER BY datum, waehrung
-`
-
-func (q *Queries) ListWechselkurseAll(ctx context.Context) ([]Wechselkur, error) {
-	rows, err := q.db.QueryContext(ctx, listWechselkurseAll)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Wechselkur
-	for rows.Next() {
-		var i Wechselkur
-		if err := rows.Scan(
-			&i.Datum,
-			&i.Waehrung,
-			&i.Kurs,
-			&i.Quelle,
-			&i.AbgerufenAm,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const setBewirtung = `-- name: SetBewirtung :one
 UPDATE ausgabe SET
   bewirtung = ?1,

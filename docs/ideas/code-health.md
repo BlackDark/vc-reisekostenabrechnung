@@ -33,8 +33,10 @@ measurement that justified each one is still readable:
 - **1.5** the loaders that only read moved to the read pool, so a trip read no longer waits
   behind an upload or an export, and the read pool refuses writes
   ([#52](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/52)).
-- **1.12** the VAT month rate is asked once per currency and month, and the stored rates are
-  read only when a line is in a foreign currency ([#51](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/51)).
+- **1.12** the VAT month rate is asked once per currency and month, the stored daily rates are
+  read per currency in the calculation and only when a line is in one
+  ([#51](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/51),
+  [#53](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/53)).
 - **1.7** the audit chain is verified in pages of 500 rows, so memory no longer scales with
   the length of the history ([#50](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/50)).
 - **1.9** the meal recalculation runs inside the expense write, so a failed recalculation
@@ -484,6 +486,12 @@ untranslated-value checks while it is open.
 
 Recorded so nobody re-opens them.
 
+- **A whole-table read of the stored daily rates (1.12, second half).** The calculation reads
+  the rate of a line's own currency and never another currency's, so the unbounded read of
+  every row is gone: with 10,000 stored rows (20 currencies over 500 business days) it cost
+  41ms per call against 2.1ms for the 500 rows of one currency, and it ran on every endpoint
+  that calculates. The bounded read stays, because a foreign line does need its currency's
+  rates.
 - **A per-user day-index cache in front of the calculation (1.3).** Measured on 20 trips
   with 100 expense lines: `ListReisenAll` alone is 6.6ms and a full `calculate` is
   10.4-16.6ms, so the recomputation a cache would remove is a few milliseconds at that

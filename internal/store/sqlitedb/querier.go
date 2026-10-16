@@ -177,7 +177,6 @@ type Querier interface {
 	ListVorschuesseByArbeitgeber(ctx context.Context, arg ListVorschuesseByArbeitgeberParams) ([]Vorschuss, error)
 	ListVorschuesseOfAbrechnung(ctx context.Context, arg ListVorschuesseOfAbrechnungParams) ([]Vorschuss, error)
 	ListWechselkurse(ctx context.Context, waehrung string) ([]Wechselkur, error)
-	ListWechselkurseAll(ctx context.Context) ([]Wechselkur, error)
 	MarkBelegInhaltGeloescht(ctx context.Context, arg MarkBelegInhaltGeloeschtParams) error
 	MarkBelegdateienFest(ctx context.Context, belegID string) error
 	MarkBezahlt(ctx context.Context, arg MarkBezahltParams) (Abrechnung, error)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -449,9 +450,10 @@ type ustMonth struct {
 
 func (a *App) attachMoney(r *http.Request, nutzerID string, in *berechnung.Eingabe) error {
 	// A rate is only looked up for a line in a currency other than the euro, so a
-	// run with none leaves the stored table alone instead of reading all of it.
-	if hasForeignLine(in) {
-		rates, err := a.store.AllRates(r.Context())
+	// run with none leaves the stored table alone, and a run with some reads those
+	// currencies only instead of the whole table.
+	for _, waehrung := range foreignCurrencies(in) {
+		rates, err := a.store.RatesFor(r.Context(), waehrung)
 		if err != nil {
 			return err
 		}
@@ -507,18 +509,25 @@ func (a *App) attachMoney(r *http.Request, nutzerID string, in *berechnung.Einga
 	return nil
 }
 
-// hasForeignLine reports whether any expense line is in a currency other than the
-// euro. The calculation only consults a rate for such a line, so this decides
-// whether the stored rates have to be read at all.
-func hasForeignLine(in *berechnung.Eingabe) bool {
+// foreignCurrencies lists the currencies the calculation will ask a rate for,
+// once each and in a stable order. The calculation compares a line only against
+// the rates of the line's own currency, so the set of currencies in the input is
+// also the set of stored rates it can need.
+func foreignCurrencies(in *berechnung.Eingabe) []string {
+	seen := map[string]bool{}
+	var out []string
 	for i := range in.Reisen {
 		for j := range in.Reisen[i].Ausgaben {
-			if w := in.Reisen[i].Ausgaben[j].Waehrung; w != "" && w != "EUR" {
-				return true
+			w := in.Reisen[i].Ausgaben[j].Waehrung
+			if w == "" || w == "EUR" || seen[w] {
+				continue
 			}
+			seen[w] = true
+			out = append(out, w)
 		}
 	}
-	return false
+	sort.Strings(out)
+	return out
 }
 
 func (a *App) lineIndex(r *http.Request, nutzerID string) map[string]berechnung.AusgabeErgebnis {

@@ -42,10 +42,10 @@ func TestExpenseLinesReportTheirOwnMonthRate(t *testing.T) {
 	actor := store.Actor{Art: "nutzer", NutzerID: &me.ID}
 	trip, err := app.store.CreateReise(t.Context(), me.ID, store.ReiseInput{
 		ArbeitgeberID: employer.ID, Anlass: "Termin",
-		BeginnLokal: "2026-09-11T08:00:00", BeginnZone: "Europe/Berlin",
-		EndeLokal: "2026-09-12T18:00:00", EndeZone: "Europe/Berlin",
+		BeginnLokal: "2026-09-15T08:00:00", BeginnZone: "Europe/Berlin",
+		EndeLokal: "2026-09-16T18:00:00", EndeZone: "Europe/Berlin",
 		Ortswechsel: []store.OrtswechselInput{{
-			AnkunftLokal: "2026-09-11T08:00:00", AnkunftZone: "Europe/Berlin",
+			AnkunftLokal: "2026-09-15T08:00:00", AnkunftZone: "Europe/Berlin",
 			Verkehrsmittel: "bahn", LandISO: "DE",
 		}},
 	}, actor)
@@ -53,11 +53,13 @@ func TestExpenseLinesReportTheirOwnMonthRate(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The dollar month rate comes from the shipped table and the franc one from the
-	// stored table, so the two answers cannot be confused for each other. The daily
-	// rates keep the lines out of the missing-rate block.
+	// stored table, so the two answers cannot be confused for each other. Both daily
+	// rates are stored closer to the lines than anything shipped, so a run that
+	// reads the stored rates of some currencies only reports a different rate, or
+	// the B04 block where there is none at all.
 	if err := app.store.RememberRates(t.Context(), []fx.Rate{
-		{Waehrung: "USD", Datum: "2026-09-11", Kurs: "1.1650"},
-		{Waehrung: "CHF", Datum: "2026-09-11", Kurs: "1.0800"},
+		{Waehrung: "USD", Datum: "2026-09-15", Kurs: "1.2000"},
+		{Waehrung: "CHF", Datum: "2026-09-15", Kurs: "1.0800"},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -65,9 +67,9 @@ func TestExpenseLinesReportTheirOwnMonthRate(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := []struct{ datum, waehrung string }{
-		{"2026-09-11", "USD"},
-		{"2026-09-12", "USD"},
-		{"2026-09-12", "CHF"},
+		{"2026-09-15", "USD"},
+		{"2026-09-16", "USD"},
+		{"2026-09-16", "CHF"},
 	}
 	for _, line := range lines {
 		if _, err := app.store.CreateAusgabe(t.Context(), me.ID, trip.Reise.ID, store.AusgabeInput{
@@ -79,9 +81,18 @@ func TestExpenseLinesReportTheirOwnMonthRate(t *testing.T) {
 	}
 
 	want := map[string]string{
-		"2026-09-11 USD": "1.170200",
-		"2026-09-12 USD": "1.170200",
-		"2026-09-12 CHF": "0.950000",
+		"2026-09-15 USD": "1.170200",
+		"2026-09-16 USD": "1.170200",
+		"2026-09-16 CHF": "0.950000",
+	}
+	// The daily rate the calculation picked. The dollar one is also in the shipped
+	// fixture, but the franc one is only in the stored table, so a run that reads
+	// the stored rates of some currencies only would leave that line without a rate
+	// at all and report the B04 block instead.
+	wantDaily := map[string]string{
+		"2026-09-15 USD": "1.2000",
+		"2026-09-16 USD": "1.2000",
+		"2026-09-16 CHF": "1.0800",
 	}
 	res := authed(t, h, cookie, http.MethodGet, "/api/v1/reisen/"+trip.Reise.ID+"/ausgaben", nil, "")
 	if res.Code != http.StatusOK {
@@ -92,6 +103,7 @@ func TestExpenseLinesReportTheirOwnMonthRate(t *testing.T) {
 			Datum    string  `json:"datum"`
 			Waehrung string  `json:"waehrung"`
 			UstKurs  *string `json:"ust_kurs"`
+			Kurs     *string `json:"kurs"`
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(res.Body.Bytes(), &list); err != nil {
@@ -107,7 +119,12 @@ func TestExpenseLinesReportTheirOwnMonthRate(t *testing.T) {
 			t.Fatalf("unexpected line %s", key)
 		}
 		if item.UstKurs == nil || *item.UstKurs != rate {
-			t.Fatalf("line %s reports month rate %v, want %s", key, item.UstKurs, rate)
+			t.Fatalf("line %s reports month rate %q, want %s", key, deref(item.UstKurs), rate)
+		}
+		if daily, ok := wantDaily[key]; ok {
+			if item.Kurs == nil || *item.Kurs != daily {
+				t.Fatalf("line %s reports daily rate %q, want %s", key, deref(item.Kurs), daily)
+			}
 		}
 	}
 }
