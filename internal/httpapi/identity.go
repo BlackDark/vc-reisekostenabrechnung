@@ -40,13 +40,28 @@ func (a *App) resolveExternal(ctx context.Context, in externalLogin) (sqlitedb.N
 			return sqlitedb.Nutzer{}, err
 		}
 		if !n.Aktiv {
-			_ = a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, false)
+			// A refused login still belongs in the audit trail, so a write that
+			// fails is reported instead of leaving the attempt untraceable.
+			if err := a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, false); err != nil {
+				return sqlitedb.Nutzer{}, err
+			}
 			return sqlitedb.Nutzer{}, errInaktiv
 		}
-		_ = a.store.TouchIdentitaet(ctx, ident.ID)
-		a.syncAdmin(ctx, n, in)
-		n, _ = a.store.GetNutzer(ctx, n.ID)
-		_ = a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, true)
+		if err := a.store.TouchIdentitaet(ctx, ident.ID); err != nil {
+			return sqlitedb.Nutzer{}, err
+		}
+		if err := a.syncAdmin(ctx, n, in); err != nil {
+			return sqlitedb.Nutzer{}, err
+		}
+		// syncAdmin may have moved the admin flag, so the principal is read back
+		// rather than returned as it was.
+		n, err = a.store.GetNutzer(ctx, n.ID)
+		if err != nil {
+			return sqlitedb.Nutzer{}, err
+		}
+		if err := a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, true); err != nil {
+			return sqlitedb.Nutzer{}, err
+		}
 		return n, nil
 	}
 	if !errors.Is(err, store.ErrNotFound) {
@@ -55,16 +70,29 @@ func (a *App) resolveExternal(ctx context.Context, in externalLogin) (sqlitedb.N
 
 	email := auth.NormEmail(in.Email)
 	if in.AllowEmail && in.EmailVerified && email != "" {
-		if n, err := a.store.GetByEmail(ctx, email); err == nil {
+		n, err := a.store.GetByEmail(ctx, email)
+		// A lookup that failed for any reason other than "no such address" must not
+		// be read as absence, which would create a second account for the address.
+		if err != nil && !errors.Is(err, store.ErrNotFound) {
+			return sqlitedb.Nutzer{}, err
+		}
+		if err == nil {
 			if !n.Aktiv {
 				return sqlitedb.Nutzer{}, errInaktiv
 			}
 			if err := a.store.LinkIdentitaet(ctx, n.ID, in.Art, in.Issuer, in.Subject, actor); err != nil {
 				return sqlitedb.Nutzer{}, err
 			}
-			a.syncAdmin(ctx, n, in)
-			n, _ = a.store.GetNutzer(ctx, n.ID)
-			_ = a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, true)
+			if err := a.syncAdmin(ctx, n, in); err != nil {
+				return sqlitedb.Nutzer{}, err
+			}
+			n, err = a.store.GetNutzer(ctx, n.ID)
+			if err != nil {
+				return sqlitedb.Nutzer{}, err
+			}
+			if err := a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, true); err != nil {
+				return sqlitedb.Nutzer{}, err
+			}
 			return n, nil
 		}
 	}
@@ -108,14 +136,18 @@ func (a *App) resolveExternal(ctx context.Context, in externalLogin) (sqlitedb.N
 	if err != nil {
 		return sqlitedb.Nutzer{}, err
 	}
-	_ = a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, true)
+	if err := a.store.TouchLogin(ctx, n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP}, true); err != nil {
+		return sqlitedb.Nutzer{}, err
+	}
 	return n, nil
 }
 
-func (a *App) syncAdmin(ctx context.Context, n sqlitedb.Nutzer, in externalLogin) {
+// syncAdmin moves the Nutzer's admin flag onto what the groups in in say, and
+// reports a write that failed, because the flag decides what the account may do.
+func (a *App) syncAdmin(ctx context.Context, n sqlitedb.Nutzer, in externalLogin) error {
 	want := auth.InGroup(in.Groups, in.AdminGroup)
 	if n.AdminUeberGruppe == want {
-		return
+		return nil
 	}
-	_ = a.store.SyncGroupAdmin(ctx, n.ID, want, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP})
+	return a.store.SyncGroupAdmin(ctx, n.ID, want, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: in.IP})
 }

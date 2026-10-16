@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"net"
@@ -201,6 +202,79 @@ func TestHeaderAuthTrustedOnly(t *testing.T) {
 	h.ServeHTTP(rec, untrusted)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("untrusted %d %s", rec.Code, rec.Body)
+	}
+}
+
+// dropAuditTable removes the table every failed and successful login writes to,
+// which is how these tests reach the audit writes' failure path without a store
+// double.
+func dropAuditTable(t *testing.T, app *App) {
+	t.Helper()
+	db, err := sql.Open("sqlite", app.cfg.DBPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec("DROP TABLE audit_ereignis"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A login writes an audit row. Where that write fails, the request must not be
+// answered as if the attempt were on record, and a correct password must not hand
+// out a session either.
+func TestLoginFailsWhenTheAttemptCannotBeRecorded(t *testing.T) {
+	app := newTestApp(t, nil)
+	seedUser(t, app, "ada", "correct-horse-1", true)
+	h := app.Handler()
+
+	ok := doJSON(t, h, http.MethodPost, "/api/v1/auth/login", `{"benutzername":"ada","passwort":"correct-horse-1"}`, nil)
+	if ok.Code != http.StatusOK {
+		t.Fatalf("login %d %s", ok.Code, ok.Body)
+	}
+	dropAuditTable(t, app)
+
+	wrong := doJSON(t, h, http.MethodPost, "/api/v1/auth/login", `{"benutzername":"ada","passwort":"wrong-password"}`, nil)
+	if wrong.Code != http.StatusInternalServerError {
+		t.Fatalf("refused attempt %d %s, want 500", wrong.Code, wrong.Body)
+	}
+	right := doJSON(t, h, http.MethodPost, "/api/v1/auth/login", `{"benutzername":"ada","passwort":"correct-horse-1"}`, nil)
+	if right.Code != http.StatusInternalServerError {
+		t.Fatalf("accepted attempt %d %s, want 500", right.Code, right.Body)
+	}
+}
+
+// The same for a header-authenticated request: the login cannot be recorded, so
+// the request is refused rather than served under a principal that was never
+// written down.
+func TestHeaderAuthRefusesWhenTheLoginCannotBeRecorded(t *testing.T) {
+	_, n, err := net.ParseCIDR("10.0.0.0/8")
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := newTestApp(t, func(cfg *config.Config) {
+		cfg.Header.Enabled = true
+		cfg.Header.AdminGroup = "admins"
+		cfg.Header.AllowedGroup = "users"
+		cfg.TrustedProxies = []*net.IPNet{n}
+	})
+	h := app.Handler()
+	call := func() *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/me", nil)
+		req.RemoteAddr = "10.1.2.3:99"
+		req.Header.Set("Remote-User", "Ada Lovelace")
+		req.Header.Set("Remote-Groups", "admins")
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec
+	}
+
+	if rec := call(); rec.Code != http.StatusOK {
+		t.Fatalf("first request %d %s", rec.Code, rec.Body)
+	}
+	dropAuditTable(t, app)
+	if rec := call(); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("unrecorded login served with %d %s, want 401", rec.Code, rec.Body)
 	}
 }
 
