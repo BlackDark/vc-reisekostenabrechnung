@@ -123,32 +123,53 @@ type Querier interface {
 	ListAuditForNutzer(ctx context.Context, arg ListAuditForNutzerParams) ([]AuditEreigni, error)
 	ListAusgabenByNutzer(ctx context.Context, nutzerID string) ([]Ausgabe, error)
 	ListAusgabenByReise(ctx context.Context, arg ListAusgabenByReiseParams) ([]Ausgabe, error)
+	// The named argument comes before the slice in the text on purpose. sqlc numbers
+	// a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+	// and SQLite then numbers those from one, so the two collide and the filter
+	// silently matches nothing. With the named argument first, the numbering lines
+	// up with the order the generated code binds. Do not reorder the WHERE clause.
+	ListAusgabenByReisen(ctx context.Context, arg ListAusgabenByReisenParams) ([]Ausgabe, error)
 	ListAuslandssaetze(ctx context.Context, jahr int64) ([]Auslandssatz, error)
 	ListBelegMailByIDs(ctx context.Context, belegIds []string) ([]BelegMail, error)
 	ListBelegdateien(ctx context.Context, belegID string) ([]Belegdatei, error)
 	ListBelege(ctx context.Context, arg ListBelegeParams) ([]Beleg, error)
 	ListBelegeForAusgabe(ctx context.Context, arg ListBelegeForAusgabeParams) ([]ListBelegeForAusgabeRow, error)
+	// The named argument comes before the slice in the text on purpose. sqlc numbers
+	// a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+	// and SQLite then numbers those from one, so the two collide and the filter
+	// silently matches nothing. With the named argument first, the numbering lines
+	// up with the order the generated code binds. Do not reorder the WHERE clause.
+	ListBelegeForAusgaben(ctx context.Context, arg ListBelegeForAusgabenParams) ([]ListBelegeForAusgabenRow, error)
 	ListBelegtexte(ctx context.Context, belegID string) ([]Belegtext, error)
+	ListEigenbelegeByAusgaben(ctx context.Context, ausgabeIds []string) ([]Eigenbeleg, error)
 	ListExporte(ctx context.Context, arg ListExporteParams) ([]Export, error)
 	ListFahrten(ctx context.Context, arg ListFahrtenParams) ([]Fahrt, error)
 	ListFahrtenByNutzer(ctx context.Context, nutzerID string) ([]Fahrt, error)
+	// The named argument comes before the slice in the text on purpose. sqlc numbers
+	// a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+	// and SQLite then numbers those from one, so the two collide and the filter
+	// silently matches nothing. With the named argument first, the numbering lines
+	// up with the order the generated code binds. Do not reorder the WHERE clause.
+	ListFahrtenByReisen(ctx context.Context, arg ListFahrtenByReisenParams) ([]Fahrt, error)
 	ListIdentitaetenByNutzer(ctx context.Context, nutzerID string) ([]NutzerIdentitaet, error)
 	ListLaender(ctx context.Context, jahr int64) ([]ListLaenderRow, error)
 	ListMailErlaubt(ctx context.Context, arg ListMailErlaubtParams) ([]MailErlaubt, error)
 	ListNutzer(ctx context.Context, arg ListNutzerParams) ([]Nutzer, error)
 	ListOffeneDuplikate(ctx context.Context, nutzerID string) ([]Beleg, error)
-	ListOrtswechsel(ctx context.Context, reiseID string) ([]Ortswechsel, error)
+	ListOrtswechselByReisen(ctx context.Context, reiseIds []string) ([]Ortswechsel, error)
 	ListProjekte(ctx context.Context, arg ListProjekteParams) ([]ListProjekteRow, error)
 	ListReisen(ctx context.Context, arg ListReisenParams) ([]Reise, error)
 	ListReisenAll(ctx context.Context, nutzerID string) ([]Reise, error)
 	ListReisenByArbeitgeberStatus(ctx context.Context, arg ListReisenByArbeitgeberStatusParams) ([]Reise, error)
 	ListReisetage(ctx context.Context, reiseID string) ([]Reisetag, error)
+	ListReisetageByReisen(ctx context.Context, reiseIds []string) ([]Reisetag, error)
 	ListRetentionBelege(ctx context.Context) ([]ListRetentionBelegeRow, error)
 	ListRetentionExporte(ctx context.Context) ([]ListRetentionExporteRow, error)
 	ListSatzOverrides(ctx context.Context, jahr int64) ([]SatzOverride, error)
 	ListSatztabellen(ctx context.Context) ([]Satztabelle, error)
 	ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNutzerParams) ([]Session, error)
 	ListSteueranteile(ctx context.Context, ausgabeID string) ([]Steueranteil, error)
+	ListSteueranteileByAusgaben(ctx context.Context, ausgabeIds []string) ([]Steueranteil, error)
 	ListTaetigkeitsstaetten(ctx context.Context, arg ListTaetigkeitsstaettenParams) ([]Taetigkeitsstaette, error)
 	ListTokensByNutzer(ctx context.Context, arg ListTokensByNutzerParams) ([]ApiToken, error)
 	ListVorlagen(ctx context.Context, arg ListVorlagenParams) ([]Vorlage, error)

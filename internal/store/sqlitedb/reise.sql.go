@@ -7,6 +7,7 @@ package sqlitedb
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -620,14 +621,89 @@ func (q *Queries) ListFahrtenByNutzer(ctx context.Context, nutzerID string) ([]F
 	return items, nil
 }
 
-const listOrtswechsel = `-- name: ListOrtswechsel :many
-SELECT id, reise_id, reihenfolge, abfahrt, abfahrt_zone, ankunft, ankunft_zone, verkehrsmittel, land_iso, satzort, ort, taetigkeitsstaette_id, zwischenlandung_mit_uebernachtung FROM ortswechsel
-WHERE reise_id = ?1
-ORDER BY reihenfolge
+const listFahrtenByReisen = `-- name: ListFahrtenByReisen :many
+SELECT id, reise_id, nutzer_id, datum, start_ort, ziel, zweck, fahrzeugart, km, hin_und_zurueck, vorlage_id, erstellt_am, geaendert_am, version FROM fahrt
+WHERE nutzer_id = ?1 AND reise_id IN (/*SLICE:reise_ids*/?)
+ORDER BY reise_id, datum, id
 `
 
-func (q *Queries) ListOrtswechsel(ctx context.Context, reiseID string) ([]Ortswechsel, error) {
-	rows, err := q.db.QueryContext(ctx, listOrtswechsel, reiseID)
+type ListFahrtenByReisenParams struct {
+	NutzerID string
+	ReiseIds []string
+}
+
+// The named argument comes before the slice in the text on purpose. sqlc numbers
+// a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+// and SQLite then numbers those from one, so the two collide and the filter
+// silently matches nothing. With the named argument first, the numbering lines
+// up with the order the generated code binds. Do not reorder the WHERE clause.
+func (q *Queries) ListFahrtenByReisen(ctx context.Context, arg ListFahrtenByReisenParams) ([]Fahrt, error) {
+	query := listFahrtenByReisen
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.NutzerID)
+	if len(arg.ReiseIds) > 0 {
+		for _, v := range arg.ReiseIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", strings.Repeat(",?", len(arg.ReiseIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Fahrt
+	for rows.Next() {
+		var i Fahrt
+		if err := rows.Scan(
+			&i.ID,
+			&i.ReiseID,
+			&i.NutzerID,
+			&i.Datum,
+			&i.StartOrt,
+			&i.Ziel,
+			&i.Zweck,
+			&i.Fahrzeugart,
+			&i.Km,
+			&i.HinUndZurueck,
+			&i.VorlageID,
+			&i.ErstelltAm,
+			&i.GeaendertAm,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOrtswechselByReisen = `-- name: ListOrtswechselByReisen :many
+SELECT id, reise_id, reihenfolge, abfahrt, abfahrt_zone, ankunft, ankunft_zone, verkehrsmittel, land_iso, satzort, ort, taetigkeitsstaette_id, zwischenlandung_mit_uebernachtung FROM ortswechsel
+WHERE reise_id IN (/*SLICE:reise_ids*/?)
+ORDER BY reise_id, reihenfolge
+`
+
+func (q *Queries) ListOrtswechselByReisen(ctx context.Context, reiseIds []string) ([]Ortswechsel, error) {
+	query := listOrtswechselByReisen
+	var queryParams []interface{}
+	if len(reiseIds) > 0 {
+		for _, v := range reiseIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", strings.Repeat(",?", len(reiseIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -849,6 +925,62 @@ ORDER BY datum
 
 func (q *Queries) ListReisetage(ctx context.Context, reiseID string) ([]Reisetag, error) {
 	rows, err := q.db.QueryContext(ctx, listReisetage, reiseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reisetag
+	for rows.Next() {
+		var i Reisetag
+		if err := rows.Scan(
+			&i.ID,
+			&i.ReiseID,
+			&i.Datum,
+			&i.LandManuell,
+			&i.SatzortManuell,
+			&i.LandBegruendung,
+			&i.FruehstueckGestellt,
+			&i.MittagGestellt,
+			&i.AbendGestellt,
+			&i.ZuzahlungFruehstueck,
+			&i.ZuzahlungMittag,
+			&i.ZuzahlungAbend,
+			&i.MahlzeitQuelle,
+			&i.Unterkunft,
+			&i.VerpflegungAusgeschlossen,
+			&i.AusschlussGrund,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReisetageByReisen = `-- name: ListReisetageByReisen :many
+SELECT id, reise_id, datum, land_manuell, satzort_manuell, land_begruendung, fruehstueck_gestellt, mittag_gestellt, abend_gestellt, zuzahlung_fruehstueck, zuzahlung_mittag, zuzahlung_abend, mahlzeit_quelle, unterkunft, verpflegung_ausgeschlossen, ausschluss_grund FROM reisetag
+WHERE reise_id IN (/*SLICE:reise_ids*/?)
+ORDER BY reise_id, datum
+`
+
+func (q *Queries) ListReisetageByReisen(ctx context.Context, reiseIds []string) ([]Reisetag, error) {
+	query := listReisetageByReisen
+	var queryParams []interface{}
+	if len(reiseIds) > 0 {
+		for _, v := range reiseIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", strings.Repeat(",?", len(reiseIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

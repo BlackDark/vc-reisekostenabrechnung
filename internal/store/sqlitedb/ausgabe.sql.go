@@ -7,6 +7,7 @@ package sqlitedb
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -523,6 +524,83 @@ func (q *Queries) ListAusgabenByReise(ctx context.Context, arg ListAusgabenByRei
 	return items, nil
 }
 
+const listAusgabenByReisen = `-- name: ListAusgabenByReisen :many
+SELECT id, nutzer_id, reise_id, kostenart, datum, leistender, beschreibung, waehrung, betrag, kurs, kurs_quelle, kurs_datum, kurs_grund, betrag_eur, rechnungsart, rechnung_auf_arbeitgeber, empfaenger, verkehrsmittel, uebernachtung_naechte, fruehstueck_enthalten, mahlzeit, bewirtung, tse_beleg, erstellt_am, geaendert_am, version FROM ausgabe
+WHERE nutzer_id = ?1 AND reise_id IN (/*SLICE:reise_ids*/?)
+ORDER BY reise_id, datum, id
+`
+
+type ListAusgabenByReisenParams struct {
+	NutzerID string
+	ReiseIds []string
+}
+
+// The named argument comes before the slice in the text on purpose. sqlc numbers
+// a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+// and SQLite then numbers those from one, so the two collide and the filter
+// silently matches nothing. With the named argument first, the numbering lines
+// up with the order the generated code binds. Do not reorder the WHERE clause.
+func (q *Queries) ListAusgabenByReisen(ctx context.Context, arg ListAusgabenByReisenParams) ([]Ausgabe, error) {
+	query := listAusgabenByReisen
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.NutzerID)
+	if len(arg.ReiseIds) > 0 {
+		for _, v := range arg.ReiseIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", strings.Repeat(",?", len(arg.ReiseIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:reise_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Ausgabe
+	for rows.Next() {
+		var i Ausgabe
+		if err := rows.Scan(
+			&i.ID,
+			&i.NutzerID,
+			&i.ReiseID,
+			&i.Kostenart,
+			&i.Datum,
+			&i.Leistender,
+			&i.Beschreibung,
+			&i.Waehrung,
+			&i.Betrag,
+			&i.Kurs,
+			&i.KursQuelle,
+			&i.KursDatum,
+			&i.KursGrund,
+			&i.BetragEur,
+			&i.Rechnungsart,
+			&i.RechnungAufArbeitgeber,
+			&i.Empfaenger,
+			&i.Verkehrsmittel,
+			&i.UebernachtungNaechte,
+			&i.FruehstueckEnthalten,
+			&i.Mahlzeit,
+			&i.Bewirtung,
+			&i.TseBeleg,
+			&i.ErstelltAm,
+			&i.GeaendertAm,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listBelegeForAusgabe = `-- name: ListBelegeForAusgabe :many
 SELECT beleg.id, beleg.status
 FROM ausgabe_beleg
@@ -564,6 +642,110 @@ func (q *Queries) ListBelegeForAusgabe(ctx context.Context, arg ListBelegeForAus
 	return items, nil
 }
 
+const listBelegeForAusgaben = `-- name: ListBelegeForAusgaben :many
+SELECT ausgabe_beleg.ausgabe_id, beleg.id, beleg.status
+FROM ausgabe_beleg
+JOIN beleg ON beleg.id = ausgabe_beleg.beleg_id
+WHERE beleg.nutzer_id = ?1 AND ausgabe_beleg.ausgabe_id IN (/*SLICE:ausgabe_ids*/?)
+ORDER BY ausgabe_beleg.ausgabe_id, beleg.id
+`
+
+type ListBelegeForAusgabenParams struct {
+	NutzerID   string
+	AusgabeIds []string
+}
+
+type ListBelegeForAusgabenRow struct {
+	AusgabeID string
+	ID        string
+	Status    string
+}
+
+// The named argument comes before the slice in the text on purpose. sqlc numbers
+// a second argument (?2) but leaves the expanded slice placeholders unnumbered,
+// and SQLite then numbers those from one, so the two collide and the filter
+// silently matches nothing. With the named argument first, the numbering lines
+// up with the order the generated code binds. Do not reorder the WHERE clause.
+func (q *Queries) ListBelegeForAusgaben(ctx context.Context, arg ListBelegeForAusgabenParams) ([]ListBelegeForAusgabenRow, error) {
+	query := listBelegeForAusgaben
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.NutzerID)
+	if len(arg.AusgabeIds) > 0 {
+		for _, v := range arg.AusgabeIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ausgabe_ids*/?", strings.Repeat(",?", len(arg.AusgabeIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ausgabe_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBelegeForAusgabenRow
+	for rows.Next() {
+		var i ListBelegeForAusgabenRow
+		if err := rows.Scan(&i.AusgabeID, &i.ID, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEigenbelegeByAusgaben = `-- name: ListEigenbelegeByAusgaben :many
+SELECT ausgabe_id, grund, zahlungsempfaenger, art, erstellt_am, bestaetigt_am, bestaetigt_von FROM eigenbeleg
+WHERE ausgabe_id IN (/*SLICE:ausgabe_ids*/?)
+`
+
+func (q *Queries) ListEigenbelegeByAusgaben(ctx context.Context, ausgabeIds []string) ([]Eigenbeleg, error) {
+	query := listEigenbelegeByAusgaben
+	var queryParams []interface{}
+	if len(ausgabeIds) > 0 {
+		for _, v := range ausgabeIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ausgabe_ids*/?", strings.Repeat(",?", len(ausgabeIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ausgabe_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Eigenbeleg
+	for rows.Next() {
+		var i Eigenbeleg
+		if err := rows.Scan(
+			&i.AusgabeID,
+			&i.Grund,
+			&i.Zahlungsempfaenger,
+			&i.Art,
+			&i.ErstelltAm,
+			&i.BestaetigtAm,
+			&i.BestaetigtVon,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSteueranteile = `-- name: ListSteueranteile :many
 SELECT id, ausgabe_id, position, satz, steuerland, netto, steuer, brutto, netto_eur, steuer_eur, brutto_eur FROM steueranteil
 WHERE ausgabe_id = ?1
@@ -572,6 +754,57 @@ ORDER BY position
 
 func (q *Queries) ListSteueranteile(ctx context.Context, ausgabeID string) ([]Steueranteil, error) {
 	rows, err := q.db.QueryContext(ctx, listSteueranteile, ausgabeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Steueranteil
+	for rows.Next() {
+		var i Steueranteil
+		if err := rows.Scan(
+			&i.ID,
+			&i.AusgabeID,
+			&i.Position,
+			&i.Satz,
+			&i.Steuerland,
+			&i.Netto,
+			&i.Steuer,
+			&i.Brutto,
+			&i.NettoEur,
+			&i.SteuerEur,
+			&i.BruttoEur,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSteueranteileByAusgaben = `-- name: ListSteueranteileByAusgaben :many
+SELECT id, ausgabe_id, position, satz, steuerland, netto, steuer, brutto, netto_eur, steuer_eur, brutto_eur FROM steueranteil
+WHERE ausgabe_id IN (/*SLICE:ausgabe_ids*/?)
+ORDER BY ausgabe_id, position
+`
+
+func (q *Queries) ListSteueranteileByAusgaben(ctx context.Context, ausgabeIds []string) ([]Steueranteil, error) {
+	query := listSteueranteileByAusgaben
+	var queryParams []interface{}
+	if len(ausgabeIds) > 0 {
+		for _, v := range ausgabeIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ausgabe_ids*/?", strings.Repeat(",?", len(ausgabeIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ausgabe_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
