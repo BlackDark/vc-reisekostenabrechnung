@@ -93,7 +93,7 @@ func insertYear(ctx context.Context, q *sqlitedb.Queries, y *satz.Year, status, 
 // EffectiveYear loads one Satztabelle with Admin overrides applied.
 func (s *Store) EffectiveYear(ctx context.Context, jahr int) (*satz.Year, error) {
 	var y *satz.Year
-	err := s.tx(ctx, func(q *sqlitedb.Queries) error {
+	err := s.rtx(ctx, func(q *sqlitedb.Queries) error {
 		var err error
 		y, err = loadEffective(ctx, q, jahr)
 		return err

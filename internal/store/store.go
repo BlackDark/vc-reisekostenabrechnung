@@ -40,7 +40,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	}
 	write.SetMaxOpenConns(1)
 	write.SetMaxIdleConns(1)
-	read, err := sql.Open("sqlite", dsn(path))
+	read, err := sql.Open("sqlite", readDSN(path))
 	if err != nil {
 		_ = write.Close()
 		return nil, err
@@ -64,6 +64,15 @@ func Open(ctx context.Context, path string) (*Store, error) {
 
 func dsn(path string) string {
 	return "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)"
+}
+
+// readDSN is the write DSN plus query_only, which refuses any statement that
+// modifies the database. A write sent to the read pool would otherwise succeed
+// and open a second writer beside the single-connection write pool, which is the
+// arrangement the two pools exist to avoid; the cost of the guard is that a
+// misplaced write fails loudly instead.
+func readDSN(path string) string {
+	return dsn(path) + "&_pragma=query_only(1)"
 }
 
 // Close closes both pools.
@@ -141,6 +150,24 @@ func (s *Store) readQ() *sqlitedb.Queries { return sqlitedb.New(s.read) }
 
 func (s *Store) tx(ctx context.Context, fn func(q *sqlitedb.Queries) error) error {
 	tx, err := s.write.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(sqlitedb.New(tx)); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
+// rtx runs fn on a transaction of the read pool. It is for loaders, and fn must
+// only read: the read pool refuses writes, and a loader that needs to write
+// belongs on s.tx. The write pool holds one connection, so a load on it waits
+// behind every write in flight, and the receipt pipeline keeps that connection
+// busy. SQLite gives a read transaction a stable snapshot, so the queries inside
+// one call still see a single state of the database.
+func (s *Store) rtx(ctx context.Context, fn func(q *sqlitedb.Queries) error) error {
+	tx, err := s.read.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
