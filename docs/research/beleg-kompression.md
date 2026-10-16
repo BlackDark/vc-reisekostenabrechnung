@@ -12,6 +12,31 @@ Die Pipeline `2026.1` ist eingebaut (Normalisierung, Farb-AVIF, WebP-Vorschau, J
 go run ./scripts/beleg-benchmark pfad/zu/fotos
 ```
 
+## Encode-Zeit im Container, 16.10.2026
+
+`scripts/beleg-benchmark` misst jetzt auch die Zeit, und zwar dort, wo sie anfällt: im App-Image. Der Encoder ist einthreadig, ein Zwei-Kern-Host liefert dieselben Zeiten wie `--cpus=1`, deshalb die Begrenzung. Gebaut wird wie das ausgelieferte Binary, also mit den WASM-Encodern über wazero:
+
+```sh
+CGO_ENABLED=0 go build -tags nodynamic -o /tmp/belegbench ./scripts/beleg-benchmark
+docker run --rm --cpus=1 -v /tmp/belegbench:/belegbench:ro -v "$PWD/photos:/photos:ro" \
+  --entrypoint /belegbench vc-reisekosten:ci -format webp /photos
+```
+
+Eingaben: der Bon-Fixture `e2e/fixtures/receipt.png` (900×1200, Profil Bon → 945 px) und derselbe Bon, auf Handyfoto-Größe vergrößert (3024×4032, Profil A4 → 2480 px). Echte Betreiberbelege (O7) fehlen weiter.
+
+| Konfiguration | Bon 945 px | A4 2480 px | Archiv Bon | Archiv A4 |
+|---|---|---|---|---|
+| **AVIF q70/speed 8** (ausgeliefert) | 4,4 s | 112 s | 27,6 KB | 141 KB |
+| AVIF q70/speed 6 | 8,4 s | 138 s | 20,0 KB | 131 KB |
+| AVIF q45/speed 8 | 4,6 s | 113 s | 17,3 KB | 71 KB |
+| WebP q55 (Rückfall) | 3,6 s | 105 s | 23,6 KB | 100 KB |
+
+Was daraus folgt:
+
+1. Die Zeit hängt an der Pixelzahl, nicht am Codec. Eine A4-Seite kostet **rund zwei Minuten CPU**, ein Bon rund vier Sekunden. Der Rückfall auf WebP spart davon nichts, es ist derselbe WASM-Weg.
+2. Der wirksame Hebel ist die **Qualität**, nicht die Speed-Stufe: q45 halbiert das Archiv bei praktisch gleicher Zeit. Speed 6 wird beim A4-Beleg nur 8 % kleiner und braucht 23 % länger, beim Bon 38 % kleiner bei 1,9-facher Zeit. Die Begründung im Code („~4x schneller als speed 6“, `internal/belegpipe/pipe.go`) lässt sich damit nicht reproduzieren; dort stehen jetzt die gemessenen Faktoren.
+3. Offen bleibt die Entscheidung: q70/speed 8 beibehalten (asynchron, ~2 min pro A4-Seite) oder die Qualität senken. Sie gehört zum Betreiber, nicht ins Experiment, und ohne die echten Belege (O7) ist die Lesbarkeitsfrage bei q45 nicht entschieden.
+
 ## TL;DR
 
 1. **Der größte Hebel ist nicht der Codec, sondern die Dokument-Aufbereitung:** Entzerren und Zuschneiden, auf 300 dpi-Äquivalent skalieren und den Hintergrund normalisieren (Schatten und Papierfarbe raus). Damit werden Belege ~25–50× kleiner als das Kamerabild, und die OCR wird **besser** (Schlüsselfelder 56 → 75–81 von 97; ein verblasster Thermobon 1/8 → 8/8).
@@ -245,5 +270,5 @@ PDF / XML / E-Rechnung: unverändert speichern (Empfangsformat), nur Vorschaubil
 * Die automatische Kantenerkennung ist das schwächste Glied (ALDI, Beleg in der Hand). Im Browser mit realen Fotos testen, ggf. doch OpenCV.js lazy laden.
 * Die Hintergrund-Normalisierung erzeugt an **harten** Schattenkanten einen dunklen Streifen (sichtbar im Thermo-Beispiel). Ein adaptiver Kernel oder ein zweistufiger Hintergrund würde helfen.
 * Die Rückseite (AGB, Unterschrift bei Bewirtung) muss als zweite Seite desselben Belegs erfassbar sein.
-* Encode-Zeit und Speicherbedarf von `gen2brain/avif` (WASM) im Container sind nicht gemessen. Erwartet werden < 1–2 s pro Bon, also unkritisch, weil asynchron.
+* Encode-Zeit: gemessen am 16.10.2026 (siehe oben) – 4,4 s pro Bon und 112 s pro A4-Seite. Die Erwartung von < 1–2 s pro Bon war zu optimistisch, die Entscheidung über Qualität und Format steht aus. Der Speicherbedarf ist weiterhin nicht gemessen.
 * Tesseract mit `tessdata_best` oder einem Kassenbon-Modell würde absolut besser abschneiden. An der Rangfolge der Varianten sollte das nichts ändern.

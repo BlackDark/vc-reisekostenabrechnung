@@ -54,8 +54,10 @@ type Photo struct {
 }
 
 // NormalizeSettings fills empty fields with the ADR 0005 defaults.
-// Quality 70 keeps a clean scan above 0.95 SSIM; speed 8 keeps the WASM encoder
-// at ~4x the speed of speed 6 for ~0.004 SSIM (docs/research/beleg-kompression.md).
+// Quality 70 keeps a clean scan above 0.95 SSIM. Speed 8 costs 4.4s on a 945 px
+// receipt against 8.4s at speed 6, for an archive 38% larger; on a 2480 px page the
+// gap narrows to 23% in time and 8% in size. Quality, not speed, is the size knob:
+// q45 halves the archive for the same time (docs/research/beleg-kompression.md).
 func NormalizeSettings(s Settings) Settings {
 	if s.Format == "" {
 		s.Format = "avif"
