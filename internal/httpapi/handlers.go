@@ -79,9 +79,15 @@ func (a *App) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	if !ok || !n.Aktiv {
 		if n.ID != "" {
-			_ = a.store.TouchLogin(r.Context(), n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: ip}, false)
+			err = a.store.TouchLogin(r.Context(), n.ID, store.Actor{NutzerID: &n.ID, Art: "nutzer", IP: ip}, false)
 		} else {
-			_ = a.store.RecordFailure(r.Context(), name, ip)
+			err = a.store.RecordFailure(r.Context(), name, ip)
+		}
+		// The refused attempt has to reach the audit trail, so a write that fails is
+		// reported instead of answering as if the attempt were on record.
+		if err != nil {
+			writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+			return
 		}
 		writeProblem(w, http.StatusUnauthorized, "ungueltige_anmeldung", "Invalid username or password", "")
 		return
@@ -98,16 +104,26 @@ func (a *App) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	_ = a.store.TouchLogin(r.Context(), n.ID, a.actor(r, n), true)
+	if err := a.store.TouchLogin(r.Context(), n.ID, a.actor(r, n), true); err != nil {
+		_ = a.sessions.Destroy(r.Context())
+		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+		return
+	}
 	writeNutzer(w, http.StatusOK, n)
 }
 
 func (a *App) PostAuthLogout(w http.ResponseWriter, r *http.Request) {
-	if n, ok := a.current(r); ok {
-		_ = a.store.RecordAudit(r.Context(), a.actor(r, n), "abmeldung", "nutzer", n.ID)
-	}
+	n, ok := a.current(r)
 	_ = a.sessions.Destroy(r.Context())
 	w.Header().Set("Clear-Site-Data", `"cache", "storage"`)
+	if ok {
+		// The session is gone either way, but a logout that could not be recorded
+		// is reported rather than answered with a clean 204.
+		if err := a.store.RecordAudit(r.Context(), a.actor(r, n), "abmeldung", "nutzer", n.ID); err != nil {
+			writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+			return
+		}
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
