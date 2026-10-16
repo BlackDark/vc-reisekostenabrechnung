@@ -148,8 +148,7 @@ func (a *App) PatchMe(w http.ResponseWriter, r *http.Request, params api.PatchMe
 	if !ok {
 		return
 	}
-	if version != n.Version {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	if versionMismatch(w, version, n.Version) {
 		return
 	}
 	var body api.ProfilPatch
@@ -201,8 +200,7 @@ func (a *App) PutAuthPasswort(w http.ResponseWriter, r *http.Request, params api
 	if !ok {
 		return
 	}
-	if version != n.Version {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	if versionMismatch(w, version, n.Version) {
 		return
 	}
 	var body api.PasswortRequest
@@ -437,8 +435,7 @@ func (a *App) PatchAdminNutzer(w http.ResponseWriter, r *http.Request, id string
 	if !ok {
 		return
 	}
-	if version != target.Version {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
+	if versionMismatch(w, version, target.Version) {
 		return
 	}
 	var body api.NutzerAdminPatch
