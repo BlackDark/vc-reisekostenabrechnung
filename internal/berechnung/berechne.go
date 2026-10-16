@@ -980,14 +980,3 @@ func Dates(r Reise) ([]string, error) {
 	}
 	return out, nil
 }
-
-// SachbezugBetrag reports the year's breakfast and main-meal values in cents.
-func SachbezugBetrag(year *satz.Year, meal string) int64 {
-	if year == nil {
-		return 0
-	}
-	if meal == "fruehstueck" {
-		return year.Inland.SachbezugFruehstueck
-	}
-	return year.Inland.SachbezugHauptmahlzeit
-}

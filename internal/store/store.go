@@ -360,10 +360,6 @@ func (s *Store) RecordFailure(ctx context.Context, benutzername, ip string) erro
 	})
 }
 
-func (s *Store) SetGroupAdmin(ctx context.Context, id string, admin bool) error {
-	return s.SyncGroupAdmin(ctx, id, admin, Actor{Art: "system"})
-}
-
 // SyncGroupAdmin updates admin_ueber_gruppe and refuses to drop the last active Admin.
 func (s *Store) SyncGroupAdmin(ctx context.Context, id string, admin bool, actor Actor) error {
 	return s.tx(ctx, func(q *sqlitedb.Queries) error {
@@ -394,12 +390,6 @@ func (s *Store) SyncGroupAdmin(ctx context.Context, id string, admin bool, actor
 			"admin_ueber_gruppe": admin,
 		}), nil)
 	})
-}
-
-// SessionByToken loads one session row.
-func (s *Store) SessionByToken(ctx context.Context, token string) (sqlitedb.Session, error) {
-	row, err := sqlitedb.New(s.write).GetSession(ctx, token)
-	return row, mapErr(err)
 }
 
 // RecordAudit appends one audit event.
@@ -482,10 +472,6 @@ func (s *Store) DeleteSessionFor(ctx context.Context, nutzerID, publicID string)
 	return sqlitedb.New(s.write).DeleteSessionByPublicID(ctx, sqlitedb.DeleteSessionByPublicIDParams{
 		OeffentlichID: publicID, NutzerID: &nutzerID,
 	})
-}
-
-func (s *Store) DeleteSessions(ctx context.Context, nutzerID string) error {
-	return sqlitedb.New(s.write).DeleteSessionsForNutzer(ctx, &nutzerID)
 }
 
 // auditPageSize bounds how much of the audit chain is read at once. The chain

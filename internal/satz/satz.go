@@ -511,16 +511,6 @@ func ParseImport(r io.Reader, jahr int) ([]Row, []LineError) {
 	return rows, nil
 }
 
-// InlandFields are the Satztabelle columns an Admin may override.
-func InlandFields() []string {
-	return []string{
-		"vma_inland_24h", "vma_inland_8h", "kuerzung_fruehstueck_pct", "kuerzung_hauptmahlzeit_pct",
-		"uebernachtung_inland_pauschale", "km_kraftwagen", "km_anderes_motorfahrzeug",
-		"sachbezug_fruehstueck", "sachbezug_hauptmahlzeit", "uebliche_mahlzeit_grenze",
-		"kleinbetragsgrenze", "bewirtung_abzug_pct", "aufbewahrung_jahre",
-	}
-}
-
 // SetInlandField writes one override onto a copy of the domestic rates.
 func SetInlandField(in *Inland, feld string, n int64) bool {
 	switch feld {
