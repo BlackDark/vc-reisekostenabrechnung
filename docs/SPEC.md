@@ -1024,7 +1024,7 @@ vc-reisekostenabrechnung/
 ├─ renovate.json5, Makefile (Entwickler-Kurzbefehle), GLOSSARY.md, README.md, LICENSE
 ```
 
-Lokale Entwicklung: `make dev` startet das Go-Backend (`go run ./cmd/reisekosten serve`) und `pnpm --filter web dev` (Vite-Proxy `/api` → `:8080`); der generierte TypeScript-Client liegt eingecheckt unter `web/src/lib/api/`; `make check` = alle Linter und Tests wie im CI.
+Lokale Entwicklung: `go run ./cmd/reisekosten serve` startet das Go-Backend, `pnpm --filter web dev` den Vite-Server (Proxy `/api` → `:8080`); der generierte TypeScript-Client liegt eingecheckt unter `web/src/lib/api/`. `make check` = `make test` (Go-Tests) plus `make web` (Biome, svelte-check, Vitest, Build, i18n-Abgleich, Bundle-Größen); `golangci-lint` und `govulncheck` laufen nur im CI.
 
 ## 17. Docker und Betrieb
 
@@ -1189,7 +1189,7 @@ Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go` (
 
 ### 18.4 E2E und Screenshot-Durchlauf
 
-- Umgebung (`e2e/compose.ci.yml`): das geladene Image `vc-reisekosten:ci`, `mock-oauth2-server` (OIDC mit konfigurierbarem `groups`-Claim), MinIO für einen S3-Lauf (eigener Playwright-Projekt-Durchlauf mit `STORAGE_BACKEND=s3`). Playwright läuft im Container `mcr.microsoft.com/playwright:v1.64.0-noble` (Browser vorinstalliert, kein Download).
+- Umgebung (`scripts/e2e-up.sh`): das geladene Image `vc-reisekosten:ci`, `mock-oauth2-server` (OIDC mit konfigurierbarem `groups`-Claim), MinIO für einen S3-Lauf (eigener Playwright-Projekt-Durchlauf mit `STORAGE_BACKEND=s3`). Playwright läuft im Container `mcr.microsoft.com/playwright:v1.64.0-noble` (Browser vorinstalliert, kein Download).
 - Projekte: `desktop` (Chromium 1280×800), `mobile` (Chromium, Pixel-7-Emulation 412×915) und `mobile-webkit` (iPhone-Emulation). Dieselben Projekte und dieselbe Umgebung laufen auf Pull Requests und auf `main`.
 - **Fachliche Flows**: Passwort-Login, OIDC-Login mit Auto-Provisioning und Admin-Gruppe, Header-Auth (nur von vertrauenswürdiger Quelle), Reise anlegen (Inland, Ausland mit Ortswechseln), Beleg hochladen (Fixture-Foto → Ecken → Bestätigen), KI-Vorschlag gegen einen Mock-Endpunkt, Abrechnung anlegen/prüfen/einreichen, PDF/ZIP herunterladen (Inhalt geprüft), Entsperrung mit Grund, als bezahlt markieren, Sprache umschalten, Satztabellen-Override als Admin.
 - **Screenshot-Durchlauf** (`e2e/tests/seiten.spec.ts`): eine Routenliste mit **jeder Seite** der App (inkl. Leer- und gefüllter Zustände über Seed-Daten). Je Route und Viewport (desktop + mobile): Seite öffnen, auf geladene Hauptüberschrift warten (Assertion „Seite lädt“), **keine** `console.error`- oder `pageerror`-Ereignisse (Test schlägt fehl), auf mobile `document.documentElement.scrollWidth <= window.innerWidth` (**kein horizontales Scrollen**), Full-Page-Screenshot nach `screenshots/<viewport>/<route>.png`. Eine Prüfung stellt sicher, dass jede im Router registrierte Route in der Liste steht.

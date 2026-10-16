@@ -162,7 +162,7 @@ Treiberwahl: `modernc.org/sqlite` und `ncruces/go-sqlite3` sind beide geeignet. 
 
 ### 4.1 Build-Muster ohne QEMU
 
-- **SPA einmal bauen:** `FROM --platform=$BUILDPLATFORM node:24-… AS web` → `pnpm build`. Das Ergebnis ist architekturunabhängig.
+- **SPA einmal bauen:** `FROM --platform=$BUILDPLATFORM node:24-… AS web` → `pnpm --filter web build`. Das Ergebnis ist architekturunabhängig.
 - **Go cross-kompilieren:** `FROM --platform=$BUILDPLATFORM golang:1.27-… AS build`, `ARG TARGETOS TARGETARCH`, `CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w"`, SPA per `//go:embed` aus der `web`-Stage. Gemessen: Kaltbuild ~14–19 s je Arch (8 Kerne), warm < 1 s. CGO-frei ist Voraussetzung (siehe 3.1).
 - **Final-Stage:** `FROM gcr.io/distroless/static-debian13:nonroot` mit **nur `COPY`**, kein `RUN`. Weil in der Zielplattform nichts ausgeführt wird, braucht der amd64-Runner für das arm64-Image **keine Emulation**, und `docker buildx build --platform linux/amd64,linux/arm64` läuft auf einem einzigen Runner. `tonistiigi/xx` (v1.9.0) ist nur bei CGO nötig.
 - **Go-Caches im Dockerfile:** `RUN --mount=type=cache,target=/root/.cache/go-build` und `…/go/pkg/mod`. Diese Cache-Mounts werden **nicht** von `cache-to: type=gha/registry` exportiert. Für Persistenz in GitHub Actions braucht es z. B. `reproducible-containers/buildkit-cache-dance` oder den Go-Build außerhalb von Docker (`actions/setup-go` mit Cache) und `COPY` des fertigen Binaries ins Image.
