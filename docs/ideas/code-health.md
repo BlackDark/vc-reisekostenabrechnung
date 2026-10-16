@@ -290,12 +290,16 @@ That is 1,114 lines, about 21% of the 5,267 lines in the `web/src/lib/components
 not just dead bytes: `svelte-check` and Biome still process these trees, and two select APIs
 sit side by side, so a contributor picks the wrong one.
 
-Also unused, and verified with no import anywhere in `web/src`, `e2e` or `scripts`:
+Also unused, verified with no import anywhere in `web/src`, `e2e` or `scripts`:
 
-- `workbox-window` (`web/package.json:27`); service-worker registration goes through
-  `virtual:pwa-register/svelte` (`web/src/lib/ReloadPrompt.svelte:2`).
 - `@testing-library/svelte` (`web/package.json:34`); all six Vitest files import only
   `vitest`.
+
+`workbox-window` (`web/package.json:27`) looked like a third one and is not: the generated
+`virtual:pwa-register/svelte` module imports it, and Vite resolves that import from the
+`web` package, so removing it fails the production build. Nothing in this repository
+names it, which is exactly why the removal looked safe; only a build from a clean
+`pnpm install` shows the difference.
 - Four dead re-exports in `web/src/lib/beleg/corners.ts:3-8` (`detectFromRGBA`,
   `profileWidth`, `suggestProfil`, `warpRGBA`); every real consumer imports `./geometry`
   directly, so the barrel is a second public surface for the same code.
