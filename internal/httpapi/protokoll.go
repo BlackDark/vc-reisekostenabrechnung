@@ -27,10 +27,7 @@ func (a *App) GetProtokoll(w http.ResponseWriter, r *http.Request, params api.Ge
 	}
 	items := make([]api.ProtokollEreignis, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, api.ProtokollEreignis{
-			Id: row.ID, Zeitpunkt: row.Zeitpunkt.UTC(), Aktion: row.Aktion,
-			ObjektTyp: row.ObjektTyp, ObjektId: row.ObjektID, AkteurArt: row.AkteurArt, Grund: row.Grund,
-		})
+		items = append(items, toProtokoll(row))
 	}
 	writeJSON(w, http.StatusOK, api.ProtokollListe{Items: items})
 }

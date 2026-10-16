@@ -306,7 +306,7 @@ func (s *Store) Einreichen(ctx context.Context, nutzerID, abrechnungID string, i
 			if err != nil {
 				return err
 			}
-			year := yearOf(prev.Bis)
+			year := yearOfOrCurrent(prev.Bis)
 			n, err := q.NextAbrechnungsnummer(ctx, sqlitedb.NextAbrechnungsnummerParams{
 				NutzerID: nutzerID, ArbeitgeberID: prev.ArbeitgeberID, Jahr: int64(year),
 			})
@@ -870,7 +870,10 @@ func subset(ids, allowed []string) bool {
 	return true
 }
 
-func yearOf(iso string) int {
+// yearOfOrCurrent reads the year of an ISO date and falls back to the current
+// year when the date cannot be read. The caller dates a retention period with it,
+// where an unreadable date must not quietly mean the year zero.
+func yearOfOrCurrent(iso string) int {
 	if len(iso) >= 4 {
 		var y int
 		_, _ = fmt.Sscanf(iso[:4], "%d", &y)

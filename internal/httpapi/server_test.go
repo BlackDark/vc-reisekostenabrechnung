@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -366,6 +367,55 @@ func TestMatchVersion(t *testing.T) {
 	version, ok := app.matchVersion(rec, &good)
 	if !ok || version != 4 || rec.Code != http.StatusOK {
 		t.Fatalf("valid version=%d code=%d ok=%v", version, rec.Code, ok)
+	}
+}
+
+// A caller that holds an older version of the row must not be able to write it,
+// and that answer is the store's own conflict answer rather than a second copy of
+// it. The version the caller does hold still goes through.
+func TestStaleVersionIsRefused(t *testing.T) {
+	app := newTestApp(t, nil)
+	seedUser(t, app, "ada", "correct-horse-1", false)
+	h := app.Handler()
+	login := doJSON(t, h, http.MethodPost, "/api/v1/auth/login", `{"benutzername":"ada","passwort":"correct-horse-1"}`, nil)
+	if login.Code != http.StatusOK || len(login.Result().Cookies()) == 0 {
+		t.Fatalf("login %d %s", login.Code, login.Body)
+	}
+	var me struct {
+		Version int64 `json:"version"`
+	}
+	if err := json.Unmarshal(login.Body.Bytes(), &me); err != nil || me.Version == 0 {
+		t.Fatalf("me %s (%v)", login.Body, err)
+	}
+	cookie := login.Result().Cookies()[0]
+	body := `{"sprache":"en"}`
+	stale := doJSON(t, h, http.MethodPatch, "/api/v1/me", body,
+		ifMatch(cookie, me.Version+1))
+	if stale.Code != http.StatusPreconditionFailed {
+		t.Fatalf("stale version %d %s", stale.Code, stale.Body)
+	}
+	var problem struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(stale.Body.Bytes(), &problem); err != nil || problem.Code != "version" {
+		t.Fatalf("stale version code %q (%v)", problem.Code, err)
+	}
+	// The version is settled before the input is looked at: a caller that writes
+	// from a stale row is refused for that, and not for what the write says.
+	both := doJSON(t, h, http.MethodPatch, "/api/v1/me", `{"sprache":"fr"}`, ifMatch(cookie, me.Version+1))
+	if both.Code != http.StatusPreconditionFailed {
+		t.Fatalf("stale version with an invalid body %d %s", both.Code, both.Body)
+	}
+	current := doJSON(t, h, http.MethodPatch, "/api/v1/me", body, ifMatch(cookie, me.Version))
+	if current.Code != http.StatusOK {
+		t.Fatalf("current version %d %s", current.Code, current.Body)
+	}
+}
+
+func ifMatch(cookie *http.Cookie, version int64) map[string]string {
+	return map[string]string{
+		"Cookie":   cookie.Name + "=" + cookie.Value,
+		"If-Match": strconv.FormatInt(version, 10),
 	}
 }
 

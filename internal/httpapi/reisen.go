@@ -849,6 +849,18 @@ func writeStoreErr(w http.ResponseWriter, err error) bool {
 	return true
 }
 
+// versionMismatch reports whether the If-Match version a caller holds is the one
+// the row carries, and answers the request when it is not. A stale version and
+// the store refusing an update that lost a race are the same situation seen from
+// two sides, so both get the store's conflict response instead of a second
+// spelling of it.
+func versionMismatch(w http.ResponseWriter, got, want int64) bool {
+	if got == want {
+		return false
+	}
+	return writeStoreErr(w, store.ErrConflict)
+}
+
 func dayBound(s string, end bool) *time.Time {
 	if s == "" {
 		return nil
