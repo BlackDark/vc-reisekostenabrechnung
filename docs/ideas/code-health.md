@@ -22,6 +22,11 @@ Baseline when this was written: `go build ./...`, `go vet ./...` and `go test ./
 Landed since, newest first. The item bodies below are left as they were found, so the
 measurement that justified each one is still readable:
 
+- **3.7, the readiness loops** one helper in `scripts/lib/wait.sh` replaces the five
+  copies, each caller still stating its own budget; the duplicated hardened
+  `docker run` blocks and the two Compose renderers are decided against, see
+  [Checked and rejected](#checked-and-rejected)
+  ([#57](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/57)).
 - **3.10** the i18n check compares flattened keys and the placeholders of each key
   ([#56](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/56)).
 - **3.8** the unused end-to-end Compose file and four forwarding scripts removed
@@ -570,6 +575,19 @@ Recorded so nobody re-opens them.
   `STORAGE_BACKEND=s3` Playwright project; neither the workflow nor `scripts/e2e-up.sh` has
   either. The file reference was corrected while the dead Compose file was removed; the
   claim itself is a spec question, not drift a cleanup can settle.
+
+- **Sharing the hardened `docker run` blocks (3.7, second half).** The six blocks differ in
+  what they add on top: mounts, environment, tmpfs sizes, ports, the network, the security
+  options. A shared base list would split each container's posture across two places, so a
+  reviewer could no longer see from the `docker run` line whether that container is
+  hardened, and a flag dropped from the shared list would weaken several at once. The
+  Compose file cannot use a shell helper at all, so part of the duplication stays either
+  way.
+- **Merging `compose-check.sh` and `compose-config.sh` (3.7, third part).** They render the
+  same files from the same filled-in example, but one asserts that a missing `APP_BASE_URL`
+  fails the render while the other renders the backup override with placeholder secrets.
+  Both run on every change to the files they read, so a disagreement between them shows up
+  as a red job rather than as a silent difference.
 
 ## Suggested order
 
