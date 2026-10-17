@@ -36,7 +36,7 @@ func Berechne(in Eingabe) (Ergebnis, error) {
 	assign(prepared)
 	var out Ergebnis
 	for i := range prepared {
-		re := rollup(&in, &prepared[i])
+		re := rollup(&prepared[i])
 		out.Reisen = append(out.Reisen, re)
 		if len(re.Blocker) == 0 {
 			out.Erstattung += re.Summe
@@ -159,7 +159,6 @@ func prepareReise(in *Eingabe, idx int) (prep, error) {
 			},
 			excluded: inTag.VerpflegungAusgeschlossen,
 		}
-		_ = u
 	}
 	n := len(dates)
 	switch {
@@ -217,7 +216,7 @@ func prepareReise(in *Eingabe, idx int) (prep, error) {
 		return p, nil
 	}
 	applyBase(&p)
-	applyOvernight(in, &p)
+	applyOvernight(&p)
 	applyFahrten(in, &p)
 	applyAusgaben(in, &p)
 	return p, nil
@@ -288,7 +287,7 @@ func applyBase(p *prep) {
 	}
 }
 
-func applyOvernight(in *Eingabe, p *prep) {
+func applyOvernight(p *prep) {
 	for i := range p.days {
 		if i == len(p.days)-1 {
 			continue
@@ -312,7 +311,6 @@ func applyOvernight(in *Eingabe, p *prep) {
 			dc.regeln = append(dc.regeln, "UEB-PAUSCHALE")
 		}
 	}
-	_ = in
 }
 
 func unterkunft(r Reise, datum string) string {
@@ -623,7 +621,7 @@ func applyAusgaben(in *Eingabe, p *prep) {
 			}
 		}
 		if a.Kostenart == "bewirtung" {
-			addBewirt(in, &p.bewirt, ae)
+			addBewirt(&p.bewirt, ae)
 		}
 	}
 	if p.fahrt > 0 {
@@ -856,7 +854,7 @@ func outsideTrip(r Reise, d civil) bool {
 	return d.before(from.add(-30)) || d.after(to.add(30))
 }
 
-func addBewirt(in *Eingabe, b *bewirtSum, ae AusgabeErgebnis) {
+func addBewirt(b *bewirtSum, ae AusgabeErgebnis) {
 	b.erstattung += ae.BetragEUR
 	var basis int64
 	for _, sh := range ae.Anteile {
@@ -868,15 +866,12 @@ func addBewirt(in *Eingabe, b *bewirtSum, ae AusgabeErgebnis) {
 	}
 	b.b += basis
 	pct := int64(7000)
-	if len(ae.Anteile) > 0 {
-		_ = in
-	}
 	ab := roundDiv(basis*pct, 10000)
 	b.abziehbar += ab
 	b.nicht += basis - ab
 }
 
-func rollup(in *Eingabe, p *prep) ReiseErgebnis {
+func rollup(p *prep) ReiseErgebnis {
 	re := ReiseErgebnis{
 		ID: p.reise.ID, Blocker: append([]string{}, p.blocker...),
 		Warnungen: append([]string{}, p.warnings...), Ausgaben: p.ausgaben,
@@ -925,7 +920,6 @@ func rollup(in *Eingabe, p *prep) ReiseErgebnis {
 		re.Warnungen = append(re.Warnungen, "W14")
 	}
 	re.Warnungen = uniqueStrings(re.Warnungen)
-	_ = in
 	return re
 }
 
