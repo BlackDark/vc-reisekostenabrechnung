@@ -130,7 +130,7 @@ export function suggestProfil(width: number, height: number): Profil {
 	return height / width > 1.6 ? "bon" : "a4";
 }
 
-function frame(w: number, h: number): Pt[] {
+export function frame(w: number, h: number): Pt[] {
 	const x = Math.max(0, w - 1);
 	const y = Math.max(0, h - 1);
 	return [

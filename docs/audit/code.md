@@ -18,7 +18,6 @@ files, 17,694 lines. Largest hand-written Go: `internal/berechnung/berechne.go` 
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
 | CODE-10 | M | `internal/berechnung/berechne.go:358-519` (`assign`, 162 lines), `:647-766` (`convertAusgabe`, 120 lines) | Two of the largest functions mix rule dispatch with field mapping inside a 982-line package. | Split rule selection from conversion. | L | Testable seams in the hot calculation path. |
-| CODE-14 | L | `web/src/lib/beleg/corners.ts:3-12` vs `web/src/lib/beleg/geometry.ts:133-142` | `frame(w, h)` is duplicated verbatim because `geometry.ts` keeps its copy unexported. | Export `frame` from `geometry.ts` and import it. | S | One definition of the fallback quad. |
 
 Comment findings (COM-1..5): see AUDIT.md.
 
