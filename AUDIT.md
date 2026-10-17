@@ -10,7 +10,7 @@ real problems are one dead distribution channel (CI-1), duplicated security and 
 `internal/httpapi` (CODE-1, CODE-2), and no license file for a product meant to be self-hosted (DEP-1).
 
 Numbers: 652 tracked files, 53,985 Go lines (106 non-test + 44 test), 17,694 web lines, 19 CI jobs,
-0 reachable known CVEs, 27 findings: 0 high, 10 medium, 17 low. By area: code 5, comments 3, CI/CD 7,
+0 reachable known CVEs, 24 findings: 0 high, 8 medium, 16 low. By area: code 5, comments 0, CI/CD 7,
 dependencies 4, security 6, cleanup 2.
 
 Top 5 by benefit / effort:
@@ -32,13 +32,10 @@ downgraded 0; 2 findings added from the review (SEC-5, SEC-6).
 Dropped: COM-5 wording nit, CLN-4 speculative (the tool header ties it to an open ADR 0005),
 CLN-5 the research docs reference those files.
 
-## Comments (3)
+## Comments (0)
 
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
-| COM-1 | M | `internal/httpapi/mail.go:131-133` | Says "Not in this slice (documented follow-ups): per-user sender allowlist and SPF/DKIM verification, a Beleg source field, and the IMAP poller itself." All four exist: `mailauth.Parse`/`Rejected` (`:190-193`), `MailOwnerForAbsender` (`mailpoll.go:156`), `Quelle: "mail"` (`:226`), `StartMailPoller` (`mailpoll.go:27`). | Delete the stale follow-up list. | S | Readers stop believing verified-sender handling is absent. |
-| COM-3 | M | `internal/auth/provision.go:50-52`, `internal/auth/json.go:1-7` | "Local wrapper keeps encoding/json out of the hot import cycle for tests." There is no import cycle: `unmarshalStringList` calls `jsonUnmarshal`, which calls `json.Unmarshal`. Two wrappers, one call. | Delete both wrappers and the comment. | S | Removes a false rationale plus two layers of indirection. |
-| COM-4 | L | `internal/berechnung/policy.go:1` | "Package berechnung holds calculation policy that later milestones implement." The package holds the whole calculator now (`berechne.go` 982 lines plus `land.go`, `frist.go`, `mwst.go`). | Update the package comment. | S | Package doc matches the package. |
 
 ## Dependencies (4)
 

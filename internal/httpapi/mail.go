@@ -103,9 +103,8 @@ func (a *App) extractMailAttachments(msg *mail.Message) [][]byte {
 // PostEingangMail parses a raw email and files each attachment as a Beleg in the
 // caller's Belegeingang; the original .eml is archived for provenance (GoBD) and
 // each duplicate attachment is skipped by checksum. This is the consume half of
-// email intake (design note options a/c); an IMAP poller or webhook feeds it.
-// Not in this slice (documented follow-ups): per-user sender allowlist and
-// SPF/DKIM verification, a Beleg source field, and the IMAP poller itself.
+// email intake (design note options a/c). Sender verification and the Nutzer
+// lookup happen in ingestMailFor, and the IMAP poller feeds this endpoint.
 func (a *App) PostEingangMail(w http.ResponseWriter, r *http.Request) {
 	n, ok := a.requireTokenActor(w, r, store.TokenScopeMailIngest)
 	if !ok {
