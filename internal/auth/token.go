@@ -27,3 +27,17 @@ func HashBearer(secret string) string {
 	sum := sha256.Sum256([]byte(secret))
 	return hex.EncodeToString(sum[:])
 }
+
+// IsHash reports whether s has the shape of a stored bearer hash, which lets a
+// reader tell a value that was hashed at rest from one that was not.
+func IsHash(s string) bool {
+	if len(s) != 2*sha256.Size {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}

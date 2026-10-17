@@ -90,7 +90,10 @@ func (a *App) PostMeToken(w http.ResponseWriter, r *http.Request) {
 		Id: tok.ID, Name: tok.Name, Scope: tok.Scope, CreatedAt: apiTime(tok.ErstelltAm), Token: plain,
 	}
 	if scope == store.TokenScopeMailIngest && a.cfg.Mail.ForwardDomain != "" {
-		addr := "belege+" + plain + "@" + a.cfg.Mail.ForwardDomain
+		// The address ends up in mail servers, mailboxes and logs, so it carries
+		// the stored hash and not the token: whoever reads the address gains the
+		// ability to send mail, but cannot call the API with it.
+		addr := "belege+" + hash + "@" + a.cfg.Mail.ForwardDomain
 		view.ForwardingAddress = &addr
 	}
 	writeJSON(w, http.StatusCreated, view)

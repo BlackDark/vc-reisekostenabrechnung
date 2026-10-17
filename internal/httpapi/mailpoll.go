@@ -133,21 +133,29 @@ func (a *App) pollMailOnce(ctx context.Context) (int, error) {
 }
 
 // resolveMailUser maps a fetched message to its recipient Nutzer: first a
-// plus-address belege+<mail:ingest token>, then the sender allowlist.
+// plus-address belege+<hash of a mail:ingest token>, then the sender allowlist.
 func (a *App) resolveMailUser(ctx context.Context, env *imap.Envelope) (string, bool) {
 	if env == nil {
 		return "", false
 	}
 	for _, to := range env.To {
-		if !strings.HasPrefix(to.Mailbox, "belege+") {
+		if !strings.HasPrefix(to.Mailbox, "belege+") ||
+			!strings.EqualFold(to.Host, a.cfg.Mail.ForwardDomain) {
 			continue
 		}
-		raw := strings.TrimPrefix(to.Mailbox, "belege+")
-		if raw == "" {
+		sum := strings.TrimPrefix(to.Mailbox, "belege+")
+		if sum == "" {
 			continue
 		}
-		tok, err := a.store.FindActiveToken(ctx, auth.HashBearer(raw))
-		if err == nil && tok.Scope == store.TokenScopeMailIngest && strings.EqualFold(to.Host, a.cfg.Mail.ForwardDomain) {
+		if !auth.IsHash(sum) {
+			// Addresses handed out before the address carried the hash still are
+			// the token itself; they keep working until a new token replaces them.
+			// The address is not logged, only the fact that it is the old shape.
+			a.log.Warn("mail:ingest address carries the token, create a new token to replace it")
+			sum = auth.HashBearer(sum)
+		}
+		tok, err := a.store.FindActiveToken(ctx, sum)
+		if err == nil && tok.Scope == store.TokenScopeMailIngest {
 			return tok.NutzerID, true
 		}
 	}

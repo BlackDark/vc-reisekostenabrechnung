@@ -10,11 +10,12 @@ real problems are one dead distribution channel (CI-1), duplicated security and 
 `internal/httpapi` (CODE-1, CODE-2), and no license file for a product meant to be self-hosted (DEP-1).
 
 Numbers: 652 tracked files, 53,985 Go lines (106 non-test + 44 test), 17,694 web lines, 19 CI jobs,
-0 reachable known CVEs, 8 findings: 0 high, 3 medium, 5 low. By area: code 0, comments 0, CI/CD 1,
-dependencies 2, security 3, cleanup 2.
+0 reachable known CVEs, 7 findings: 0 high, 2 medium, 5 low. By area: code 0, comments 0, CI/CD 1,
+dependencies 2, security 2, cleanup 2.
 
 Top 5 by benefit / effort:
 
+(none left)
 (none left)
 (none left)
 (none left)
@@ -43,13 +44,12 @@ CLN-5 the research docs reference those files.
 | DEP-1 | M | repository root; `docs/SPEC.md:1024` | No license file is tracked (`git ls-files \| rg -i license` is empty) although the SPEC lists `LICENSE` in the layout and the product is published for self-hosting. Without one, users get no grant and no terms. | Add the intended license and its SPDX identifier; the SPEC layout entry then matches (absorbs CLN-2). | S | Legal clarity for a self-hosted product. |
 | DEP-4 | L | `go.mod:34,56`; accepted in `docs/SPEC.md:1261` | Codegen tooling sits in the main module graph, which pulls in a second JWT major (`golang-jwt/jwt/v4 v4.5.2` beside `jwt/v5`), ClickHouse/YDB/Vertica/MSSQL/Azure drivers and the deprecated `github.com/golang/protobuf v1.5.4`. It inflates `go.sum` and hides DEP-2 among tooling noise. | Move the tools to their own module. | M | Smaller graph, quieter vulnerability scans. |
 
-## Security (3)
+## Security (2)
 
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
 | SEC-3 | L | `deploy/docker-compose.yml:12`, `deploy/docker-compose.backup.yml:11-15` | Secrets arrive as container environment (`env_file: .env` for `S3_SECRET_ACCESS_KEY`, `OIDC_CLIENT_SECRET`, `INITIAL_ADMIN_PASSWORD`, `MAIL_IMAP_PASSWORD`; Litestream credentials via `environment:`), so `docker inspect` and `/proc/<pid>/environ` expose them. The app already supports `*_FILE` variants (`deploy/.env.example:22,33,59,75,94`). | Use the `*_FILE` variants with Docker secrets, and keep Litestream credentials in `litestream.yml`. | M | Secrets leave the process environment. |
 | SEC-4 | L | `deploy/docker-compose.yml:4` | `image: ...:${APP_VERSION:-latest}` falls back to a mutable tag when `APP_VERSION` is unset, so an operator who forgets the variable silently runs whatever `latest` points to. | Default to a pinned version or digest and fail when unset. | S | A deploy cannot change code by accident. |
-| SEC-6 | M | `internal/httpapi/token.go:93`; `internal/httpapi/mailpoll.go:145` | The `mail:ingest` token is embedded in the forwarding address (`belege+<token>@domain`) and read back from the `To:` header of every forwarded mail, so the plaintext token travels through mail servers, logs and mailboxes. API tokens are hashed at rest (SEC-1 cites the asymmetry), and this exposure is not on the accepted-risk list. | Use an opaque address alias that maps to the token server side, or record the acceptance in the SPEC. | M | The ingest credential stops leaking through mail. |
 
 Accepted risks, on record and not findings: the setup token is written to the log on every start
 (`internal/httpapi/bootstrap.go:63`, SPEC 10.6); IMAP intake accepts mail with no or neutral
