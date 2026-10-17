@@ -15,6 +15,12 @@ on:
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
+# Manual dispatch and tag push can both name the same tag. Serialise them; a
+# release is never cancelled once it started.
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -31,7 +37,6 @@ jobs:
       attestations: write
     with:
       caller: release
-    secrets: inherit
 
   publish:
     needs: ci
@@ -104,16 +109,11 @@ jobs:
           sbom: false
       - name: Image size
         run: python3 scripts/oci-size.py /tmp/image.oci.tar | tee image-size.txt
-      - name: Load linux/amd64 for Trivy
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          platforms: linux/amd64
-          load: true
-          tags: vc-reisekosten:scan
-          cache-from: type=gha
-          provenance: false
-          sbom: false
+      - name: Load linux/amd64 from the OCI archive for Trivy
+        run: |
+          skopeo copy --override-arch amd64 --override-os linux \
+            oci-archive:/tmp/image.oci.tar docker-daemon:vc-reisekosten:scan
+          docker image inspect vc-reisekosten:scan >/dev/null
       - name: Trivy before push
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
