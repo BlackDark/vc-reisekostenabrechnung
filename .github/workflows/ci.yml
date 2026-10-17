@@ -31,6 +31,7 @@ jobs:
       image: ${{ steps.out.outputs.image }}
       toolchain: ${{ steps.out.outputs.toolchain }}
       backup: ${{ steps.out.outputs.backup }}
+      ci: ${{ steps.out.outputs.ci }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -88,6 +89,10 @@ jobs:
               - 'deploy/**'
               - 'scripts/compose-config.sh'
               - 'scripts/litestream-smoke.sh'
+            ci:
+              - '.github/workflows/**'
+              - 'scripts/workflowperm/**'
+              - 'scripts/ghrepo/**'
       - id: out
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -97,6 +102,7 @@ jobs:
               echo "image=${{ steps.filter.outputs.image }}"
               echo "toolchain=${{ steps.filter.outputs.toolchain }}"
               echo "backup=${{ steps.filter.outputs.backup }}"
+              echo "ci=${{ steps.filter.outputs.ci }}"
             } >> "$GITHUB_OUTPUT"
           else
             {
@@ -105,6 +111,7 @@ jobs:
               echo "image=true"
               echo "toolchain=true"
               echo "backup=true"
+              echo "ci=true"
             } >> "$GITHUB_OUTPUT"
           fi
 
@@ -504,6 +511,8 @@ jobs:
           printf '%s\n' "$TITLE" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-zA-Z0-9._/-]+\))?!?: .+'
 
   actionlint:
+    needs: changes
+    if: needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -575,7 +584,10 @@ jobs:
 
   publish-edge:
     needs: ci-ok
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only a direct push to main publishes the edge channel; the push trigger
+    # already restricts the branch. A called run reports the caller's event and
+    # carries inputs.caller, so it never matches.
+    if: github.event_name == 'push' && (inputs.caller || '') == ''
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -625,3 +637,11 @@ jobs:
           subject-name: ghcr.io/blackdark/vc-reisekostenabrechnung
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+      # The channel counts as published only when the tag resolves to the index
+      # this run built and signed.
+      - name: The edge tag points at this build
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          got=$(docker buildx imagetools inspect --raw ghcr.io/blackdark/vc-reisekostenabrechnung:edge | sha256sum | cut -d' ' -f1)
+          test "sha256:$got" = "$DIGEST" || { echo "edge is sha256:$got, expected $DIGEST"; exit 1; }
