@@ -28,4 +28,4 @@ That copies the viewport frames from `e2e/screenshots/gallery/` to `docs/assets/
 
 ## Other checks
 
-`govulncheck` runs in the `go` job. Trivy scans the image in the `scan` job (fixable CRITICAL and HIGH fail the job; the SARIF upload is visible in code scanning). CodeQL is informational. `pdfa` checks the sample exports with veraPDF and rejects a file that is not PDF/A-3b.
+`govulncheck` runs in the `go-vuln` job. Trivy scans the image in the `scan` job (fixable CRITICAL and HIGH fail the job; the SARIF upload is visible in code scanning). CodeQL is informational. `pdfa` checks the sample exports with veraPDF and rejects a file that is not PDF/A-3b.

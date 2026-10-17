@@ -1167,7 +1167,7 @@ Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-
 ### 18.1 Grundregeln
 
 - Alle Actions per Commit-SHA gepinnt (Renovate `helpers:pinGitHubActionDigests`), minimale `permissions` je Workflow/Job (Default `contents: read`).
-- **Concurrency**: `group: ci-${{ github.event_name }}-${{ github.ref }}`, `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` → nur PR-Läufe werden durch neue Pushes abgebrochen, Läufe auf `main`, Tags und Releases laufen immer zu Ende. Aufgerufene Workflows (`workflow_call`) nutzen ein anderes Präfix als der Aufrufer (kein Deadlock).
+- **Concurrency**: `group: ci-${{ inputs.caller || github.event_name }}-${{ github.ref }}`, `cancel-in-progress: ${{ inputs.caller == '' }}` → ein neuer Push bricht nur direkte Läufe (PR, `main`, `workflow_dispatch`) ab; ein per `workflow_call` gestarteter Lauf läuft zu Ende. Der Gruppenname trennt Aufrufer und Event, deshalb blockiert ein Release-Lauf seinen Aufrufer nicht.
 - **Jeder Job hat `timeout-minutes`** (Werte in 18.2).
 - **Pfadfilter** mit `dorny/paths-filter` im Job `changes` statt `paths-ignore` am Trigger: der Workflow läuft immer, überflüssige Jobs werden übersprungen, und der Aggregator `ci-ok` ist trotzdem grün (sonst blockiert ein fehlender Pflicht-Check reine Doku-PRs). Auf `main`, bei `workflow_dispatch` und `workflow_call` laufen alle Jobs.
 - **Ein Dockerfile** für lokal, CI und Release; CI und Release teilen den `type=gha`-Cache-Scope, der Release-Build ist daher fast nur Cache-Treffer.
@@ -1178,33 +1178,44 @@ Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-
 Trigger: `pull_request`, `push` auf `main`, `workflow_dispatch`, `workflow_call`.
 
 ```
-changes ─┬─► go ────────┐
-         ├─► codegen ───┤
-         ├─► web ───────┤
-         ├─► image ──┬──► smoke ──┐
-         │           ├──► e2e ────┤
-         │           ├──► pdfa ───┤
-         │           └──► scan ───┤
-         └─► pr-titel ────────────┴─► ci-ok (if: always(); prüft needs.*.result ∈ {success, skipped})
+changes ─┬─► go-lint ───────────┐
+         ├─► toolchain-parity ──┤
+         ├─► go-test ───────────┤
+         ├─► go-vuln ───────────┤
+         ├─► codegen ───────────┤
+         ├─► web ───────────────┤
+         ├─► backup ────────────┤
+         ├─► actionlint ────────┤
+         ├─► pr-titel ──────────┤
+         └─► image ─┬─► smoke ──┤
+                    ├─► e2e ────┤
+                    ├─► pdfa ───┤
+                    └─► scan ───┴─► ci-ok ─► publish-edge (nur Push auf `main`)
 ```
+
+`ci-ok` läuft mit `if: always()` und besteht, wenn jedes Job-Ergebnis in `needs` `success` oder `skipped` ist.
 
 | Job | Läuft wenn | Inhalt | Timeout |
 |---|---|---|---|
-| `changes` | immer | Filter `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `satztabellen/**`, `internal/**`), `web` (`web/**`, `pnpm-lock.yaml`, `biome.json`), `toolchain` (alle Dateien, aus denen `scripts/mise-check.sh` Versionen liest), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `image` (go ∪ web ∪ `Dockerfile`, `assets/**`, `e2e/**`, `deploy/**`) | 2 |
-| `go` | go | `setup-go` (`go-version-file: go.mod`, Cache), `golangci-lint-action` (v2.14.0), `go test -race -shuffle=on -coverprofile` (inkl. Golden-Tests 4.16, Storage-Contract-Tests gegen MinIO-Service-Container), `govulncheck` | 10 |
-| `codegen` | go | `sqlc generate`, `oapi-codegen`, `openapi-typescript` → `git diff --exit-code`; Postgres-Probe: sqlc-Engine `postgresql` in Temp-Verzeichnis generieren und kompilieren (3.6) | 5 |
-| `web` | web | `pnpm/action-setup`, `setup-node` (`node-version-file: .node-version`, `cache: pnpm`), `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich de/en, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 10 |
-| `image` | image | `setup-buildx`, `buildkit-cache-dance` (pnpm-Store, Go-Caches), `build-push-action` **ohne Push** für `linux/amd64,linux/arm64` (beweist Multi-Arch), danach `linux/amd64` mit `load: true` (Cache-Treffer), `docker save \| zstd` → Artefakt `image-amd64` | 10 |
-| `smoke` | image | Container-Smoke-Test (18.5) | 5 |
-| `e2e` | image | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go`/`web` | 10 |
-| `pdfa` | image | Validator-Job (18.6) | 5 |
-| `scan` | image | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
+| `changes` | immer | Filter mit `dorny/paths-filter`, auf Nicht-PR-Events alle `true`: `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`) | 3 |
+| `go-lint` | go | `golangci-lint-action` (v2.14.0) | 10 |
+| `go-test` | go | Typst und poppler für die Golden-Tests (4.16), MinIO für die Storage-Contract-Tests (3.6), `go test -race -shuffle=on -coverprofile ./...` | 20 |
+| `go-vuln` | go | `govulncheck` (v1.8.0, im Actions-Cache) über alle Pakete | 10 |
+| `codegen` | go | `pnpm install --frozen-lockfile`, `scripts/codegen-check.sh` (sqlc, oapi-codegen, openapi-typescript → `git diff --exit-code`), `scripts/postgres-probe.sh` (sqlc-Engine `postgresql`, 3.6) | 10 |
+| `toolchain-parity` | toolchain | `scripts/mise-check.sh`: `mise.toml` gegen die Dateien, aus denen CI ihre Versionen liest | 5 |
+| `web` | web | `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 12 |
+| `image` | image | `setup-buildx`, `buildkit-cache-dance` (pnpm-Store, Go-Caches), `scripts/compose-check.sh`, **ein** Multi-Arch-Build (`linux/amd64,linux/arm64`) als OCI-Archiv, amd64 per `skopeo` in den Daemon (Commit-Label-Prüfung), Größenbericht, amd64 als Artefakt | 25 |
+| `smoke` | `image` erfolgreich | amd64-Artefakt laden, Container-Smoke-Test (18.5) | 8 |
+| `e2e` | `image` erfolgreich | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go-lint`/`web` | 25 |
+| `pdfa` | `image` erfolgreich | Validator-Job (18.6) | 20 |
+| `scan` | `image` erfolgreich | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 10 |
 | `backup` | backup | Compose-Rendering (`compose-config.sh`) und Litestream-Restore als UID 65532 (O16) – ohne Image-Artefakt | 10 |
-| `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 2 |
-| `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 2 |
-| `publish-edge` | nur `push` auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert wie Release | 10 |
+| `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 3 |
+| `actionlint` | ci | `actionlint` (v1.7.12, geprüfte Prüfsumme) über alle Workflows, dazu `go test ./scripts/workflowperm ./scripts/ghrepo` | 5 |
+| `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 3 |
+| `publish-edge` | nur Push auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert und attestiert wie ein Release, danach Prüfung, dass `:edge` auf den gebauten Digest zeigt | 15 |
 
-Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go` (~120 s) und `web` (~90 s) → ≈ 3 min.
+Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go-test` (~120 s) und `web` (~90 s) → ≈ 3 min.
 
 ### 18.3 Security in der CI
 

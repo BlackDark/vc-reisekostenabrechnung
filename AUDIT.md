@@ -10,11 +10,12 @@ real problems are one dead distribution channel (CI-1), duplicated security and 
 `internal/httpapi` (CODE-1, CODE-2), and no license file for a product meant to be self-hosted (DEP-1).
 
 Numbers: 652 tracked files, 53,985 Go lines (106 non-test + 44 test), 17,694 web lines, 19 CI jobs,
-0 reachable known CVEs, 5 findings: 0 high, 2 medium, 3 low. By area: code 0, comments 0, CI/CD 1,
-dependencies 2, security 0, cleanup 2.
+0 reachable known CVEs, 4 findings: 0 high, 1 medium, 3 low. By area: code 0, comments 0, CI/CD 1,
+dependencies 2, security 0, cleanup 1.
 
 Top 5 by benefit / effort:
 
+(none left)
 (none left)
 (none left)
 (none left)
@@ -55,9 +56,8 @@ Accepted risks, on record and not findings: the setup token is written to the lo
 `Authentication-Results` verdict (`internal/httpapi/mail.go:191`) by design; `OIDC_ALLOW_EMAIL_LINKING`
 links only on `email_verified` (`internal/httpapi/identity.go:72`).
 
-## Cleanup (2)
+## Cleanup (1)
 
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
-| CLN-1 | M | `docs/SPEC.md:1144,1165-1179,1187`; `docs/development.md:31` | The documented CI layout no longer matches `ci.yml`: SPEC describes a `go` job with `govulncheck` instead of `go-lint`/`go-test`/`go-vuln`, omits `toolchain-parity` and `actionlint`, states a different concurrency expression (`ci-${{ github.event_name }}` vs `inputs.caller`), lists other timeouts for ten jobs (image 10 vs 25, e2e 10 vs 25, pdfa 5 vs 20, and so on), and still describes the `image` step as `load: true` although `ci.yml:291-294` extracts with `skopeo`. | Rewrite SPEC 18.1/18.2 and `development.md:31` from the workflow. | S | Contributors reason from a correct pipeline description. |
 | CLN-3 | L | `renovate.json5:131` | The `svelte` group still lists `@testing-library/svelte`, removed from `web/package.json` when code-health 2.5 landed (`rg testing-library web/package.json pnpm-lock.yaml` is empty). | Remove the line. | S | No stale dependency configuration. |
