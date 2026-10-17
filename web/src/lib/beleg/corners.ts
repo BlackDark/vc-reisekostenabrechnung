@@ -1,15 +1,10 @@
-import { detectFromRGBA, type Profil, type Pt, warpRGBA } from "./geometry";
-
-function frame(w: number, h: number): Pt[] {
-	const x = Math.max(0, w - 1);
-	const y = Math.max(0, h - 1);
-	return [
-		{ x: 0, y: 0 },
-		{ x, y: 0 },
-		{ x, y },
-		{ x: 0, y },
-	];
-}
+import {
+	detectFromRGBA,
+	frame,
+	type Profil,
+	type Pt,
+	warpRGBA,
+} from "./geometry";
 
 export async function detectCorners(bitmap: ImageBitmap): Promise<Pt[]> {
 	const max = 180;

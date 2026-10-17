@@ -1,8 +1,8 @@
 # Configuration
 
-Every setting is an environment variable. A secret also has a `<NAME>_FILE` form (a file path, for example a Docker secret). The file wins when both are set. `reisekosten config check` validates a configuration without serving.
+Every setting is an environment variable. A secret also has a `<NAME>_FILE` form (a file path, for example a Docker secret); setting both the value and the file stops the app at startup. `reisekosten config check` validates a configuration without serving.
 
-Compose reads `.env` from the directory of the compose file. `APP_BASE_URL` is required there (`${APP_BASE_URL:?required}`). `APP_VERSION` and `APP_PORT` are Compose variables, not application settings: they select the image tag (default `latest`) and the published host port (default `8080`).
+Compose reads `.env` from the directory of the compose file and requires `APP_BASE_URL` and `APP_VERSION` there (`${APP_BASE_URL:?required}`). `APP_VERSION` selects the released image tag; `APP_PORT` sets the published host port (default `8080`). The app service takes its secrets from files in `deploy/secrets`, mounted at `/run/secrets`: `INITIAL_ADMIN_PASSWORD`, `OIDC_CLIENT_SECRET`, `S3_SECRET_ACCESS_KEY`, `MAIL_IMAP_PASSWORD` and `AI_API_KEY`. See [Installation](installation.md).
 
 `FX_ECB_URL`, `FX_TIMEOUT` and `EXPORT_PDF_STANDARD` are read at startup and applied; their defaults match the previously compiled-in values. Every variable below is read at startup, and a malformed value (including a non-boolean where a boolean is expected) stops the process.
 
@@ -98,9 +98,9 @@ Invalid combinations stop the process with a clear error (every login method off
 | `JOB_WORKERS` | `2` | Background workers |
 | `RETENTION_REPORT_ENABLED` | `true` | Monthly retention report for admins |
 | **Litestream overlay** | | |
-| `LITESTREAM_ACCESS_KEY_ID` | | Required only with `docker-compose.backup.yml` |
-| `LITESTREAM_SECRET_ACCESS_KEY` | | |
-| `LITESTREAM_REPLICA_URL` | | `s3://bucket/path` in the EU/EEA |
+| `LITESTREAM_ACCESS_KEY_ID` | | Read by Litestream, not by this app; the shipped overlay keeps it in `deploy/secrets/litestream.yml`, so it stays out of the container environment |
+| `LITESTREAM_SECRET_ACCESS_KEY` | | Same file |
+| `LITESTREAM_REPLICA_URL` | | `s3://bucket/path` in the EU/EEA, from the same file |
 
 Sign-in details and a Pocket ID example are in [Authentication](authentication.md). Backup, restore, and retention are in [Operations](operations.md).
 
@@ -117,8 +117,8 @@ Forward or redirect receipts to a mailbox the app polls; their attachments then 
 | `MAIL_IMAP_FOLDER` | `INBOX` | Mailbox folder to poll |
 | `MAIL_IMAP_INTERVAL` | `5m` | Poll interval; must be positive |
 | `MAIL_IMAP_PROCESSED_ACTION` | `flag` | After filing: `flag`, `delete`, or `move:<mailbox>` |
-| `MAIL_FORWARD_DOMAIN` | | Domain of the per-user plus address `belege+<token>@<domain>` |
+| `MAIL_FORWARD_DOMAIN` | | Domain of the per-user plus address `belege+<hash>@<domain>` |
 
-Each user gets a `mail:ingest` token (Profile; the plaintext is shown once). Its forwarding address is `belege+<that token>@MAIL_FORWARD_DOMAIN`. On each poll the app reads unseen mail and, per message, picks the owner by that plus-address token first, then by the sender allowlist (addresses and `@domains` the user listed). It files PDF, image and XML attachments into that owner's Belegeingang (inline logos and text parts are skipped, duplicates dedupe by checksum), archives the original message, and then flags, deletes or moves it per the processed action. A message it cannot map, or that fails to ingest, is left unseen and retried next tick.
+Each user gets a `mail:ingest` token (Profile; the plaintext is shown once). Its forwarding address is `belege+<SHA-256 of that token>@MAIL_FORWARD_DOMAIN`, because the address travels through mail servers and mailboxes: whoever reads it can send mail into the account, but the API does not accept it as a bearer token. Addresses issued before this change carried the token itself and keep working; a new token replaces one. On each poll the app reads unseen mail and, per message, picks the owner by that plus-address token first, then by the sender allowlist (addresses and `@domains` the user listed). It files PDF, image and XML attachments into that owner's Belegeingang (inline logos and text parts are skipped, duplicates dedupe by checksum), archives the original message, and then flags, deletes or moves it per the processed action. A message it cannot map, or that fails to ingest, is left unseen and retried next tick.
 
 Trust note: the poller files whatever a mapped sender attaches, so only a user's forwarding-token senders and allowlisted senders can add receipts to their inbox.

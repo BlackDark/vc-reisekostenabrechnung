@@ -434,3 +434,38 @@ func TestMissingIfMatch(t *testing.T) {
 		t.Fatalf("%d %s", rec.Code, rec.Body)
 	}
 }
+
+// The readiness probe writes temporary files and queries the database, so an
+// unauthenticated caller must not be able to drive that work per request, and the
+// cause of a failed probe belongs in the log instead of the response.
+func TestReadyzCachesItsVerdictAndHidesTheCause(t *testing.T) {
+	app := newTestApp(t, func(c *config.Config) {
+		c.TypstPath = filepath.Join(t.TempDir(), "kein-typst")
+	})
+	h := app.Handler()
+
+	first := doJSON(t, h, http.MethodGet, "/readyz", "", nil)
+	if first.Code != http.StatusServiceUnavailable {
+		t.Fatalf("first probe %d %s", first.Code, first.Body)
+	}
+	var problem struct {
+		Code   string `json:"code"`
+		Detail string `json:"detail"`
+	}
+	if err := json.Unmarshal(first.Body.Bytes(), &problem); err != nil {
+		t.Fatal(err)
+	}
+	if problem.Code != "typst" {
+		t.Fatalf("code %q", problem.Code)
+	}
+	if problem.Detail != "" {
+		t.Fatalf("the response names the cause: %q", problem.Detail)
+	}
+
+	// The path is fine now, but the verdict of the first probe still stands.
+	app.cfg.TypstPath = os.Args[0]
+	second := doJSON(t, h, http.MethodGet, "/readyz", "", nil)
+	if second.Code != http.StatusServiceUnavailable {
+		t.Fatalf("second probe inside the window %d %s", second.Code, second.Body)
+	}
+}

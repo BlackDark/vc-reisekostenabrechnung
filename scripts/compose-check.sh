@@ -2,8 +2,9 @@
 set -eu
 cd "$(dirname "$0")/../deploy"
 cp .env.example .env
-# Required public URL. Secrets stay empty in the example; the backup override
-# needs non-empty values only so Compose interpolation can succeed.
+# Required public URL and image tag. Secrets stay empty in the example: the app
+# reads them from files, which docker compose config does not check.
+sed -i 's|^APP_VERSION=.*|APP_VERSION=v1.1.0|' .env
 sed -i 's|^APP_BASE_URL=.*|APP_BASE_URL=https://reisekosten.example|' .env
 trap 'rm -f .env' EXIT
 set +e
@@ -27,8 +28,5 @@ if [ "$status" -eq 0 ]; then
   cat /tmp/compose-missing.out >&2
   exit 1
 fi
-LITESTREAM_ACCESS_KEY_ID=ci \
-LITESTREAM_SECRET_ACCESS_KEY=ci \
-LITESTREAM_REPLICA_URL=s3://bucket/reisekosten \
-  docker compose -f docker-compose.yml -f docker-compose.backup.yml config >/dev/null
+docker compose -f docker-compose.yml -f docker-compose.backup.yml config >/dev/null
 echo "compose config ok"

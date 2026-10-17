@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"strconv"
+	"strings"
 )
 
 func writeCSV(header []string, rows [][]string) ([]byte, error) {
@@ -24,7 +25,7 @@ func writeCSV(header []string, rows [][]string) ([]byte, error) {
 }
 
 func ausgabenCSV(s Snapshot) ([]byte, error) {
-	header := stringsCSV(`abrechnungsnummer;reise_nr;reise_anlass;projekt;ausgabe_id;belegnummern;datum;kostenart;verkehrsmittel;leistender;beschreibung;rechnungsart;rechnung_auf_arbeitgeber;waehrung;betrag_beleg;kurs;kurs_quelle;kurs_datum;betrag_eur;anteil_nr;ust_land;ust_satz;netto_eur;ust_eur;brutto_eur;vorsteuerfaehig;bewirtung_abziehbar_eur;bewirtung_nicht_abziehbar_eur`)
+	header := strings.Split(`abrechnungsnummer;reise_nr;reise_anlass;projekt;ausgabe_id;belegnummern;datum;kostenart;verkehrsmittel;leistender;beschreibung;rechnungsart;rechnung_auf_arbeitgeber;waehrung;betrag_beleg;kurs;kurs_quelle;kurs_datum;betrag_eur;anteil_nr;ust_land;ust_satz;netto_eur;ust_eur;brutto_eur;vorsteuerfaehig;bewirtung_abziehbar_eur;bewirtung_nicht_abziehbar_eur`, ";")
 	var rows [][]string
 	for _, reise := range s.Reisen {
 		for _, a := range reise.Ausgaben {
@@ -57,7 +58,7 @@ func ausgabenCSV(s Snapshot) ([]byte, error) {
 }
 
 func reisetageCSV(s Snapshot) ([]byte, error) {
-	header := stringsCSV(`abrechnungsnummer;reise_nr;datum;tagesart;abwesenheit_std;land_iso;satzort;satz_24h_eur;pauschale_eur;kuerzung_fruehstueck_eur;kuerzung_mittag_eur;kuerzung_abend_eur;zuzahlungen_eur;verpflegung_eur;unterkunft;uebernachtungspauschale_eur;regel_ids;hinweise`)
+	header := strings.Split(`abrechnungsnummer;reise_nr;datum;tagesart;abwesenheit_std;land_iso;satzort;satz_24h_eur;pauschale_eur;kuerzung_fruehstueck_eur;kuerzung_mittag_eur;kuerzung_abend_eur;zuzahlungen_eur;verpflegung_eur;unterkunft;uebernachtungspauschale_eur;regel_ids;hinweise`, ";")
 	var rows [][]string
 	for _, reise := range s.Reisen {
 		for _, day := range reise.Reisetage {
@@ -74,7 +75,7 @@ func reisetageCSV(s Snapshot) ([]byte, error) {
 }
 
 func fahrtenCSV(s Snapshot) ([]byte, error) {
-	header := stringsCSV(`abrechnungsnummer;reise_nr;datum;start;ziel;zweck;fahrzeugart;km;hin_und_zurueck;km_gesamt;satz_eur_km;betrag_eur`)
+	header := strings.Split(`abrechnungsnummer;reise_nr;datum;start;ziel;zweck;fahrzeugart;km;hin_und_zurueck;km_gesamt;satz_eur_km;betrag_eur`, ";")
 	var rows [][]string
 	for _, reise := range s.Reisen {
 		for _, f := range reise.Fahrten {
@@ -89,26 +90,10 @@ func fahrtenCSV(s Snapshot) ([]byte, error) {
 }
 
 func protokollCSV(s Snapshot) ([]byte, error) {
-	header := stringsCSV(`zeitpunkt;akteur_art;aktion;objekt_typ;objekt_id;grund`)
+	header := strings.Split(`zeitpunkt;akteur_art;aktion;objekt_typ;objekt_id;grund`, ";")
 	rows := make([][]string, 0, len(s.Protokoll))
 	for _, ev := range s.Protokoll {
 		rows = append(rows, []string{ev.Zeitpunkt, ev.AkteurArt, ev.Aktion, ev.ObjektTyp, ev.ObjektID, ev.Grund})
 	}
 	return writeCSV(header, rows)
-}
-
-func stringsCSV(header string) []string {
-	return splitSemi(header)
-}
-
-func splitSemi(s string) []string {
-	out := make([]string, 0, 16)
-	start := 0
-	for i := 0; i <= len(s); i++ {
-		if i == len(s) || s[i] == ';' {
-			out = append(out, s[start:i])
-			start = i + 1
-		}
-	}
-	return out
 }

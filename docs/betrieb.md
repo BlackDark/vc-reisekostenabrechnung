@@ -27,7 +27,7 @@ Bei S3 liegen die Dateien im Bucket. Das Tar enthält dann nur die Datenbank und
 docker compose -f docker-compose.yml -f docker-compose.backup.yml up -d
 ```
 
-Pflichtvariablen (sonst bricht Compose mit `fehlt` ab): `LITESTREAM_ACCESS_KEY_ID`, `LITESTREAM_SECRET_ACCESS_KEY`, `LITESTREAM_REPLICA_URL` (`s3://bucket/pfad`, Bucket in der EU/EWR).
+Replica-URL und Zugangsdaten stehen in `secrets/litestream.yml` (`s3://bucket/pfad`, Bucket in der EU/EWR). Compose hängt die Datei read-only ein, damit die Werte nicht in der Container-Umgebung erscheinen; der Container läuft als UID 65532 und braucht Leserecht auf die Datei.
 
 Der CI-Job `backup` stellt eine Datei-Replik mit UID 65532 wieder her (`scripts/litestream-smoke.sh`). Das ist die Probe für O16. Ein monatlicher Restore gegen den echten S3-Bucket bleibt eine Aufgabe der betreibenden Stelle und ist nicht Teil von v1-CI.
 

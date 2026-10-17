@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/auth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/id"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
 )
@@ -31,7 +32,9 @@ func SessionMetaFrom(ctx context.Context) *SessionMeta {
 	return m
 }
 
-// SessionStore is an scs store backed by the session table.
+// SessionStore is an scs store backed by the session table. The table holds the
+// SHA-256 of the session token, never the token itself, so reading the database
+// does not hand out live sessions; the plaintext only ever sits in the cookie.
 type SessionStore struct {
 	db *sql.DB
 }
@@ -59,11 +62,11 @@ func (s *SessionStore) DeleteCtx(ctx context.Context, token string) error {
 	if token == "" {
 		return nil
 	}
-	return s.q().DeleteSession(ctx, token)
+	return s.q().DeleteSession(ctx, auth.HashBearer(token))
 }
 
 func (s *SessionStore) FindCtx(ctx context.Context, token string) ([]byte, bool, error) {
-	row, err := s.q().GetSession(ctx, token)
+	row, err := s.q().GetSession(ctx, auth.HashBearer(token))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, false, nil
 	}
@@ -85,7 +88,7 @@ func (s *SessionStore) CommitCtx(ctx context.Context, token string, b []byte, ex
 	now := time.Now().UTC()
 	publicID := id.Must()
 	created := now
-	if existing, err := s.q().GetSession(ctx, token); err == nil {
+	if existing, err := s.q().GetSession(ctx, auth.HashBearer(token)); err == nil {
 		publicID = existing.OeffentlichID
 		created = existing.ErstelltAm
 	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -104,7 +107,7 @@ func (s *SessionStore) CommitCtx(ctx context.Context, token string, b []byte, ex
 		}
 	}
 	return s.q().UpsertSession(ctx, sqlitedb.UpsertSessionParams{
-		Token:         token,
+		TokenHash:     auth.HashBearer(token),
 		Data:          base64.StdEncoding.EncodeToString(b),
 		Expiry:        expiry.UTC(),
 		NutzerID:      nutzerID,

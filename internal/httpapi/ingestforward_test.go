@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/emersion/go-imap/v2"
+
+	"github.com/BlackDark/vc-reisekostenabrechnung/internal/auth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/config"
 )
 
@@ -27,8 +30,27 @@ func TestIngestTokenForwardingAddress(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &ingest); err != nil {
 		t.Fatal(err)
 	}
-	if ingest.Scope != "mail:ingest" || ingest.ForwardingAddress != "belege+"+ingest.Token+"@example.com" {
-		t.Fatalf("ingest token forwarding address wrong: %s", rec.Body)
+	if ingest.Scope != "mail:ingest" {
+		t.Fatalf("ingest token scope wrong: %s", rec.Body)
+	}
+	// The address travels through mail servers, mailboxes and logs, so it carries
+	// the hash the database stores: whoever reads it can send mail into the
+	// account, but it is not a bearer token for the API.
+	want := "belege+" + auth.HashBearer(ingest.Token) + "@example.com"
+	if ingest.ForwardingAddress != want {
+		t.Fatalf("ingest token forwarding address %q, want %q", ingest.ForwardingAddress, want)
+	}
+	if strings.Contains(ingest.ForwardingAddress, ingest.Token) {
+		t.Fatalf("the address carries the token: %q", ingest.ForwardingAddress)
+	}
+	// The address still selects its owner, and only its own domain does.
+	nutzerID, ok := app.resolveMailUser(t.Context(), envelopeFor(ingest.ForwardingAddress))
+	if !ok || nutzerID == "" {
+		t.Fatalf("address %q found no owner", ingest.ForwardingAddress)
+	}
+	if _, ok := app.resolveMailUser(t.Context(), envelopeFor("belege+"+
+		auth.HashBearer(ingest.Token)+"@andere.example")); ok {
+		t.Fatalf("a foreign domain resolved to an owner")
 	}
 
 	up := doCookie(t, h, http.MethodPost, "/api/v1/me/tokens", `{"name":"up","scope":"belege:upload"}`, cookie)
@@ -38,4 +60,10 @@ func TestIngestTokenForwardingAddress(t *testing.T) {
 	if strings.Contains(up.Body.String(), "forwarding_address") {
 		t.Fatalf("upload token should not carry a forwarding address: %s", up.Body)
 	}
+}
+
+// envelopeFor returns the envelope of a message addressed to one recipient.
+func envelopeFor(address string) *imap.Envelope {
+	at := strings.LastIndex(address, "@")
+	return &imap.Envelope{To: []imap.Address{{Mailbox: address[:at], Host: address[at+1:]}}}
 }

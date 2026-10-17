@@ -156,13 +156,45 @@ func (a *App) jobRetention(ctx context.Context, jobID string) error {
 	return a.store.FinishRetentionReport(ctx, jobID, abgelaufen, offen)
 }
 
+// derivedPart is one rendition a pipeline job generates from a page.
+type derivedPart struct {
+	variante, ext, mime string
+	body                []byte
+}
+
+// storeDerived stores one generated rendition and appends the row CompleteBeleg
+// needs. PutIfAbsent keeps a job that runs twice idempotent.
+func (a *App) storeDerived(ctx context.Context, nutzerID, belegID string, seite int64, part derivedPart, out *[]store.DateiIn) error {
+	key := blobKey(nutzerID, belegID, part.variante, seite, part.ext)
+	sum := belegpipe.SHA256Hex(part.body)
+	if err := a.blobs.PutIfAbsent(ctx, key, bytes.NewReader(part.body), sum); err != nil {
+		return err
+	}
+	*out = append(*out, store.DateiIn{
+		Variante: part.variante, Seite: seite, Key: key, MIME: part.mime, Bytes: int64(len(part.body)), SHA256: sum,
+	})
+	return nil
+}
+
+// finishClosedBeleg reports whether the Beleg already reached a final state, in
+// which case the job only records that it finished instead of rebuilding
+// renditions that a previous worker stored.
+func (a *App) finishClosedBeleg(ctx context.Context, belegID, jobID string, row sqlitedb.Beleg) (bool, error) {
+	switch row.Status {
+	case "zur_bestaetigung", "bestaetigt", "storniert":
+		err := a.store.CompleteBeleg(ctx, belegID, jobID, row.PipelineVersion, row.PipelineParameter, row.Seiten, nil)
+		return true, err
+	}
+	return false, nil
+}
+
 func (a *App) jobFoto(ctx context.Context, jobID, belegID string) error {
 	row, err := a.store.GetBelegByID(ctx, belegID)
 	if err != nil {
 		return err
 	}
-	if row.Status == "zur_bestaetigung" || row.Status == "bestaetigt" || row.Status == "storniert" {
-		return a.store.CompleteBeleg(ctx, belegID, jobID, row.PipelineVersion, row.PipelineParameter, row.Seiten, nil)
+	if done, err := a.finishClosedBeleg(ctx, belegID, jobID, row); done {
+		return err
 	}
 	files, err := a.store.ListBelegdateien(ctx, belegID)
 	if err != nil {
@@ -189,24 +221,16 @@ func (a *App) jobFoto(ctx context.Context, jobID, belegID string) error {
 		if err != nil {
 			return err
 		}
-		parts := []struct {
-			variante, ext, mime string
-			body                []byte
-		}{
+		parts := []derivedPart{
 			{"archiv", photo.ArchivExt, photo.ArchivMIME, photo.Archiv},
 			{"vorschau", "webp", "image/webp", photo.Preview},
 			{"bild", "webp", "image/webp", photo.Bild},
 			{"export_jpeg", "jpg", "image/jpeg", photo.ExportJPEG},
 		}
 		for _, p := range parts {
-			key := blobKey(row.NutzerID, belegID, p.variante, f.Seite, p.ext)
-			sum := belegpipe.SHA256Hex(p.body)
-			if err := a.blobs.PutIfAbsent(ctx, key, bytes.NewReader(p.body), sum); err != nil {
+			if err := a.storeDerived(ctx, row.NutzerID, belegID, f.Seite, p, &derived); err != nil {
 				return err
 			}
-			derived = append(derived, store.DateiIn{
-				Variante: p.variante, Seite: f.Seite, Key: key, MIME: p.mime, Bytes: int64(len(p.body)), SHA256: sum,
-			})
 		}
 	}
 	if pages == 0 {
@@ -221,8 +245,8 @@ func (a *App) jobPDF(ctx context.Context, jobID, belegID string) error {
 	if err != nil {
 		return err
 	}
-	if row.Status == "zur_bestaetigung" || row.Status == "bestaetigt" || row.Status == "storniert" {
-		return a.store.CompleteBeleg(ctx, belegID, jobID, row.PipelineVersion, row.PipelineParameter, row.Seiten, nil)
+	if done, err := a.finishClosedBeleg(ctx, belegID, jobID, row); done {
+		return err
 	}
 	files, err := a.store.ListBelegdateien(ctx, belegID)
 	if err != nil {
@@ -262,22 +286,14 @@ func (a *App) jobPDF(ctx context.Context, jobID, belegID string) error {
 				return err
 			}
 			seite := int64(page)
-			for _, p := range []struct {
-				variante, ext, mime string
-				body                []byte
-			}{
+			for _, p := range []derivedPart{
 				{"vorschau", "webp", "image/webp", preview},
 				{"bild", "webp", "image/webp", bild},
 				{"export_jpeg", "jpg", "image/jpeg", jpg},
 			} {
-				key := blobKey(row.NutzerID, belegID, p.variante, seite, p.ext)
-				sum := belegpipe.SHA256Hex(p.body)
-				if err := a.blobs.PutIfAbsent(ctx, key, bytes.NewReader(p.body), sum); err != nil {
+				if err := a.storeDerived(ctx, row.NutzerID, belegID, seite, p, &derived); err != nil {
 					return err
 				}
-				derived = append(derived, store.DateiIn{
-					Variante: p.variante, Seite: seite, Key: key, MIME: p.mime, Bytes: int64(len(p.body)), SHA256: sum,
-				})
 			}
 			return nil
 		})

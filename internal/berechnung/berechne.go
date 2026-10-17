@@ -36,7 +36,7 @@ func Berechne(in Eingabe) (Ergebnis, error) {
 	assign(prepared)
 	var out Ergebnis
 	for i := range prepared {
-		re := rollup(&in, &prepared[i])
+		re := rollup(&prepared[i])
 		out.Reisen = append(out.Reisen, re)
 		if len(re.Blocker) == 0 {
 			out.Erstattung += re.Summe
@@ -141,14 +141,13 @@ func prepareReise(in *Eingabe, idx int) (prep, error) {
 	overnight := false
 	for i, d := range dates {
 		inTag := tagInput(*r, d.String())
-		u := inTag.Unterkunft
-		if u == "" {
-			u = "keine"
-		}
-		if i == len(dates)-1 {
-			u = "keine"
-		} else if u == "beleg" || u == "pauschale" || u == "gestellt" || u == "verkehrsmittel" {
-			overnight = true
+		// The departure day carries no overnight stay; any earlier day whose input
+		// names one of these accommodations makes the trip a trip with a night away.
+		if i < len(dates)-1 {
+			switch inTag.Unterkunft {
+			case "beleg", "pauschale", "gestellt", "verkehrsmittel":
+				overnight = true
+			}
 		}
 		p.days[i] = dayCalc{
 			datum: d,
@@ -159,7 +158,6 @@ func prepareReise(in *Eingabe, idx int) (prep, error) {
 			},
 			excluded: inTag.VerpflegungAusgeschlossen,
 		}
-		_ = u
 	}
 	n := len(dates)
 	switch {
@@ -217,7 +215,7 @@ func prepareReise(in *Eingabe, idx int) (prep, error) {
 		return p, nil
 	}
 	applyBase(&p)
-	applyOvernight(in, &p)
+	applyOvernight(&p)
 	applyFahrten(in, &p)
 	applyAusgaben(in, &p)
 	return p, nil
@@ -288,7 +286,7 @@ func applyBase(p *prep) {
 	}
 }
 
-func applyOvernight(in *Eingabe, p *prep) {
+func applyOvernight(p *prep) {
 	for i := range p.days {
 		if i == len(p.days)-1 {
 			continue
@@ -312,7 +310,6 @@ func applyOvernight(in *Eingabe, p *prep) {
 			dc.regeln = append(dc.regeln, "UEB-PAUSCHALE")
 		}
 	}
-	_ = in
 }
 
 func unterkunft(r Reise, datum string) string {
@@ -355,7 +352,20 @@ type groupKey struct {
 
 type ref struct{ pi, di int }
 
+// assign settles the Verpflegungspauschale for every group of days that shares
+// one, which is the only value a second trip can take away from a day.
 func assign(all []prep) {
+	keys, groups := groupDays(all)
+	for _, k := range keys {
+		grantGroup(all, k, groups[k])
+	}
+}
+
+// groupDays collects the trip days that share one Verpflegungspauschale.
+// The scope is the Arbeitgeber, or the whole Nutzer when the policy says so, and a
+// trip that carries a blocker keeps its days out of every group. The keys come back
+// in a stable order so a run stays reproducible.
+func groupDays(all []prep) ([]groupKey, map[groupKey][]ref) {
 	groups := map[groupKey][]ref{}
 	var keys []groupKey
 	for pi := range all {
@@ -380,139 +390,143 @@ func assign(all []prep) {
 		}
 		return keys[i].scope < keys[j].scope
 	})
-	for _, k := range keys {
-		refs := groups[k]
-		var maxCand int64
-		var win dayCalc
-		have := false
-		var combined int
-		foreign := -1
-		for i, rf := range refs {
-			dc := &all[rf.pi].days[rf.di]
-			if !have || dc.base > maxCand {
-				maxCand = dc.base
-				win = *dc
-				have = true
-			}
-			if dc.art == "eintaegig" || dc.art == "ueber_nacht" {
-				combined += dc.absence
-			}
-			if !dc.land.inland() && (foreign < 0 || later(*all[rf.pi].reise, *all[refs[foreign].pi].reise)) {
-				foreign = i
-			}
+	return keys, groups
+}
+
+// grantGroup settles one group of days that share a Verpflegungspauschale: it
+// picks the day that receives the Pauschale, computes the meal deductions and writes
+// the outcome into every day of the group.
+func grantGroup(all []prep, k groupKey, refs []ref) {
+	var maxCand int64
+	var win dayCalc
+	have := false
+	var combined int
+	foreign := -1
+	for i, rf := range refs {
+		dc := &all[rf.pi].days[rf.di]
+		if !have || dc.base > maxCand {
+			maxCand = dc.base
+			win = *dc
+			have = true
 		}
-		if combined > eightHours && len(refs) > 0 {
-			src := refs[0]
-			if foreign >= 0 {
-				src = refs[foreign]
-			}
-			rate := all[src.pi].days[src.di].hit.VMA8h
-			if rate > maxCand {
-				maxCand = rate
-				win = all[src.pi].days[src.di]
-				have = true
-			}
+		if dc.art == "eintaegig" || dc.art == "ueber_nacht" {
+			combined += dc.absence
 		}
-		meals := unionMeals(all, refs)
-		s24 := int64(0)
-		pctF, pctH := int64(2000), int64(4000)
-		if have {
-			s24 = win.hit.VMA24h
-			if win.pctF > 0 {
-				pctF = win.pctF
-			}
-			if win.pctH > 0 {
-				pctH = win.pctH
-			}
+		if !dc.land.inland() && (foreign < 0 || later(*all[rf.pi].reise, *all[refs[foreign].pi].reise)) {
+			foreign = i
 		}
-		kF := kuerzAmount(meals.frueh, s24, pctF, meals.zFrueh)
-		kM := kuerzAmount(meals.mittag, s24, pctH, meals.zMittag)
-		kA := kuerzAmount(meals.abend, s24, pctH, meals.zAbend)
-		var lines []Kuerzung
-		if meals.frueh && s24 > 0 {
-			lines = append(lines, Kuerzung{Art: "fruehstueck", Betrag: kF, Regel: "KUERZ-FRUEH"})
+	}
+	if combined > eightHours && len(refs) > 0 {
+		src := refs[0]
+		if foreign >= 0 {
+			src = refs[foreign]
 		}
-		if meals.mittag && s24 > 0 {
-			lines = append(lines, Kuerzung{Art: "mittag", Betrag: kM, Regel: "KUERZ-MITTAG"})
+		rate := all[src.pi].days[src.di].hit.VMA8h
+		if rate > maxCand {
+			maxCand = rate
+			win = all[src.pi].days[src.di]
+			have = true
 		}
-		if meals.abend && s24 > 0 {
-			lines = append(lines, Kuerzung{Art: "abend", Betrag: kA, Regel: "KUERZ-ABEND"})
+	}
+	meals := unionMeals(all, refs)
+	s24 := int64(0)
+	pctF, pctH := int64(2000), int64(4000)
+	if have {
+		s24 = win.hit.VMA24h
+		if win.pctF > 0 {
+			pctF = win.pctF
 		}
-		result := maxCand - kF - kM - kA
-		if result < 0 {
-			result = 0
+		if win.pctH > 0 {
+			pctH = win.pctH
 		}
-		var granted int64
+	}
+	kF := kuerzAmount(meals.frueh, s24, pctF, meals.zFrueh)
+	kM := kuerzAmount(meals.mittag, s24, pctH, meals.zMittag)
+	kA := kuerzAmount(meals.abend, s24, pctH, meals.zAbend)
+	var lines []Kuerzung
+	if meals.frueh && s24 > 0 {
+		lines = append(lines, Kuerzung{Art: "fruehstueck", Betrag: kF, Regel: "KUERZ-FRUEH"})
+	}
+	if meals.mittag && s24 > 0 {
+		lines = append(lines, Kuerzung{Art: "mittag", Betrag: kM, Regel: "KUERZ-MITTAG"})
+	}
+	if meals.abend && s24 > 0 {
+		lines = append(lines, Kuerzung{Art: "abend", Betrag: kA, Regel: "KUERZ-ABEND"})
+	}
+	result := maxCand - kF - kM - kA
+	if result < 0 {
+		result = 0
+	}
+	var granted int64
+	for _, rf := range refs {
+		if all[rf.pi].reise.Status == "gesperrt" {
+			granted += all[rf.pi].reise.Snapshot[k.datum]
+		}
+	}
+	rest := result - granted
+	if rest < 0 {
+		rest = 0
 		for _, rf := range refs {
-			if all[rf.pi].reise.Status == "gesperrt" {
-				granted += all[rf.pi].reise.Snapshot[k.datum]
+			all[rf.pi].days[rf.di].warnungen = append(all[rf.pi].days[rf.di].warnungen, "W12")
+		}
+	}
+	open := openRefs(all, refs)
+	winner := -1
+	if len(open) > 0 && maxCand > 0 {
+		winner = 0
+		for i := range open {
+			if later(*all[open[i].pi].reise, *all[open[winner].pi].reise) {
+				winner = i
 			}
 		}
-		rest := result - granted
-		if rest < 0 {
-			rest = 0
-			for _, rf := range refs {
-				all[rf.pi].days[rf.di].warnungen = append(all[rf.pi].days[rf.di].warnungen, "W12")
-			}
+	}
+	for _, rf := range refs {
+		dc := &all[rf.pi].days[rf.di]
+		if all[rf.pi].reise.Status == "gesperrt" {
+			dc.ergebnis = all[rf.pi].reise.Snapshot[k.datum]
+			dc.pauschale = dc.ergebnis
+			dc.gotP = dc.ergebnis > 0
+			continue
 		}
-		open := openRefs(all, refs)
-		winner := -1
-		if len(open) > 0 && maxCand > 0 {
-			winner = 0
-			for i := range open {
-				if later(*all[open[i].pi].reise, *all[open[winner].pi].reise) {
-					winner = i
+		owned := winner >= 0 && rf == open[winner]
+		if owned {
+			dc.pauschale = maxCand
+			dc.kuerz = lines
+			dc.ergebnis = rest
+			dc.gotP = true
+			for _, line := range lines {
+				if line.Betrag > 0 {
+					dc.regeln = append(dc.regeln, line.Regel)
 				}
 			}
+			if dc.excluded {
+				dc.ergebnis = 0
+				dc.regeln = append(dc.regeln, "VMA-AUSGESCHLOSSEN")
+			}
+			continue
 		}
+		dc.ergebnis = 0
+		if len(refs) > 1 && (winner >= 0 || granted > 0) {
+			other := *all[refs[0].pi].reise
+			if winner >= 0 {
+				other = *all[open[winner].pi].reise
+			}
+			if other.ID != all[rf.pi].reise.ID {
+				dc.hinweise = append(dc.hinweise, Hinweis{
+					Code: "H-TAG-VERRECHNET", ReiseID: other.ID, Anlass: other.Anlass, Datum: k.datum,
+				})
+			}
+		}
+	}
+	if maxCand == 0 {
 		for _, rf := range refs {
 			dc := &all[rf.pi].days[rf.di]
-			if all[rf.pi].reise.Status == "gesperrt" {
-				dc.ergebnis = all[rf.pi].reise.Snapshot[k.datum]
-				dc.pauschale = dc.ergebnis
-				dc.gotP = dc.ergebnis > 0
-				continue
-			}
-			owned := winner >= 0 && rf == open[winner]
-			if owned {
-				dc.pauschale = maxCand
-				dc.kuerz = lines
-				dc.ergebnis = rest
-				dc.gotP = true
-				for _, line := range lines {
-					if line.Betrag > 0 {
-						dc.regeln = append(dc.regeln, line.Regel)
-					}
+			if dc.meals.frueh || dc.meals.mittag || dc.meals.abend {
+				betrag := dc.sachHaupt
+				if dc.meals.frueh && !dc.meals.mittag && !dc.meals.abend {
+					betrag = dc.sachFrueh
 				}
-				if dc.excluded {
-					dc.ergebnis = 0
-					dc.regeln = append(dc.regeln, "VMA-AUSGESCHLOSSEN")
-				}
-				continue
-			}
-			dc.ergebnis = 0
-			if len(refs) > 1 && (winner >= 0 || granted > 0) {
-				other := *all[refs[0].pi].reise
-				if winner >= 0 {
-					other = *all[open[winner].pi].reise
-				}
-				if other.ID != all[rf.pi].reise.ID {
-					dc.hinweise = append(dc.hinweise, Hinweis{
-						Code: "H-TAG-VERRECHNET", ReiseID: other.ID, Anlass: other.Anlass, Datum: k.datum,
-					})
-				}
-			}
-		}
-		if maxCand == 0 {
-			for _, rf := range refs {
-				dc := &all[rf.pi].days[rf.di]
-				if dc.meals.frueh || dc.meals.mittag || dc.meals.abend {
-					betrag := dc.sachHaupt
-					if dc.meals.frueh && !dc.meals.mittag && !dc.meals.abend {
-						betrag = dc.sachFrueh
-					}
-					dc.hinweise = append(dc.hinweise, Hinweis{Code: "H-SACHBEZUG", Betrag: betrag, Datum: dc.datum.String()})
-				}
+				dc.hinweise = append(dc.hinweise, Hinweis{Code: "H-SACHBEZUG", Betrag: betrag, Datum: dc.datum.String()})
 			}
 		}
 	}
@@ -623,7 +637,7 @@ func applyAusgaben(in *Eingabe, p *prep) {
 			}
 		}
 		if a.Kostenart == "bewirtung" {
-			addBewirt(in, &p.bewirt, ae)
+			addBewirt(&p.bewirt, ae)
 		}
 	}
 	if p.fahrt > 0 {
@@ -693,7 +707,23 @@ func convertAusgabe(in *Eingabe, r Reise, a Ausgabe) (AusgabeErgebnis, []string,
 	if sumBrutto > 0 && sumBrutto != a.Betrag && a.Betrag > 0 {
 		block = append(block, "B02")
 	}
-	// Convert shares to EUR. Rounding remainder lands on the largest share.
+	sharesInEUR(shares, a, eur)
+	klein := year.Inland.Kleinbetrag
+	warns = append(warns, vorsteuer(shares, a, eur, klein)...)
+	ae.Anteile = shares
+	warns = append(warns, expenseWarnings(r, a, d, eur, klein, year.Inland.UeblicheMahlzeit)...)
+	if a.Waehrung != "" && a.Waehrung != "EUR" && a.Monatskurs != "" && deTax(shares) {
+		warns = appendUnique(warns, "H-UST-KURS")
+		ae.Monatskurs = a.Monatskurs
+	}
+	ae.Warnungen = warns
+	return ae, warns, block
+}
+
+// sharesInEUR converts the gross and tax amounts of every share to euro. The
+// rounding remainder lands on the share with the largest gross amount, so the
+// shares still add up to the line total.
+func sharesInEUR(shares []SteuerErgebnis, a Ausgabe, eur int64) {
 	if a.Betrag > 0 && (a.Waehrung != "" && a.Waehrung != "EUR") {
 		var allocated int64
 		largest := 0
@@ -709,14 +739,21 @@ func convertAusgabe(in *Eingabe, r Reise, a Ausgabe) (AusgabeErgebnis, []string,
 		for i := range shares {
 			shares[i].NettoEUR = shares[i].BruttoEUR - shares[i].SteuerEUR
 		}
-	} else {
-		for i := range shares {
-			shares[i].BruttoEUR = shares[i].Brutto
-			shares[i].SteuerEUR = shares[i].Steuer
-			shares[i].NettoEUR = shares[i].Netto
-		}
+		return
 	}
-	klein := year.Inland.Kleinbetrag
+	for i := range shares {
+		shares[i].BruttoEUR = shares[i].Brutto
+		shares[i].SteuerEUR = shares[i].Steuer
+		shares[i].NettoEUR = shares[i].Netto
+	}
+}
+
+// vorsteuer marks the deductible shares and reports the warning a foreign share
+// with tax raises. A German share is deductible when the expense is not a
+// self-declaration and either the employer is the recipient, the amount stays
+// within the small-amount limit, or the ticket exception applies.
+func vorsteuer(shares []SteuerErgebnis, a Ausgabe, eur, klein int64) []string {
+	var warns []string
 	for i := range shares {
 		sh := &shares[i]
 		sh.Vorsteuer = sh.Steuerland == "DE" && a.Rechnungsart != "eigenbeleg" &&
@@ -725,8 +762,14 @@ func convertAusgabe(in *Eingabe, r Reise, a Ausgabe) (AusgabeErgebnis, []string,
 			warns = appendUnique(warns, "W10")
 		}
 	}
-	ae.Anteile = shares
-	if a.Kostenart == "verpflegung" && eur > year.Inland.UeblicheMahlzeit {
+	return warns
+}
+
+// expenseWarnings collects the warnings that depend on the expense itself, the
+// trip it belongs to and the day it is dated.
+func expenseWarnings(r Reise, a Ausgabe, d civil, eur, klein, ueblicheMahlzeit int64) []string {
+	var warns []string
+	if a.Kostenart == "verpflegung" && eur > ueblicheMahlzeit {
 		warns = append(warns, "W08")
 	}
 	if a.Rechnungsart != "fahrausweis" && !a.RechnungAufArbeitgeber && eur > klein {
@@ -757,12 +800,7 @@ func convertAusgabe(in *Eingabe, r Reise, a Ausgabe) (AusgabeErgebnis, []string,
 	if a.Empfaenger != "" && r.ArbeitgeberName != "" && !strings.EqualFold(strings.TrimSpace(a.Empfaenger), strings.TrimSpace(r.ArbeitgeberName)) {
 		warns = appendUnique(warns, "W02")
 	}
-	if a.Waehrung != "" && a.Waehrung != "EUR" && a.Monatskurs != "" && deTax(shares) {
-		warns = appendUnique(warns, "H-UST-KURS")
-		ae.Monatskurs = a.Monatskurs
-	}
-	ae.Warnungen = warns
-	return ae, warns, block
+	return warns
 }
 
 func deTax(shares []SteuerErgebnis) bool {
@@ -856,7 +894,7 @@ func outsideTrip(r Reise, d civil) bool {
 	return d.before(from.add(-30)) || d.after(to.add(30))
 }
 
-func addBewirt(in *Eingabe, b *bewirtSum, ae AusgabeErgebnis) {
+func addBewirt(b *bewirtSum, ae AusgabeErgebnis) {
 	b.erstattung += ae.BetragEUR
 	var basis int64
 	for _, sh := range ae.Anteile {
@@ -868,15 +906,12 @@ func addBewirt(in *Eingabe, b *bewirtSum, ae AusgabeErgebnis) {
 	}
 	b.b += basis
 	pct := int64(7000)
-	if len(ae.Anteile) > 0 {
-		_ = in
-	}
 	ab := roundDiv(basis*pct, 10000)
 	b.abziehbar += ab
 	b.nicht += basis - ab
 }
 
-func rollup(in *Eingabe, p *prep) ReiseErgebnis {
+func rollup(p *prep) ReiseErgebnis {
 	re := ReiseErgebnis{
 		ID: p.reise.ID, Blocker: append([]string{}, p.blocker...),
 		Warnungen: append([]string{}, p.warnings...), Ausgaben: p.ausgaben,
@@ -925,7 +960,6 @@ func rollup(in *Eingabe, p *prep) ReiseErgebnis {
 		re.Warnungen = append(re.Warnungen, "W14")
 	}
 	re.Warnungen = uniqueStrings(re.Warnungen)
-	_ = in
 	return re
 }
 
