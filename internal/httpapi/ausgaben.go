@@ -24,7 +24,10 @@ func (a *App) GetAusgaben(w http.ResponseWriter, r *http.Request, id api.Id) {
 	if writeStoreErr(w, err) {
 		return
 	}
-	lines := a.lineIndex(r, n.ID)
+	lines, err := a.lineIndex(r, n.ID)
+	if writeStoreErr(w, err) {
+		return
+	}
 	items := make([]api.Ausgabe, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, presentAusgabe(row, lines[row.Row.ID]))
@@ -49,7 +52,7 @@ func (a *App) PostAusgabe(w http.ResponseWriter, r *http.Request, id api.Id) {
 	if writeStoreErr(w, err) {
 		return
 	}
-	writeObject(w, http.StatusCreated, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
+	writeObject(w, http.StatusCreated, row.Row.Version, presentAusgabe(row, a.lineOf(r, n.ID, row.Row.ID)))
 }
 
 func (a *App) GetAusgabe(w http.ResponseWriter, r *http.Request, id api.Id) {
@@ -61,7 +64,11 @@ func (a *App) GetAusgabe(w http.ResponseWriter, r *http.Request, id api.Id) {
 	if writeStoreErr(w, err) {
 		return
 	}
-	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
+	lines, err := a.lineIndex(r, n.ID)
+	if writeStoreErr(w, err) {
+		return
+	}
+	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, lines[row.Row.ID]))
 }
 
 func (a *App) PatchAusgabe(w http.ResponseWriter, r *http.Request, id api.Id, params api.PatchAusgabeParams) {
@@ -85,7 +92,7 @@ func (a *App) PatchAusgabe(w http.ResponseWriter, r *http.Request, id api.Id, pa
 	if writeStoreErr(w, err) {
 		return
 	}
-	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
+	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineOf(r, n.ID, row.Row.ID)))
 }
 
 func (a *App) DeleteAusgabe(w http.ResponseWriter, r *http.Request, id api.Id, params api.DeleteAusgabeParams) {
@@ -120,7 +127,7 @@ func (a *App) PutAusgabeBelege(w http.ResponseWriter, r *http.Request, id api.Id
 	if writeStoreErr(w, err) {
 		return
 	}
-	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
+	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineOf(r, n.ID, row.Row.ID)))
 }
 
 func (a *App) PutEigenbeleg(w http.ResponseWriter, r *http.Request, id api.Id, params api.PutEigenbelegParams) {
@@ -142,7 +149,7 @@ func (a *App) PutEigenbeleg(w http.ResponseWriter, r *http.Request, id api.Id, p
 	if writeStoreErr(w, err) {
 		return
 	}
-	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
+	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineOf(r, n.ID, row.Row.ID)))
 }
 
 func (a *App) PostBewirtungBestaetigen(w http.ResponseWriter, r *http.Request, id api.Id, params api.PostBewirtungBestaetigenParams) {
@@ -158,7 +165,7 @@ func (a *App) PostBewirtungBestaetigen(w http.ResponseWriter, r *http.Request, i
 	if writeStoreErr(w, err) {
 		return
 	}
-	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineIndex(r, n.ID)[row.Row.ID]))
+	writeObject(w, http.StatusOK, row.Row.Version, presentAusgabe(row, a.lineOf(r, n.ID, row.Row.ID)))
 }
 
 func (a *App) GetWechselkurs(w http.ResponseWriter, r *http.Request, params api.GetWechselkursParams) {
@@ -530,14 +537,17 @@ func foreignCurrencies(in *berechnung.Eingabe) []string {
 	return out
 }
 
-func (a *App) lineIndex(r *http.Request, nutzerID string) map[string]berechnung.AusgabeErgebnis {
+// lineIndex calculates the per-line results of every Ausgabe of the Nutzer. It
+// reports why it failed, so a read view can answer with an error instead of a
+// list whose numbers are silently missing.
+func (a *App) lineIndex(r *http.Request, nutzerID string) (map[string]berechnung.AusgabeErgebnis, error) {
 	bundles, err := a.store.ListReisenAll(r.Context(), nutzerID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	result, _, _, err := a.calculate(r, bundles)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	out := map[string]berechnung.AusgabeErgebnis{}
 	for _, re := range result {
@@ -545,7 +555,19 @@ func (a *App) lineIndex(r *http.Request, nutzerID string) map[string]berechnung.
 			out[line.ID] = line
 		}
 	}
-	return out
+	return out, nil
+}
+
+// lineOf returns the calculated line for one Ausgabe. Some callers have already
+// written their row when they build the view, so a failure here is logged rather
+// than answered: the write stands and only the view loses its numbers.
+func (a *App) lineOf(r *http.Request, nutzerID, ausgabeID string) berechnung.AusgabeErgebnis {
+	lines, err := a.lineIndex(r, nutzerID)
+	if err != nil {
+		a.log.Error("ausgabe line", "ausgabe_id", ausgabeID, "err", err)
+		return berechnung.AusgabeErgebnis{}
+	}
+	return lines[ausgabeID]
 }
 
 func presentAusgabe(item store.AusgabeBundle, calc berechnung.AusgabeErgebnis) api.Ausgabe {

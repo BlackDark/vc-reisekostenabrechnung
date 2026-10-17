@@ -10,7 +10,7 @@ real problems are one dead distribution channel (CI-1), duplicated security and 
 `internal/httpapi` (CODE-1, CODE-2), and no license file for a product meant to be self-hosted (DEP-1).
 
 Numbers: 652 tracked files, 53,985 Go lines (106 non-test + 44 test), 17,694 web lines, 19 CI jobs,
-0 reachable known CVEs, 24 findings: 0 high, 8 medium, 16 low. By area: code 5, comments 0, CI/CD 7,
+0 reachable known CVEs, 23 findings: 0 high, 7 medium, 16 low. By area: code 4, comments 0, CI/CD 7,
 dependencies 4, security 6, cleanup 2.
 
 Top 5 by benefit / effort:
@@ -25,7 +25,7 @@ trivy, osv-scanner, semgrep, hadolint, tokei/cloc, license tooling; `yamllint` f
 Worktree leftovers (`out/`, `e2e/test-results/`, `e2e/playwright-report/`, `node_modules/`) are
 git-ignored and untracked, so they are not committed clutter.
 
-Areas: code 5 findings, CI/CD 7 -> `docs/audit/code.md`, `docs/audit/cicd.md`. The rest below.
+Areas: code 4 findings, CI/CD 7 -> `docs/audit/code.md`, `docs/audit/cicd.md`. The rest below.
 
 review: kept 34, dropped 3 (COM-5, CLN-4, CLN-5), merged 2 (COM-2 into CODE-3, CLN-2 into DEP-1),
 downgraded 0; 2 findings added from the review (SEC-5, SEC-6).
