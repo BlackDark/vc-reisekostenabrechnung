@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -37,6 +38,11 @@ type App struct {
 	sessions  *scs.SessionManager
 	log       *slog.Logger
 	limits    limiter
+	readyMu   sync.Mutex
+	readyAt   time.Time
+	readyCode string
+	readyText string
+	readyOK   bool
 	ki        *ki.Client
 	kiGate    *ki.Gate
 	oidcMu    sync.Mutex
@@ -100,7 +106,8 @@ func (a *App) Handler() http.Handler {
 	api.HandlerWithOptions(a, api.StdHTTPServerOptions{
 		BaseRouter: mux,
 		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			writeProblem(w, http.StatusBadRequest, "ungueltige_anfrage", "Bad request", err.Error())
+			a.log.Warn("bind request", "method", r.Method, "path", r.URL.Path, "err", err)
+			writeProblem(w, http.StatusBadRequest, "ungueltige_anfrage", "Bad request", "")
 		},
 	})
 	mux.HandleFunc("GET /healthz", a.healthz)
@@ -340,36 +347,66 @@ func (a *App) version(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
+// readyTTL is how long a readiness verdict is served from memory. The probe
+// writes temporary files and runs two queries, so an unauthenticated caller must
+// not be able to drive that work on every request.
+const readyTTL = 5 * time.Second
+
+// readyz reports whether the instance can serve. It answers with a generic text
+// and logs the cause: the endpoint needs no credentials, so filesystem paths and
+// driver errors are for the operator's log, not for the caller.
 func (a *App) readyz(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if err := a.store.Ping(ctx); err != nil {
-		writeProblem(w, http.StatusServiceUnavailable, "db", "Database unavailable", err.Error())
+	ok, code, text := a.ready(r.Context())
+	if !ok {
+		writeProblem(w, http.StatusServiceUnavailable, code, text, "")
 		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+}
+
+// ready returns a verdict no older than readyTTL, running the probes at most once
+// per window. A failing probe also is cached, so a probe every second costs one
+// check per window instead of one per request.
+func (a *App) ready(ctx context.Context) (bool, string, string) {
+	a.readyMu.Lock()
+	defer a.readyMu.Unlock()
+	if !a.readyAt.IsZero() && time.Since(a.readyAt) < readyTTL {
+		return a.readyOK, a.readyCode, a.readyText
+	}
+	ok, code, text := a.readyCheck(ctx)
+	a.readyAt, a.readyOK, a.readyCode, a.readyText = time.Now(), ok, code, text
+	return ok, code, text
+}
+
+func (a *App) readyCheck(ctx context.Context) (bool, string, string) {
+	if err := a.store.Ping(ctx); err != nil {
+		a.log.Error("readyz: database", "err", err)
+		return false, "db", "Database unavailable"
 	}
 	v, err := a.store.DBVersion(ctx)
 	if err != nil || v < 1 {
-		writeProblem(w, http.StatusServiceUnavailable, "migration", "Migrations not applied", "")
-		return
+		a.log.Error("readyz: migrations", "version", v, "err", err)
+		return false, "migration", "Migrations not applied"
 	}
 	if err := writable(a.cfg.DataDir); err != nil {
-		writeProblem(w, http.StatusServiceUnavailable, "data_dir", "DATA_DIR is not writable", err.Error())
-		return
+		a.log.Error("readyz: data dir", "err", err)
+		return false, "data_dir", "DATA_DIR is not writable"
 	}
 	if err := writable(os.TempDir()); err != nil {
-		writeProblem(w, http.StatusServiceUnavailable, "tmp", "/tmp is not writable", err.Error())
-		return
+		a.log.Error("readyz: temp dir", "err", err)
+		return false, "tmp", "Temp directory is not writable"
 	}
 	if err := typstOK(a.cfg.TypstPath); err != nil {
-		writeProblem(w, http.StatusServiceUnavailable, "typst", "typst is not executable", err.Error())
-		return
+		a.log.Error("readyz: typst", "err", err)
+		return false, "typst", "typst is not executable"
 	}
 	if a.blobs != nil {
 		if err := a.blobs.Ready(ctx); err != nil {
-			writeProblem(w, http.StatusServiceUnavailable, "storage", "Storage is not ready", err.Error())
-			return
+			a.log.Error("readyz: storage", "err", err)
+			return false, "storage", "Storage is not ready"
 		}
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+	return true, "", ""
 }
 
 func writable(dir string) error {
