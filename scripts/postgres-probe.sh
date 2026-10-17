@@ -20,7 +20,7 @@ sql:
 EOF
 cd "$root"
 go mod init probe >/dev/null
-(cd "$repo" && go tool sqlc generate -f "$root/sqlc.yaml")
+go -C "$repo/tools" tool sqlc generate -f "$root/sqlc.yaml"
 go mod tidy >/dev/null
 go build ./pgdb
 echo "postgres probe ok"

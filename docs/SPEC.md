@@ -951,7 +951,7 @@ Versionen aus [S] 5, ergänzt um am 08.10.2026 abgefragte Pakete (†). Renovate
 | Backend | Go | 1.27.2 (Image `golang:1.27.2-trixie`) |
 | | HTTP | `net/http` ServeMux (Go-Muster-Routing), `http.CrossOriginProtection`, `log/slog` |
 | | SQLite-Treiber | `modernc.org/sqlite` v1.60.1 (cgo-frei, ADR 0003) |
-| | SQL-Codegen / Migrationen | `sqlc` v1.31.1 / `pressly/goose/v3` v3.28.0 (als `tool`-Direktiven in `go.mod`) |
+| | SQL-Codegen / Migrationen | `sqlc` v1.31.1 / `pressly/goose/v3` v3.28.0 (als `tool`-Direktiven im eigenen Modul `tools/`) |
 | | OpenAPI | `oapi-codegen/v2` v2.8.0, `oapi-codegen/runtime` v1.7.0 |
 | | Auth | `coreos/go-oidc/v3` v3.21.0, `golang.org/x/oauth2` v0.37.0, `golang.org/x/crypto` v0.57.0 (argon2), `alexedwards/scs/v2` v2.9.0 |
 | | Rate-Limit | `golang.org/x/time` v0.16.0 † |
@@ -1006,6 +1006,7 @@ vc-reisekostenabrechnung/
 ├─ db/migrations/              goose-SQL (gemeinsames SQLite/Postgres-Subset)
 ├─ db/queries/                 sqlc-Abfragen
 ├─ sqlc.yaml
+├─ tools/                      eigenes Go-Modul mit den tool-Direktiven (sqlc, goose, oapi-codegen)
 ├─ api/openapi.yaml            Quelle der API (spec-first)
 ├─ api/schemas/                abrechnung-export-v1.schema.json
 ├─ satztabellen/               laender.csv (BMF-Name ↔ ISO), Inlandswerte je Jahr; Auslandswerte aus docs/research/data/*.csv übernommen
@@ -1197,7 +1198,7 @@ changes ─┬─► go-lint ───────────┐
 
 | Job | Läuft wenn | Inhalt | Timeout |
 |---|---|---|---|
-| `changes` | immer | Filter mit `dorny/paths-filter`, auf Nicht-PR-Events alle `true`: `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`) | 3 |
+| `changes` | immer | Filter mit `dorny/paths-filter`, auf Nicht-PR-Events alle `true`: `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `tools/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`, `tools/**`) | 3 |
 | `go-lint` | go | `golangci-lint-action` (v2.14.0) | 10 |
 | `go-test` | go | Typst und poppler für die Golden-Tests (4.16), MinIO für die Storage-Contract-Tests (3.6), `go test -race -shuffle=on -coverprofile ./...` | 20 |
 | `go-vuln` | go | `govulncheck` (v1.8.0, im Actions-Cache) über alle Pakete | 10 |
@@ -1295,7 +1296,7 @@ Kurz und **englisch** (Vorgabe des Owners; deutsche Fachbegriffe bleiben): Banne
 | Automerge | nur nach grüner CI (Plattform-Automerge, Pflicht-Check „CI ok“): devDependencies patch/minor, GitHub-Actions digest/patch/minor, Docker-Digest-Refreshes, Lockfile-Pflege; nie Major, nie Pre-1.0-Minor |
 | Gruppen | node (Image + `.node-version`), Go-Toolchain (`go.mod` + `golang`-Image), `golang.org/x/*`, Codegen (sqlc, goose, oapi-codegen, openapi-typescript/-fetch), Svelte-Ökosystem, Vite/Vitest/PWA, Tailwind, Playwright (npm + Docker-Image gleich), Docker-Actions, Typst (eigene PR mit Label `export`, kein Automerge) |
 | Grenzen | TypeScript `<7` bis `svelte-check` TS 7 kann (ADR 0004); Node `<25` (LTS-Linie 24) |
-| Go | `gomod` inkl. `tool`-Direktiven (sqlc, goose, oapi-codegen); `postUpdateOptions: gomodTidy, gomodUpdateImportPaths` |
+| Go | `gomod` für das Hauptmodul und `tools/go.mod` inkl. `tool`-Direktiven (sqlc, goose, oapi-codegen); `postUpdateOptions: gomodTidy, gomodUpdateImportPaths` |
 | Versionen in Dateien | Presets `customManagers:dockerfileVersions`, `githubActionsVersions`, `makefileVersions`, `biomeVersions` für `# renovate: datasource=… depName=…`-Kommentare (z. B. `ARG PNPM_VERSION`, `golangci-lint`-Version im Workflow, veraPDF-Version) und das `$schema` in `biome.json`; Typst, distroless, golang, node, Litestream, Playwright, mock-oauth2-server als Image-Referenzen direkt über die Dockerfile-/Compose-Manager |
 | Ausschlüsse | `docs/research/**` (Spikes mit eigenen `package.json`) |
 

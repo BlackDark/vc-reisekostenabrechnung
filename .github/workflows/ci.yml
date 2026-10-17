@@ -48,6 +48,7 @@ jobs:
               - 'internal/**'
               - 'satztabellen/**'
               - 'docs/research/data/**'
+              - 'tools/**'
               - '.golangci.yml'
             web:
               - 'web/**'
@@ -76,6 +77,7 @@ jobs:
               - 'e2e/**'
               - 'deploy/**'
               - 'scripts/**'
+              - 'tools/**'
             toolchain:
               - 'mise.toml'
               - '.node-version'

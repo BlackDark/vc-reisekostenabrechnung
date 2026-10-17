@@ -1,5 +1,7 @@
 .PHONY: check test web generate fmt
 
+TOOLS := $(CURDIR)/tools
+
 check: test web
 
 test:
@@ -17,6 +19,7 @@ web:
 	node scripts/bundle-budget.mjs
 
 generate:
-	go tool sqlc generate
-	go tool oapi-codegen --config api/oapi-codegen.yaml api/openapi.yaml
+	go -C $(TOOLS) tool sqlc generate -f $(CURDIR)/sqlc.yaml
+	go -C $(TOOLS) tool oapi-codegen --config $(CURDIR)/api/oapi-codegen.yaml \
+		-o $(CURDIR)/internal/api/server.gen.go $(CURDIR)/api/openapi.yaml
 	pnpm --filter web codegen
