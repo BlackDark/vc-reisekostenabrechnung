@@ -1,0 +1,46 @@
+# Audit: code, 2026-10-17 (main 0604fce)
+
+Scope: hand-written Go (`internal/`, `cmd/`, `scripts/`) and web sources (`web/src/`). Generated
+and vendored trees (`internal/api/server.gen.go`, `internal/store/sqlitedb/*`, `web/src/lib/api/schema.ts`,
+`internal/webui/dist`, `node_modules`) got size and staleness checks only.
+
+Not repeated here: `docs/ideas/code-health.md` holds the finished code-health pass (ids 1.x, 2.x, 3.x).
+Every row below is new or a recurrence that the pass did not cover.
+
+Inventory: 652 tracked files; 106 non-test Go files, 44 test Go files, 53,985 Go lines; 262 svelte/ts
+files, 17,694 lines. Largest hand-written Go: `internal/berechnung/berechne.go` 982,
+`internal/httpapi/reisen.go` 973, `internal/store/ausgaben.go` 928, `internal/store/reisen.go` 905,
+`internal/httpapi/stammdaten.go` 853. Largest web source: `ReiseDetail.svelte` 656,
+`AbrechnungDetail.svelte` 389, `ausgabe-editor.svelte` 374.
+
+## Code findings
+
+| ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
+| --- | --- | --- | --- | --- | --- | --- |
+| CODE-1 | M | `internal/httpapi/mail.go:34-52`, `internal/httpapi/token.go:120-138` | `requireIngestActor` and `requireUploadActor` are the same bearer path: parse `Bearer`, `FindActiveToken`, scope check, `GetNutzer` + `Aktiv`, `TouchToken`, else `requireUser`. Only the scope constant (`TokenScopeMailIngest` vs `TokenScopeUpload`) and one message differ. | One `requireTokenActor(w, r, scope)`. | S | Two copies of a security check cannot drift. |
+| CODE-2 | M | `internal/httpapi/handlers.go:467-478`, `internal/httpapi/stammdaten.go:128-135,199-209,288-299,383-398` | Hand-rolled sentinel mapping that `writeStoreErr` (`reisen.go:813-850`) already centralizes: `ErrConflict`→412, `ErrNotFound`→404, `ErrLastAdmin`→409. Six call sites re-implement it. | Call `writeStoreErr(w, err)` at these sites. | S | One mapping from store error to status. |
+| CODE-3 | M | `internal/store/ausgaben.go:431-441` and `:447-457` | `Rates` and `RatesFor` are byte-identical (both `ListWechselkurse(ctx, waehrung)` plus the same loop). Callers use both (`ausgaben.go:400`, `:456`). | Delete `Rates`, keep one name, and remove the false doc claim beside it (absorbs COM-2). | S | Removes a function whose only justification is a false doc claim (COM-2). |
+| CODE-4 | M | `internal/httpapi/jobs.go:164-166` / `:224-226`, `:192-210` / `:265-281` | `jobFoto` and `jobPDF` repeat the same final-state guard and the same blob write loop (`blobKey` + `SHA256Hex` + `PutIfAbsent` + append to `parts`). | Extract the guard and the write loop. | M | Halves the maintenance surface of both pipeline jobs. |
+| CODE-5 | M | `internal/satz/satz.go:549-585` | `InlandField` re-lists all 13 names of `SetInlandField` (`:515-547`), and `:551-554` calls `SetInlandField` on a copy only to prove the name is known. | One name→pointer table used by both functions. | S | A new field no longer needs a second switch. |
+| CODE-6 | M | `internal/store/ausgaben.go:707-720` | `splitRound(n, d) (int64, int64, bool)`: the second result is always `0` and the bool is false only when `d == 0`; the sole caller (`berechnungEUR`, `:711`) discards both (`n, _, _`). | Collapse to one rounded-division helper. | S | Signature stops promising results it never returns. |
+| CODE-7 | M | `internal/berechnung/berechne.go:162,315,872,928` | Dead-parameter suppression: `_ = u` (`:162`), `_ = in` (`:315`, `:872`, `:928`), including the no-op guard `if len(ae.Anteile) > 0 { _ = in }` (`:871-873`). | Drop the parameters or use them. | M | Removes code that reads as intentional but does nothing. |
+| CODE-8 | M | `internal/httpapi/ausgaben.go:533-541` | `lineIndex` swallows both errors (`ListReisenAll`, `calculate`) with `return nil`, so the view silently loses its per-line results instead of failing. | Return the error to the handler. | M | A broken view becomes visible instead of empty. |
+| CODE-9 | M | `web/src/routes/ReiseDetail.svelte:107-115` | `loadBelege` fetches `/api/v1/belege?limit=100` and then filters by `beleg_ids` in the browser. An account with more than 100 Belege silently shows no receipt for an Ausgabe. | Ask the server for the ids that are needed. | M | Correct receipts for accounts with more than 100 Belege. |
+| CODE-10 | M | `internal/berechnung/berechne.go:358-519` (`assign`, 162 lines), `:647-766` (`convertAusgabe`, 120 lines) | Two of the largest functions mix rule dispatch with field mapping inside a 982-line package. | Split rule selection from conversion. | L | Testable seams in the hot calculation path. |
+| CODE-11 | L | `internal/export/csv.go:100-114` | `stringsCSV(header)` only calls `splitSemi`, and `splitSemi` re-implements `strings.Split(s, ";")`. | Use `strings.Split`, delete both. | S | Less bespoke code on the export path. |
+| CODE-12 | L | `internal/satz/satz.go:353-359` | Two branches with identical bodies: `exact && key != ""` and `exact && key == ""` both `return y.hit(...)`. | Collapse to `if exact`. | S | Removes a condition that cannot change the result. |
+| CODE-13 | L | `internal/satz/satz.go:493-503` | `prev` is read from `seen[id]` and then discarded with `_ = prev` (`:500`); only `Zeile` reports the duplicate. | Drop the variable, keep the `seen[id]` write. | S | Removes a dead local and its suppression. |
+| CODE-14 | L | `web/src/lib/beleg/corners.ts:3-12` vs `web/src/lib/beleg/geometry.ts:133-142` | `frame(w, h)` is duplicated verbatim because `geometry.ts` keeps its copy unexported. | Export `frame` from `geometry.ts` and import it. | S | One definition of the fallback quad. |
+
+Comment findings (COM-1..5): see AUDIT.md.
+
+## Not established
+
+- `internal/httpapi/snapshot.go:270,283` call `rate24`/`kmRate` per Reisetag/Fahrt after `rateSnapshot`
+  (`:439-472`) already loaded the year. Cost of `EffectiveYear` was not measured, so this is not a finding.
+- `internal/httpapi/snapshot.go:500-519` `advancesOf` lists all Vorschuesse and filters in Go; whether the
+  store can filter was not checked.
+- `internal/httpapi/mailpoll.go:24-26` calls the poller "the one part not covered by a durable unit test";
+  that matches the code (`pollMailOnce` untested), so it stays.
+- `internal/httpapi/abrechnung.go:26-31` per-row `GetAbrechnungBundle` is `docs/ideas/code-health.md` 1.4,
+  skipped as an existing item.
