@@ -10,13 +10,12 @@ real problems are one dead distribution channel (CI-1), duplicated security and 
 `internal/httpapi` (CODE-1, CODE-2), and no license file for a product meant to be self-hosted (DEP-1).
 
 Numbers: 652 tracked files, 53,985 Go lines (106 non-test + 44 test), 17,694 web lines, 19 CI jobs,
-0 reachable known CVEs, 13 findings: 0 high, 3 medium, 10 low. By area: code 0, comments 0, CI/CD 1,
-dependencies 4, security 6, cleanup 2.
+0 reachable known CVEs, 12 findings: 0 high, 3 medium, 9 low. By area: code 0, comments 0, CI/CD 1,
+dependencies 4, security 5, cleanup 2.
 
 Top 5 by benefit / effort:
 
-1. SEC-1 hash session tokens at rest, as API tokens already are (M).
-
+(none left)
 Tool coverage: ripgrep, govulncheck 1.8.0, `go vet`, `go test`, `go mod tidy -diff`, `go mod verify`,
 shellcheck, actionlint, `pnpm audit`, `pnpm outdated`, docker. Not available, so unverified: gitleaks,
 trivy, osv-scanner, semgrep, hadolint, tokei/cloc, license tooling; `yamllint` fails to start.
@@ -44,11 +43,10 @@ CLN-5 the research docs reference those files.
 | DEP-3 | L | `go.mod:12,14,15,16,17` | Five direct dependencies are behind latest, all minor or patch, none a major: minio-go 7.3.0→7.4.1, goose 3.28.0→3.29.0, jsonschema 6.0.2→6.0.3, x/crypto 0.57.0→0.58.0, x/image 0.46.0→0.47.0. Renovate already groups them. | None; let Renovate land them. | S | Stays current without manual work. |
 | DEP-4 | L | `go.mod:34,56`; accepted in `docs/SPEC.md:1261` | Codegen tooling sits in the main module graph, which pulls in a second JWT major (`golang-jwt/jwt/v4 v4.5.2` beside `jwt/v5`), ClickHouse/YDB/Vertica/MSSQL/Azure drivers and the deprecated `github.com/golang/protobuf v1.5.4`. It inflates `go.sum` and hides DEP-2 among tooling noise. | Move the tools to their own module. | M | Smaller graph, quieter vulnerability scans. |
 
-## Security (6)
+## Security (5)
 
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
-| SEC-1 | L | `internal/store/session.go:107`, `db/queries/session.sql:16-17` | Session bearer tokens are stored in plaintext and looked up by value (`Token: token`, `WHERE token = sqlc.arg(token)`), while API tokens are hashed (`internal/auth/token.go:24`, `HashAPIToken`). A database read yields live sessions (idle 168h, lifetime 720h). | Store `SHA256(token)` and look up by hash, as API tokens do. | M | A database leak no longer hands out live sessions. |
 | SEC-2 | L | `internal/httpapi/server.go:346-368`, `:102-104` | `/readyz` is unauthenticated and unthrottled (`allowAPI` skips non-`/api/` paths, `server.go:150-153`) and returns raw `err.Error()` for the database, `DATA_DIR`, `/tmp`, `TYPST_PATH` and storage failures, so filesystem paths and permission errors leak. The request-binding handler returns `err.Error()` as problem `detail` for any 4xx parse failure. | Return a generic detail, log the specifics. | S | Less internal disclosure to unauthenticated callers. |
 | SEC-3 | L | `deploy/docker-compose.yml:12`, `deploy/docker-compose.backup.yml:11-15` | Secrets arrive as container environment (`env_file: .env` for `S3_SECRET_ACCESS_KEY`, `OIDC_CLIENT_SECRET`, `INITIAL_ADMIN_PASSWORD`, `MAIL_IMAP_PASSWORD`; Litestream credentials via `environment:`), so `docker inspect` and `/proc/<pid>/environ` expose them. The app already supports `*_FILE` variants (`deploy/.env.example:22,33,59,75,94`). | Use the `*_FILE` variants with Docker secrets, and keep Litestream credentials in `litestream.yml`. | M | Secrets leave the process environment. |
 | SEC-4 | L | `deploy/docker-compose.yml:4` | `image: ...:${APP_VERSION:-latest}` falls back to a mutable tag when `APP_VERSION` is unset, so an operator who forgets the variable silently runs whatever `latest` points to. | Default to a pinned version or digest and fail when unset. | S | A deploy cannot change code by accident. |

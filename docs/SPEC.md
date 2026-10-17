@@ -730,6 +730,7 @@ Downloads (Belege, Exporte) liefern `Content-Disposition: attachment` (Ausnahme:
 - Cookie `__Host-rk_session`: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`. Mit `COOKIE_SECURE=false` (nur lokale Entwicklung/Smoke-Test über http) heißt das Cookie `rk_session` ohne `Secure`, weil Browser `__Host-`-Cookies sonst verwerfen.
 - Leerlauf-Timeout `SESSION_IDLE_TIMEOUT` (Default 7 Tage), absolute Laufzeit `SESSION_LIFETIME` (Default 30 Tage); Token-Rotation bei Login und Rechteänderung; Logout löscht die Session serverseitig und sendet `Clear-Site-Data: "cache", "storage"` (leert auch Service-Worker-Caches).
 - Nutzer sehen ihre aktiven Sessions (Gerät, letzte Nutzung) und können sie beenden. Deaktivieren eines Nutzers beendet alle seine Sessions.
+- Die Tabelle `session` speichert nur `SHA-256` des Tokens (`token_hash`), wie `api_token` es hält; das Klartext-Token liegt allein im Cookie, damit ein Lesezugriff auf die DB keine gültige Session liefert. Sessions aus älteren Versionen enden mit Migration `00016`.
 
 ### 10.2 Passwort-Login
 

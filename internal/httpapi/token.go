@@ -121,7 +121,7 @@ func (a *App) requireTokenActor(w http.ResponseWriter, r *http.Request, scope st
 	zero := sqlitedb.Nutzer{}
 	if h := r.Header.Get("Authorization"); strings.HasPrefix(h, "Bearer ") {
 		plain := strings.TrimSpace(strings.TrimPrefix(h, "Bearer "))
-		tok, err := a.store.FindActiveToken(r.Context(), auth.HashAPIToken(plain))
+		tok, err := a.store.FindActiveToken(r.Context(), auth.HashBearer(plain))
 		if err != nil || tok.Scope != scope {
 			writeProblem(w, http.StatusUnauthorized, "ungueltiges_token", "Invalid token", "")
 			return zero, false

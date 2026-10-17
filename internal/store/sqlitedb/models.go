@@ -395,7 +395,7 @@ type Satztabelle struct {
 }
 
 type Session struct {
-	Token         string
+	TokenHash     string
 	Data          string
 	Expiry        time.Time
 	NutzerID      *string

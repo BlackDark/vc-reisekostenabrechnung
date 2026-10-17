@@ -146,7 +146,7 @@ func (a *App) resolveMailUser(ctx context.Context, env *imap.Envelope) (string, 
 		if raw == "" {
 			continue
 		}
-		tok, err := a.store.FindActiveToken(ctx, auth.HashAPIToken(raw))
+		tok, err := a.store.FindActiveToken(ctx, auth.HashBearer(raw))
 		if err == nil && tok.Scope == store.TokenScopeMailIngest && strings.EqualFold(to.Host, a.cfg.Mail.ForwardDomain) {
 			return tok.NutzerID, true
 		}
