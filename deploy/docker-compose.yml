@@ -1,7 +1,7 @@
 name: reisekosten
 services:
   app:
-    image: ghcr.io/blackdark/vc-reisekostenabrechnung:${APP_VERSION:-latest}
+    image: ghcr.io/blackdark/vc-reisekostenabrechnung:${APP_VERSION:?fehlt – veröffentlichte Version setzen, z. B. v1.1.0}
     restart: unless-stopped
     read_only: true
     user: "65532:65532"
@@ -12,6 +12,31 @@ services:
     env_file: .env
     environment:
       APP_BASE_URL: ${APP_BASE_URL:?fehlt – öffentliche URL setzen}
+      # Secrets kommen als Dateien unter ./secrets und nicht aus der Umgebung:
+      # `docker inspect` und /proc/<pid>/environ zeigen sonst jeden Wert. Eine
+      # leere Datei bedeutet „nicht gesetzt“.
+      INITIAL_ADMIN_PASSWORD_FILE: /run/secrets/initial_admin_password
+      OIDC_CLIENT_SECRET_FILE: /run/secrets/oidc_client_secret
+      S3_SECRET_ACCESS_KEY_FILE: /run/secrets/s3_secret_access_key
+      MAIL_IMAP_PASSWORD_FILE: /run/secrets/mail_imap_password
+      AI_API_KEY_FILE: /run/secrets/ai_api_key
+    secrets:
+      - initial_admin_password
+      - oidc_client_secret
+      - s3_secret_access_key
+      - mail_imap_password
+      - ai_api_key
     volumes: ["data:/data"]
+secrets:
+  initial_admin_password:
+    file: ./secrets/initial_admin_password
+  oidc_client_secret:
+    file: ./secrets/oidc_client_secret
+  s3_secret_access_key:
+    file: ./secrets/s3_secret_access_key
+  mail_imap_password:
+    file: ./secrets/mail_imap_password
+  ai_api_key:
+    file: ./secrets/ai_api_key
 volumes:
   data:

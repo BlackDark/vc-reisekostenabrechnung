@@ -1091,13 +1091,13 @@ CMD ["serve"]
 
 ### 17.2 docker-compose.yml und .env.example
 
-`deploy/docker-compose.yml` nutzt Pflichtvariablen mit `${VAR:?fehlt}` und enthält **keine** Beispiel-Secrets:
+`deploy/docker-compose.yml` nutzt Pflichtvariablen mit `${VAR:?fehlt}` und enthält **keine** Beispiel-Secrets. `APP_VERSION` ist Pflicht: mit einem Default `latest` würde ein vergessener Wert still einen anderen Stand starten. Secrets liegen als Dateien in `deploy/secrets` und erreichen die App über die `*_FILE`-Variablen; Werte in der Umgebung zeigen `docker inspect` und `/proc/<pid>/environ` jedem, der sie lesen kann. Eine leere Datei bedeutet „nicht gesetzt“; steht zusätzlich der Klartext in `.env`, bricht die App beim Start ab (`<NAME>` und `<NAME>_FILE` gleichzeitig).
 
 ```yaml
 name: reisekosten
 services:
   app:
-    image: ghcr.io/blackdark/vc-reisekostenabrechnung:${APP_VERSION:-latest}
+    image: ghcr.io/blackdark/vc-reisekostenabrechnung:${APP_VERSION:?fehlt – veröffentlichte Version setzen, z. B. v1.1.0}
     restart: unless-stopped
     read_only: true
     user: "65532:65532"
@@ -1108,12 +1108,36 @@ services:
     env_file: .env
     environment:
       APP_BASE_URL: ${APP_BASE_URL:?fehlt – öffentliche URL setzen}
+      INITIAL_ADMIN_PASSWORD_FILE: /run/secrets/initial_admin_password
+      OIDC_CLIENT_SECRET_FILE: /run/secrets/oidc_client_secret
+      S3_SECRET_ACCESS_KEY_FILE: /run/secrets/s3_secret_access_key
+      MAIL_IMAP_PASSWORD_FILE: /run/secrets/mail_imap_password
+      AI_API_KEY_FILE: /run/secrets/ai_api_key
+    secrets:
+      - initial_admin_password
+      - oidc_client_secret
+      - s3_secret_access_key
+      - mail_imap_password
+      - ai_api_key
     volumes: ["data:/data"]
+secrets:
+  initial_admin_password:
+    file: ./secrets/initial_admin_password
+  oidc_client_secret:
+    file: ./secrets/oidc_client_secret
+  s3_secret_access_key:
+    file: ./secrets/s3_secret_access_key
+  mail_imap_password:
+    file: ./secrets/mail_imap_password
+  ai_api_key:
+    file: ./secrets/ai_api_key
 volumes:
   data:
 ```
 
-Litestream liegt in einer **eigenen Override-Datei** `deploy/docker-compose.backup.yml`, weil Compose `${VAR:?…}` auch für inaktive Profile auswertet – ein Profil `backup` in derselben Datei würde ohne Litestream-Variablen den Start verhindern:
+`docker compose` hängt `file:`-Secrets als Bind-Mount ein, deshalb müssen die Dateien für UID 65532 lesbar sein (`0644`), während das Verzeichnis `deploy/secrets` `0700` bleibt und andere Konten auf dem Host aussperrt.
+
+Litestream liegt in einer **eigenen Override-Datei** `deploy/docker-compose.backup.yml`; ein Deploy ohne Backup lädt sie nicht:
 
 ```yaml
 # docker compose -f docker-compose.yml -f docker-compose.backup.yml up -d
@@ -1126,10 +1150,10 @@ services:
     user: "65532:65532"   # gleiche UID wie die App (WAL-/Metadateien unter /data)
     cap_drop: [ALL]
     environment:
-      LITESTREAM_ACCESS_KEY_ID: ${LITESTREAM_ACCESS_KEY_ID:?fehlt}
-      LITESTREAM_SECRET_ACCESS_KEY: ${LITESTREAM_SECRET_ACCESS_KEY:?fehlt}
-      LITESTREAM_REPLICA_URL: ${LITESTREAM_REPLICA_URL:?fehlt – s3://bucket/pfad (EU)}
-    volumes: ["data:/data", "./litestream.yml:/etc/litestream.yml:ro"]
+      HOME: /tmp
+    # Replica-URL und Zugangsdaten stehen in secrets/litestream.yml, nicht in der
+    # Umgebung; Vorlage ist deploy/litestream.yml.
+    volumes: ["data:/data", "./secrets/litestream.yml:/etc/litestream.yml:ro"]
 ```
 
 Optionale Variablen (z. B. `TRUSTED_PROXIES`, `OIDC_*`) kommen über `env_file`; die App prüft beim Start Abhängigkeiten (z. B. `HEADER_AUTH_ENABLED=true` ohne `TRUSTED_PROXIES` → Startabbruch). Ein CI-Schritt prüft beide Dateien mit `docker compose config` gegen eine `.env` aus `.env.example`.

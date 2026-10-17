@@ -25,7 +25,7 @@ With S3 the tar holds the database and `files.txt` only. Version the bucket as w
 
 ## Litestream
 
-`deploy/docker-compose.backup.yml` runs Litestream 0.5.17 as UID 65532, with a read-only root, `cap_drop: ALL`, a tmpfs on `/tmp`, and `HOME=/tmp`. It writes the replica at `LITESTREAM_REPLICA_URL` and a `.reisekosten.db-litestream` directory next to the database. Both are owned by UID 65532, so `/data` must be writable by that user.
+`deploy/docker-compose.backup.yml` runs Litestream 0.5.17 as UID 65532, with a read-only root, `cap_drop: ALL`, a tmpfs on `/tmp`, and `HOME=/tmp`. It writes the replica configured in `secrets/litestream.yml` (mounted read-only, credentials included) and a `.reisekosten.db-litestream` directory next to the database. Both are owned by UID 65532, so `/data` must be writable by that user.
 
 The replica URL should be an S3 bucket in the EU/EEA. CI restores a file replica (`scripts/litestream-smoke.sh`). A monthly restore of the real bucket is an operator task.
 
