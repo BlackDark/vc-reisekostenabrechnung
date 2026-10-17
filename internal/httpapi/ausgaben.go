@@ -453,7 +453,7 @@ func (a *App) attachMoney(r *http.Request, nutzerID string, in *berechnung.Einga
 	// run with none leaves the stored table alone, and a run with some reads those
 	// currencies only instead of the whole table.
 	for _, waehrung := range foreignCurrencies(in) {
-		rates, err := a.store.RatesFor(r.Context(), waehrung)
+		rates, err := a.store.Rates(r.Context(), waehrung)
 		if err != nil {
 			return err
 		}
