@@ -464,16 +464,7 @@ func (a *App) PatchAdminNutzer(w http.ResponseWriter, r *http.Request, id string
 		hash = &h
 	}
 	updated, err := a.store.UpdateAdmin(r.Context(), id, version, aktiv, istAdmin, hash, a.actor(r, admin))
-	if errors.Is(err, store.ErrLastAdmin) {
-		writeProblem(w, http.StatusConflict, "letzter_admin", "The last Admin cannot be removed", "")
-		return
-	}
-	if errors.Is(err, store.ErrConflict) {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-		return
-	}
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeNutzer(w, http.StatusOK, updated)
