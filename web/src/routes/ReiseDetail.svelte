@@ -105,13 +105,13 @@
 	}
 
 	async function loadBelege(rows: components["schemas"]["Ausgabe"][]) {
-		const ids = new Set(rows.flatMap((row) => row.beleg_ids ?? []));
-		if (ids.size === 0) {
+		const ids = [...new Set(rows.flatMap((row) => row.beleg_ids ?? []))];
+		if (ids.length === 0) {
 			belege = [];
 			return;
 		}
-		const list = await api.GET("/api/v1/belege", { params: { query: { limit: 100 } } });
-		belege = (list.data?.items ?? []).filter((item) => ids.has(item.id));
+		const found = await Promise.all(ids.map((id) => api.GET("/api/v1/belege/{id}", { params: { path: { id } } })));
+		belege = found.flatMap((res) => (res.data ? [res.data] : []));
 	}
 
 	async function loadLands(year: number) {
