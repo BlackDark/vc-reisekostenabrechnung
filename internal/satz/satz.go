@@ -507,9 +507,8 @@ func ParseImport(r io.Reader, jahr int) ([]Row, []LineError) {
 	return rows, nil
 }
 
-// SetInlandField writes one override onto a copy of the domestic rates.
-// inlandFieldPtr resolves an override name to the field it addresses, so the
-// writer and the reader below share one list of names.
+// inlandFieldPtr resolves an override name to the field it addresses, so
+// SetInlandField and InlandField share one list of names.
 func inlandFieldPtr(in *Inland, feld string) *int64 {
 	switch feld {
 	case "vma_inland_24h":
@@ -552,7 +551,6 @@ func SetInlandField(in *Inland, feld string, n int64) bool {
 	return true
 }
 
-// InlandField reads one domestic rate.
 // InlandField reads one domestic rate.
 func InlandField(in Inland, feld string) (int64, bool) {
 	p := inlandFieldPtr(&in, feld)
