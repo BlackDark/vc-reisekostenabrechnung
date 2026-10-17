@@ -10,11 +10,12 @@ real problems are one dead distribution channel (CI-1), duplicated security and 
 `internal/httpapi` (CODE-1, CODE-2), and no license file for a product meant to be self-hosted (DEP-1).
 
 Numbers: 652 tracked files, 53,985 Go lines (106 non-test + 44 test), 17,694 web lines, 19 CI jobs,
-0 reachable known CVEs, 12 findings: 0 high, 3 medium, 9 low. By area: code 0, comments 0, CI/CD 1,
-dependencies 4, security 5, cleanup 2.
+0 reachable known CVEs, 10 findings: 0 high, 3 medium, 7 low. By area: code 0, comments 0, CI/CD 1,
+dependencies 2, security 5, cleanup 2.
 
 Top 5 by benefit / effort:
 
+(none left)
 (none left)
 Tool coverage: ripgrep, govulncheck 1.8.0, `go vet`, `go test`, `go mod tidy -diff`, `go mod verify`,
 shellcheck, actionlint, `pnpm audit`, `pnpm outdated`, docker. Not available, so unverified: gitleaks,
@@ -34,13 +35,11 @@ CLN-5 the research docs reference those files.
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
 
-## Dependencies (4)
+## Dependencies (2)
 
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
 | DEP-1 | M | repository root; `docs/SPEC.md:1024` | No license file is tracked (`git ls-files \| rg -i license` is empty) although the SPEC lists `LICENSE` in the layout and the product is published for self-hosting. Without one, users get no grant and no terms. | Add the intended license and its SPDX identifier; the SPEC layout entry then matches (absorbs CLN-2). | S | Legal clarity for a self-hosted product. |
-| DEP-2 | L | `go.mod:16` (`golang.org/x/crypto@v0.57.0`) | govulncheck: "1 vulnerability in modules you require, but your code doesn't appear to call these vulnerabilities" (GO-2026-5932, `openpgp`, `Fixed in: N/A`). `openpgp` is never imported (`rg openpgp internal/` is empty). | Track `v0.58.0`; nothing else is actionable while no fix exists. | S | Clears the only govulncheck module hit. |
-| DEP-3 | L | `go.mod:12,14,15,16,17` | Five direct dependencies are behind latest, all minor or patch, none a major: minio-go 7.3.0→7.4.1, goose 3.28.0→3.29.0, jsonschema 6.0.2→6.0.3, x/crypto 0.57.0→0.58.0, x/image 0.46.0→0.47.0. Renovate already groups them. | None; let Renovate land them. | S | Stays current without manual work. |
 | DEP-4 | L | `go.mod:34,56`; accepted in `docs/SPEC.md:1261` | Codegen tooling sits in the main module graph, which pulls in a second JWT major (`golang-jwt/jwt/v4 v4.5.2` beside `jwt/v5`), ClickHouse/YDB/Vertica/MSSQL/Azure drivers and the deprecated `github.com/golang/protobuf v1.5.4`. It inflates `go.sum` and hides DEP-2 among tooling noise. | Move the tools to their own module. | M | Smaller graph, quieter vulnerability scans. |
 
 ## Security (5)
