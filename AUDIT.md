@@ -10,11 +10,12 @@ real problems are one dead distribution channel (CI-1), duplicated security and 
 `internal/httpapi` (CODE-1, CODE-2), and no license file for a product meant to be self-hosted (DEP-1).
 
 Numbers: 652 tracked files, 53,985 Go lines (106 non-test + 44 test), 17,694 web lines, 19 CI jobs,
-0 reachable known CVEs, 4 findings: 0 high, 1 medium, 3 low. By area: code 0, comments 0, CI/CD 1,
-dependencies 2, security 0, cleanup 1.
+0 reachable known CVEs, 3 findings: 0 high, 1 medium, 2 low. By area: code 0, comments 0, CI/CD 1,
+dependencies 2, security 0, cleanup 0.
 
 Top 5 by benefit / effort:
 
+(none left)
 (none left)
 (none left)
 (none left)
@@ -56,8 +57,7 @@ Accepted risks, on record and not findings: the setup token is written to the lo
 `Authentication-Results` verdict (`internal/httpapi/mail.go:191`) by design; `OIDC_ALLOW_EMAIL_LINKING`
 links only on `email_verified` (`internal/httpapi/identity.go:72`).
 
-## Cleanup (1)
+## Cleanup (0)
 
 | ID | Sev | Where | Problem and evidence | Fix | Effort | Benefit |
 | --- | --- | --- | --- | --- | --- | --- |
-| CLN-3 | L | `renovate.json5:131` | The `svelte` group still lists `@testing-library/svelte`, removed from `web/package.json` when code-health 2.5 landed (`rg testing-library web/package.json pnpm-lock.yaml` is empty). | Remove the line. | S | No stale dependency configuration. |

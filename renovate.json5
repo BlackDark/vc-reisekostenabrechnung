@@ -143,7 +143,6 @@
         '@lucide/svelte',
         'tailwind-variants',
         'cn',
-        '@testing-library/svelte',
       ],
     },
     {
