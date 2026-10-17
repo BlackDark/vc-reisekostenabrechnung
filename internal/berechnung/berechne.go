@@ -141,14 +141,13 @@ func prepareReise(in *Eingabe, idx int) (prep, error) {
 	overnight := false
 	for i, d := range dates {
 		inTag := tagInput(*r, d.String())
-		u := inTag.Unterkunft
-		if u == "" {
-			u = "keine"
-		}
-		if i == len(dates)-1 {
-			u = "keine"
-		} else if u == "beleg" || u == "pauschale" || u == "gestellt" || u == "verkehrsmittel" {
-			overnight = true
+		// The departure day carries no overnight stay; any earlier day whose input
+		// names one of these accommodations makes the trip a trip with a night away.
+		if i < len(dates)-1 {
+			switch inTag.Unterkunft {
+			case "beleg", "pauschale", "gestellt", "verkehrsmittel":
+				overnight = true
+			}
 		}
 		p.days[i] = dayCalc{
 			datum: d,
