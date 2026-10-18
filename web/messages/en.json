@@ -137,6 +137,8 @@
 	"reise_lunch": "Lunch provided",
 	"reise_dinner": "Dinner provided",
 	"reise_copay": "Own contribution",
+	"reise_trip_country": "Change country for the whole trip",
+	"reise_trip_country_apply": "Apply to whole trip",
 	"reise_override": "Override country",
 	"reise_reason": "Reason",
 	"reise_exclude": "Exclude allowance",
