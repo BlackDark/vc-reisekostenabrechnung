@@ -51,7 +51,7 @@
 	let confirmOpen = $state(false);
 	let pendingDelete = $state<string | null>(null);
 	const dayGrid =
-		"grid-cols-[8.5rem_7.5rem_minmax(9rem,1.4fr)_repeat(3,5.75rem)] items-center gap-x-3";
+		"grid-cols-[8.5rem_7.5rem_minmax(9rem,1.4fr)_repeat(4,5.75rem)] items-center gap-x-3";
 	let fahrtOpen = $state(false);
 	let vorlageOpen = $state(false);
 	let ausgabeOpen = $state(false);
@@ -374,6 +374,7 @@
 				<span>{m.reise_land()}</span>
 				<span class="text-right">{m.reise_pauschale()}</span>
 				<span class="text-right">{m.reise_kuerzung()}</span>
+				<span class="text-right">{m.reise_overnight()}</span>
 				<span class="text-right">{m.reise_result()}</span>
 			</div>
 			<Tooltip.Provider delayDuration={200}>
@@ -389,6 +390,7 @@
 										<span class="min-w-0">{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</span>
 										<span class="text-right tabular-nums" data-field="pauschale">{money(tag?.pauschale_cent)}</span>
 										<span class="text-right tabular-nums" data-field="kuerzung">{money(tag?.kuerzung_cent)}</span>
+										<span class="text-right tabular-nums" data-field="uebernachtung">{money(tag?.uebernachtung_cent)}</span>
 										<span class="text-right font-medium tabular-nums">{money(tag?.ergebnis_cent)}</span>
 									</span>
 								</summary>
@@ -468,9 +470,6 @@
 											<Input id={`reason-${day.datum}`} bind:value={day.begruendung} />
 										</label>
 									</div>
-									<p class="text-muted-foreground text-right text-xs tabular-nums" data-field="uebernachtung">
-										{m.reise_overnight()}: {money(tag?.uebernachtung_cent)}
-									</p>
 									{#if tag?.warnungen?.includes("W03") && !day.verpflegung_ausgeschlossen}
 										<label class="grid gap-1 text-sm" for={`exclude-${day.datum}`}>
 											{m.reise_exclude()}
