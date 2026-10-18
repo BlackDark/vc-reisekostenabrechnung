@@ -1285,7 +1285,7 @@ release.yml (workflow_dispatch auf dem Tag; zusätzlich push: tags v* für manue
 - Nur `GITHUB_TOKEN`, **kein PAT**. Voraussetzung (Eduard, einmalig): _Settings → Actions → General → Workflow permissions →_ „**Allow GitHub Actions to create and approve pull requests**“ aktivieren (release-please erstellt sonst keinen PR). `release-please.yml` braucht `contents: write`, `pull-requests: write`, `actions: write` (für `gh workflow run`).
 - release-please-Konfiguration: `release-type: simple`, `bump-minor-pre-major: true`, `changelog-sections` deutsch beschriftet, `extra-files` für `web/package.json`; Startversion `0.1.0`.
 - Schlägt `release.yml` fehl, bleibt das Release ein Entwurf und es gibt kein Image; Wiederholung per `gh workflow run release.yml --ref vX.Y.Z`.
-- Ob `draft` + `force-tag-creation` in release-please-action v5 wie beschrieben zusammenspielen, wird in M1 verifiziert (offener Punkt); Fallback: Release normal anlegen, `release.yml` ergänzt Notes erst nach erfolgreichem Publish und markiert Fehlschläge im Release-Text.
+- `draft: true` + `force-tag-creation: true` sind praktisch verifiziert (v1.0.0 entstand als Entwurf mit Tag, siehe O4); das Release bleibt Entwurf, bis der Notes-Job `--draft=false` setzt. Der zuerst erwogene Fallback (Release normal anlegen, Notes erst nach erfolgreichem Publish ergänzen) bleibt ungenutzt.
 
 ### 18.8 Ausdrücklich nicht
 
