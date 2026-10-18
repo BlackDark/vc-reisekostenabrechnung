@@ -7,6 +7,7 @@
 	import AusgabeEditor from "$lib/components/ausgabe-editor.svelte";
 	import BelegErfassen from "$lib/components/beleg-erfassen.svelte";
 	import DateField from "$lib/components/date-field.svelte";
+	import DayFlags from "$lib/components/day-flags.svelte";
 	import DayTypeIcon from "$lib/components/day-type-icon.svelte";
 	import StatCard from "$lib/components/stat-card.svelte";
 	import StatusBadge from "$lib/components/status-badge.svelte";
@@ -53,7 +54,7 @@
 	let confirmOpen = $state(false);
 	let pendingDelete = $state<string | null>(null);
 	const dayGrid =
-		"grid-cols-[8.5rem_7.5rem_minmax(9rem,1.4fr)_repeat(4,5.75rem)] items-center gap-x-3";
+		"grid-cols-[8.5rem_7.5rem_minmax(9rem,1.4fr)_8.5rem_repeat(4,5.75rem)] items-center gap-x-3";
 	let fahrtOpen = $state(false);
 	let vorlageOpen = $state(false);
 	let ausgabeOpen = $state(false);
@@ -444,6 +445,7 @@
 				<span>{m.reise_day()}</span>
 				<span>{m.reise_tagesart()}</span>
 				<span>{m.reise_land()}</span>
+				<span></span>
 				<span class="text-right">{m.reise_pauschale()}</span>
 				<span class="text-right">{m.reise_kuerzung()}</span>
 				<span class="text-right">{m.reise_overnight()}</span>
@@ -460,6 +462,7 @@
 										<span class="font-medium">{formatWhen(day.datum, session.locale, "date")}</span>
 										<span class="flex items-center gap-1.5"><DayTypeIcon type={tag?.tagesart} />{dayTypeLabel(tag?.tagesart)}</span>
 										<span class="min-w-0">{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</span>
+										<DayFlags {day} />
 										<span class="text-right tabular-nums" data-field="pauschale">{money(tag?.pauschale_cent)}</span>
 										<span class="text-right tabular-nums" data-field="kuerzung">{money(tag?.kuerzung_cent)}</span>
 										<span class="text-right tabular-nums" data-field="uebernachtung">{money(tag?.uebernachtung_cent)}</span>
