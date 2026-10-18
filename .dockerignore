@@ -14,6 +14,10 @@ e2e/*
 docs/assets/screenshots
 deploy
 scripts
+# The image build runs this script to compile the server, so the same flags and
+# ldflags are used here, in CI and in the release. Nothing else from scripts/
+# belongs in the context.
+!scripts/build-binary.sh
 tools
 coverage
 playwright-report
