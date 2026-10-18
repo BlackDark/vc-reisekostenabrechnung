@@ -22,6 +22,7 @@ jobs:
     outputs:
       go: ${{ steps.out.outputs.go }}
       web: ${{ steps.out.outputs.web }}
+      codegen: ${{ steps.out.outputs.codegen }}
       image: ${{ steps.out.outputs.image }}
       toolchain: ${{ steps.out.outputs.toolchain }}
       backup: ${{ steps.out.outputs.backup }}
@@ -46,7 +47,6 @@ jobs:
               - 'internal/**'
               - 'satztabellen/**'
               - 'docs/research/data/**'
-              - 'tools/**'
               - '.golangci.yml'
             web:
               - 'web/**'
@@ -56,6 +56,20 @@ jobs:
               - 'biome.json'
               - 'scripts/check-i18n.mjs'
               - 'scripts/bundle-budget.mjs'
+            # Only the generators and what they read. Handwritten Go cannot
+            # change a generated file, so the codegen job stays off a plain Go
+            # change; the tools/ module is here and not under go because nothing
+            # outside codegen uses it.
+            codegen:
+              - 'api/**'
+              - 'db/**'
+              - 'sqlc.yaml'
+              - 'tools/**'
+              - 'internal/api/**'
+              - 'internal/store/sqlitedb/**'
+              - 'web/src/lib/api/schema.ts'
+              - 'scripts/codegen-check.sh'
+              - 'scripts/postgres-probe.sh'
             image:
               - '**/*.go'
               - 'go.mod'
@@ -75,7 +89,6 @@ jobs:
               - 'e2e/**'
               - 'deploy/**'
               - 'scripts/**'
-              - 'tools/**'
             toolchain:
               - 'mise.toml'
               - '.node-version'
@@ -103,6 +116,7 @@ jobs:
             {
               echo "go=${{ steps.filter.outputs.go }}"
               echo "web=${{ steps.filter.outputs.web }}"
+              echo "codegen=${{ steps.filter.outputs.codegen }}"
               echo "image=${{ steps.filter.outputs.image }}"
               echo "toolchain=${{ steps.filter.outputs.toolchain }}"
               echo "backup=${{ steps.filter.outputs.backup }}"
@@ -112,6 +126,7 @@ jobs:
             {
               echo "go=true"
               echo "web=true"
+              echo "codegen=true"
               echo "image=true"
               echo "toolchain=true"
               echo "backup=true"
@@ -180,7 +195,7 @@ jobs:
           . scripts/lib/wait.sh
           wait_until 40 1 "the MinIO health endpoint" curl -sf http://127.0.0.1:9000/minio/health/live \
             || { docker logs rk-minio >&2 || true; exit 1; }
-      - run: go test -race -shuffle=on -coverprofile=coverage.out ./...
+      - run: go test -race -shuffle=on ./...
         env:
           S3_TEST_ENDPOINT: http://127.0.0.1:9000
           S3_TEST_BUCKET: rk-test
@@ -214,7 +229,7 @@ jobs:
 
   codegen:
     needs: changes
-    if: needs.changes.outputs.go == 'true'
+    if: needs.changes.outputs.codegen == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -223,6 +238,13 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+          # codegen-check.sh and postgres-probe.sh run the generators out of the
+          # tools/ module, which has its own go.sum. Keying the cache on the root
+          # go.sum alone left sqlc and oapi-codegen to be downloaded and
+          # recompiled on every run.
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.10.1
@@ -234,15 +256,13 @@ jobs:
       - run: bash scripts/codegen-check.sh
       - run: bash scripts/postgres-probe.sh
 
-  web:
+  # The web checks do not feed anything downstream, so they run beside the build
+  # instead of holding up the SPA that the Go compile embeds.
+  web-check:
     needs: changes
-    # The Go binary embeds the built SPA, and the image is assembled from the Go
-    # binaries, so both need this job's output even when only Go files changed.
-    if: |
-      needs.changes.outputs.web == 'true' || needs.changes.outputs.go == 'true'
-      || needs.changes.outputs.image == 'true'
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -255,39 +275,42 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec biome ci .
       - run: pnpm --filter web check
+
+  # Builds the SPA and the server binaries in one job. The Go compile needs the
+  # SPA first, so the two never overlapped; one job also means one artifact
+  # instead of a tar handed from one job to the next. setup-go restores the Go
+  # build cache for the same go.sum as the test jobs, so the compile is
+  # incremental instead of the cold one BuildKit would pay for on every run.
+  build:
+    needs: changes
+    # The Go binary embeds the built SPA, and the image is assembled from the Go
+    # binaries, so this runs even when only Go files changed.
+    if: |
+      needs.changes.outputs.web == 'true' || needs.changes.outputs.go == 'true'
+      || needs.changes.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.10.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --filter web build
       - run: node scripts/check-i18n.mjs
       - run: node scripts/bundle-budget.mjs
-      - name: Pack the built SPA for the Go build
-        run: tar -C web -cf web-dist.tar dist
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: web-dist
-          path: web-dist.tar
-          retention-days: 3
-
-  # Compiles the server once per image platform and hands the binaries to the
-  # image build as a build context. setup-go restores the Go build cache for the
-  # same go.sum as the test jobs, so the compile is incremental instead of the
-  # cold one BuildKit would pay for on every run.
-  go-build:
-    needs: [changes, web]
-    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.image == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        with:
-          name: web-dist
       - name: Embed the built SPA
         run: |
           rm -rf internal/webui/dist
-          tar -xf web-dist.tar -C internal/webui
+          cp -r web/dist internal/webui/dist
       - name: Cross-compile for both image platforms
         env:
           VERSION: ci-${{ github.run_id }}
@@ -308,7 +331,7 @@ jobs:
           retention-days: 3
 
   image:
-    needs: [changes, go-build]
+    needs: [changes, build]
     if: needs.changes.outputs.image == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -326,9 +349,9 @@ jobs:
           tar -xf gobin.tar -C prebuilt-go
       - run: bash scripts/compose-check.sh
       # One multi-platform build, and no compiler: the gobin context replaces the
-      # Go stage with the binaries go-build already produced, so the arm64 image
-      # costs a final COPY. The amd64 image comes out of the archive for the jobs
-      # below, which is why nothing is built twice.
+      # Go stage with the binaries the build job already produced, so the arm64
+      # image costs a final COPY. The amd64 image comes out of the archive for the
+      # jobs below, which is why nothing is built twice.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -376,16 +399,34 @@ jobs:
     timeout-minutes: 25
     strategy:
       # Each shard gets its own runner, its own containers and its own SQLite
-      # file, so shards cannot interfere. fail-fast keeps a single browser from
-      # hiding the result of the other two.
+      # file, so shards cannot interfere. fail-fast keeps one browser from hiding
+      # the result of the others. WebKit needs about 1.6x the Chromium projects,
+      # so it runs as two shards instead of leaving the other runners idle while
+      # it finishes.
       fail-fast: false
       matrix:
-        project: [desktop, mobile, mobile-webkit]
+        include:
+          - label: desktop
+            args: --project=desktop
+          - label: mobile
+            args: --project=mobile
+          - label: mobile-webkit-1
+            args: --project=mobile-webkit --shard=1/2
+          - label: mobile-webkit-2
+            args: --project=mobile-webkit --shard=2/2
+    name: e2e (${{ matrix.label }})
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: image-amd64
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          # The Playwright container installs the end-to-end workspace on a bare
+          # runner. With the store on the mounted checkout, pnpm links the
+          # packages instead of downloading them again in every shard.
+          path: .pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: zstd -d image-amd64.tar.zst -c | docker load
       - name: Start mock IdP and app
         run: bash scripts/e2e-up.sh
@@ -400,8 +441,8 @@ jobs:
             -v "$PWD":/work -w /work \
             mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f \
             bash -lc 'npm install -g pnpm@12.10.1 \
-              && pnpm install --frozen-lockfile --filter e2e \
-              && pnpm --filter e2e exec playwright test --project=${{ matrix.project }}'
+              && pnpm install --frozen-lockfile --filter e2e --store-dir /work/.pnpm-store \
+              && pnpm --filter e2e exec playwright test ${{ matrix.args }}'
       - name: Container logs
         if: always()
         run: |
@@ -410,7 +451,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report-${{ matrix.project }}
+          name: playwright-report-${{ matrix.label }}
           path: |
             e2e/playwright-report
             e2e/test-results
@@ -419,7 +460,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: screenshots-${{ matrix.project }}
+          name: screenshots-${{ matrix.label }}
           path: e2e/screenshots
           retention-days: 7
           if-no-files-found: ignore
@@ -453,22 +494,22 @@ jobs:
           docker run --rm --user 65532:65532 \
             -v "$PWD/out":/out:ro \
             vc-reisekosten:ci export-check --dir /out
-      # One JVM boot per sample: the XML report carries the verdict
-      # (<isCompliant>) and the exit code carries the same verdict.
+      # veraPDF takes a list of files, so every sample is validated in one JVM
+      # boot instead of one per sample. The exit code carries the verdict: 0 when
+      # every file conforms, 1 when at least one does not, and 4 when there was
+      # nothing to check, so a sample that failed to export cannot pass silently.
       - name: Validate PDF/A-3b
         run: |
           mkdir -p reports
-          fail=0
+          set --
           for pdf in out/*/abrechnung.pdf; do
-            name=$(basename "$(dirname "$pdf")")
-            if ! docker run --rm --network none -v "$PWD/out:/out:ro" \
-              "$VERAPDF_IMAGE" --flavour 3b --format xml "/out/$name/abrechnung.pdf" \
-              > "reports/verapdf-${name}.xml"; then
-              echo "veraPDF did not accept out/$name/abrechnung.pdf as PDF/A-3b" >&2
-              fail=1
-            fi
+            set -- "$@" "/out/$(basename "$(dirname "$pdf")")/abrechnung.pdf"
           done
-          exit "$fail"
+          if ! docker run --rm --network none -v "$PWD/out:/out:ro" \
+            "$VERAPDF_IMAGE" --flavour 3b --format xml "$@" > reports/verapdf.xml; then
+            echo "veraPDF did not accept every sample as PDF/A-3b" >&2
+            exit 1
+          fi
       - name: Reject a file that is not PDF/A-3b
         run: |
           printf '%s\n' '%PDF-1.1' '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj' '2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj' 'trailer<</Root 1 0 R>>' '%%EOF' > /tmp/broken.pdf
@@ -582,8 +623,8 @@ jobs:
         go-test,
         go-vuln,
         codegen,
-        web,
-        go-build,
+        web-check,
+        build,
         image,
         smoke,
         e2e,
@@ -605,8 +646,8 @@ jobs:
           GO_TEST: ${{ needs.go-test.result }}
           GO_VULN: ${{ needs.go-vuln.result }}
           CODEGEN: ${{ needs.codegen.result }}
-          WEB: ${{ needs.web.result }}
-          GO_BUILD: ${{ needs.go-build.result }}
+          WEB_CHECK: ${{ needs.web-check.result }}
+          BUILD: ${{ needs.build.result }}
           IMAGE: ${{ needs.image.result }}
           SMOKE: ${{ needs.smoke.result }}
           E2E: ${{ needs.e2e.result }}
@@ -620,7 +661,7 @@ jobs:
           import os, sys
           names = [
               "CHANGES", "GO_LINT", "TOOLCHAIN", "GO_TEST", "GO_VULN",
-              "CODEGEN", "WEB", "GO_BUILD", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "SCAN",
+              "CODEGEN", "WEB_CHECK", "BUILD", "IMAGE", "SMOKE", "E2E", "PDFA", "BACKUP", "SCAN",
               "TITLE", "ACTIONLINT",
           ]
           bad = [name for name in names if os.environ[name] not in ("success", "skipped")]
@@ -629,17 +670,17 @@ jobs:
           PY
 
   publish-edge:
-    needs: [ci-ok, go-build]
+    needs: [ci-ok, build]
     # ci-ok aggregates jobs that a push skips (pr-titel is pull_request-only).
     # GitHub skips any job whose dependency chain holds a skipped job, even when
     # ci-ok itself succeeded, so the guard needs always(). always() also drops
     # the implicit success() of needs and lets a cancelled run through, hence the
-    # explicit result and cancellation checks. go-build must have run as well: a
-    # push that touched no image input has no binaries to publish. The event and
-    # ref checks keep the channel off a manual run.
+    # explicit result and cancellation checks. The build job must have run as
+    # well: a push that touched no image input has no binaries to publish. The
+    # event and ref checks keep the channel off a manual run.
     if: |
       always() && !cancelled() && needs.ci-ok.result == 'success'
-      && needs.go-build.result == 'success'
+      && needs.build.result == 'success'
       && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -673,7 +714,7 @@ jobs:
             type=raw,value=edge
             type=sha,prefix=sha-,format=short
       # The binaries are the ones the tests above ran against, so the channel
-      # publishes what CI verified. They carry the version go-build baked in.
+      # publishes what CI verified. They carry the version the build job baked in.
       - id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:

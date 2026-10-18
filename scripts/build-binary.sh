@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds the server binary for one target platform.
 #
-# The image build, the CI go-build job and the release job all call this, so the
+# The image build, the CI build job and the release job all call this, so the
 # build tags, trimpath and ldflags cannot drift apart. VERSION and COMMIT are
 # compiled in: `reisekosten version` and the status endpoint report them. OUT
 # receives the binary and the empty data directory that the runtime image copies,

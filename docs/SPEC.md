@@ -922,7 +922,7 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 - Sprache: Nutzereinstellung → sonst `Accept-Language` → sonst `DEFAULT_LOCALE`. Umschalten ohne Neuladen. Formatierung über `Intl` (Währung, Datum, Zahlen) passend zur Sprache; Steuerbegriffe bleiben im Englischen erklärt (Tooltip mit deutschem Originalbegriff, z. B. „Meal allowance (Verpflegungspauschale)“).
 - API-Fehler liefern `code` + Parameter, die SPA übersetzt; der Server enthält keine UI-Texte außer im Export.
 - Export: Typst-Layout mit Wörterbuch `de`/`en`; Sprache je Abrechnung (`export_sprache`). Rechtsgrundlagen bleiben deutsch zitiert.
-- CI: fehlende oder überzählige Schlüssel zwischen `de` und `en` brechen den Build (Skript im Job `web`).
+- CI: fehlende oder überzählige Schlüssel zwischen `de` und `en` brechen den Build (Skript im Job `build`).
 - **Terminologie de → en** (verbindlich für die englische UI):
 
 | Deutsch (Glossar) | Englisch | Deutsch (Glossar) | Englisch |
@@ -1086,7 +1086,7 @@ CMD ["serve"]
 
 - Multi-Arch Pflicht (Q23): `docker buildx build --platform linux/amd64,linux/arm64` auf **einem** amd64-Runner; SPA einmal, Go je Arch per Cross-Compile, Typst/distroless per `COPY` der passenden Arch ([S] 4.1). Kein QEMU, keine nativen ARM-Runner.
 - **Vorgebaute Binaries statt Compiler im Build**: CI und Release legen je Arch ein Binary unter `<arch>/reisekosten` (samt leerem `<arch>/data`) ab und übergeben das Verzeichnis als `--build-context gobin=<dir>`. Die Laufzeitstufe wählt ihres über `ARG TARGETARCH` in `COPY` aus, deshalb läuft im Multi-Arch-Build kein Compiler und kein `RUN`, und ein Arch-Binary kann nicht in der falschen Plattform landen. Ohne diesen Kontext kompiliert die `gobin`-Stufe selbst (lokal, Compose), damit ein Quellbaum genügt.
-- `scripts/build-binary.sh` ist die einzige Quelle für Build-Tags, `-trimpath` und `-ldflags`; die `gobin`-Stufe, der CI-Job `go-build` und der Release rufen es mit `VERSION`/`COMMIT`/`GOOS`/`GOARCH`/`OUT` auf. Der Image-Build der CI braucht deshalb keinen `type=gha`-Layer-Cache und kein `buildkit-cache-dance`; die `RUN --mount=type=cache`-Verzeichnisse bleiben auf den lokalen Pfad beschränkt.
+- `scripts/build-binary.sh` ist die einzige Quelle für Build-Tags, `-trimpath` und `-ldflags`; die `gobin`-Stufe, der CI-Job `build` und der Release rufen es mit `VERSION`/`COMMIT`/`GOOS`/`GOARCH`/`OUT` auf. Der Image-Build der CI braucht deshalb keinen `type=gha`-Layer-Cache und kein `buildkit-cache-dance`; die `RUN --mount=type=cache`-Verzeichnisse bleiben auf den lokalen Pfad beschränkt.
 - `.dockerignore`: `.git`, `node_modules`, `**/dist`, `docs/research`, `e2e`, Testartefakte; `scripts/` ist ausgenommen, mit Ausnahme von `scripts/build-binary.sh`, das der lokale Build-Pfad aufruft.
 - Migrationen laufen beim `serve`-Start (idempotent, mit Sperre); `reisekosten migrate` separat möglich.
 - `/tmp` muss beschreibbar sein (Typst-Arbeitsverzeichnis, Uploads) → `tmpfs` bei read-only Root-FS.
@@ -1164,7 +1164,7 @@ Optionale Variablen (z. B. `TRUSTED_PROXIES`, `OIDC_*`) kommen über `env_file`;
 
 ## 18. CI/CD (GitHub Actions)
 
-Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-Laufzeit ≈ 5 Minuten** (Wanduhr) bei warmem Cache; nie ein ungetestetes Image veröffentlichen. Kritischer Pfad: `web` → `go-build` → `image` → `e2e`.
+Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-Laufzeit ≈ 5 Minuten** (Wanduhr) bei warmem Cache; nie ein ungetestetes Image veröffentlichen. Kritischer Pfad: `build` → `image` → `e2e`.
 
 ### 18.1 Grundregeln
 
@@ -1172,7 +1172,7 @@ Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-
 - **Concurrency**: `group: ci-${{ github.event_name }}-${{ github.ref }}`, `cancel-in-progress: true` → ein neuer Push bricht den vorherigen Lauf auf demselben Ref ab. Der Event im Gruppennamen trennt einen manuellen Lauf von einem Push auf `main`, damit `workflow_dispatch` den Push-Lauf nicht abbricht.
 - **Jeder Job hat `timeout-minutes`** (Werte in 18.2).
 - **Pfadfilter** mit `dorny/paths-filter` im Job `changes` statt `paths-ignore` am Trigger: der Workflow läuft immer, überflüssige Jobs werden übersprungen, und der Aggregator `ci-ok` ist trotzdem grün (sonst blockiert ein fehlender Pflicht-Check reine Doku-PRs). Pull Requests vergleichen gegen den Merge-Base, Pushes gegen ihren eigenen Commit-Bereich (`fetch-depth: 0`); ein reiner Doku- oder CI-Commit auf `main` startet deshalb weder Go-Compile noch Image-Build noch E2E-Shards. Bei `workflow_dispatch` laufen alle Jobs.
-- **Ein Dockerfile** für lokal, CI und Release. CI und Release kompilieren je Plattform _außerhalb_ von BuildKit (Job `go-build` bzw. Release-Job) und geben die Binaries als `--build-context gobin` hinein; der Image-Build selbst ist reines `COPY`. Der Release baut die Binaries mit `VERSION=$RELEASE_TAG` neu, deshalb trägt das Release-Image seine Version und nicht die des `edge`-Laufs.
+- **Ein Dockerfile** für lokal, CI und Release. CI und Release kompilieren je Plattform _außerhalb_ von BuildKit (Job `build` bzw. Release-Job) und geben die Binaries als `--build-context gobin` hinein; der Image-Build selbst ist reines `COPY`. Der Kontext ist optional: `docker build .` übersetzt SPA und Server aus dem Quellbaum, ohne dass lokal etwas vorgebaut sein muss. Der Release baut die Binaries mit `VERSION=$RELEASE_TAG` neu, deshalb trägt das Release-Image seine Version und nicht die des `edge`-Laufs.
 - Branch-Schutz/Ruleset auf `main`: PR Pflicht, Squash-Merge, Pflicht-Check **„CI ok“**, PR-Titel im Conventional-Commits-Format (Job `pr-titel`, Shell-Regex, nur bei PRs), keine Force-Pushes.
 
 ### 18.2 `ci.yml`
@@ -1188,27 +1188,28 @@ changes ─┬─► go-lint ───────────┐
          ├─► backup ────────────┤
          ├─► actionlint ────────┤
          ├─► pr-titel ──────────┤
-         └─► web ─► go-build ─► image ─┬─► smoke ──┤
-                                       ├─► e2e ─────┤
-                                       ├─► pdfa ────┤
-                                       └─► scan ────┴─► ci-ok ─► publish-edge (nur Push auf `main`)
+         ├─► web-check ─────────┤
+         └─► build ─► image ──────────┬─► smoke ──┤
+                                      ├─► e2e ─────┤
+                                      ├─► pdfa ────┤
+                                      └─► scan ────┴─► ci-ok ─► publish-edge (nur Push auf `main`)
 ```
 
 `ci-ok` läuft mit `if: always()` und besteht, wenn jedes Job-Ergebnis in `needs` `success` oder `skipped` ist.
 
 | Job | Läuft wenn | Inhalt | Timeout |
 | --- | --- | --- | --- |
-| `changes` | immer | Filter mit `dorny/paths-filter`: bei `workflow_dispatch` alle `true`, sonst der Diff des PRs bzw. des Pushes: `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `tools/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`, `tools/**`) | 3 |
+| `changes` | immer | Filter mit `dorny/paths-filter`: bei `workflow_dispatch` alle `true`, sonst der Diff des PRs bzw. des Pushes: `go` (`**/*.go`, `go.mod`, `go.sum`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `codegen` (`api/**`, `db/**`, `sqlc.yaml`, `tools/**`, `internal/api/**`, `internal/store/sqlitedb/**`, `web/src/lib/api/schema.ts`, `scripts/codegen-check.sh`, `scripts/postgres-probe.sh`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`) | 3 |
 | `go-lint` | go | `golangci-lint-action` (v2.14.0) | 10 |
-| `go-test` | go | Typst und poppler für die Golden-Tests (4.16), MinIO für die Storage-Contract-Tests (3.6), `go test -race -shuffle=on -coverprofile ./...` | 20 |
+| `go-test` | go | Typst und poppler für die Golden-Tests (4.16), MinIO für die Storage-Contract-Tests (3.6), `go test -race -shuffle=on ./...` | 20 |
 | `go-vuln` | go | `govulncheck` (v1.8.0, im Actions-Cache) über alle Pakete | 10 |
-| `codegen` | go | `pnpm install --frozen-lockfile`, `scripts/codegen-check.sh` (sqlc, oapi-codegen, openapi-typescript → `git diff --exit-code`), `scripts/postgres-probe.sh` (sqlc-Engine `postgresql`, 3.6) | 10 |
+| `codegen` | codegen | `pnpm install --frozen-lockfile`, `scripts/codegen-check.sh` (sqlc, oapi-codegen, openapi-typescript → `git diff --exit-code`), `scripts/postgres-probe.sh` (sqlc-Engine `postgresql`, 3.6); Go-Cache zusätzlich auf `tools/go.sum`, weil die Generatoren in ihrem eigenen Modul liegen | 10 |
 | `toolchain-parity` | toolchain | `scripts/mise-check.sh`: `mise.toml` gegen die Dateien, aus denen CI ihre Versionen liest | 5 |
-| `web` | web, go oder image | `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich, `vitest run --coverage`, `vite build` + Bundle-Budget (13), danach `web/dist` als Artefakt für `go-build` | 12 |
-| `go-build` | go oder image | SPA-Artefakt in `internal/webui/dist`, `scripts/build-binary.sh` für `linux/amd64` und `linux/arm64` (parallel, Go-Cache von `setup-go`), beide Arch-Verzeichnisse als `gobin`-Artefakt | 15 |
+| `web-check` | web | `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, `vitest run --coverage` (13) – prüft nur, damit keine Prüfung den SPA-Build aufhält | 10 |
+| `build` | web, go oder image | SPA bauen (13) mit i18n-Schlüsselvergleich und Bundle-Budget, `web/dist` nach `internal/webui/dist`, `scripts/build-binary.sh` für `linux/amd64` und `linux/arm64` (parallel, Go-Cache von `setup-go`), beide Arch-Verzeichnisse als `gobin`-Artefakt | 20 |
 | `image` | image | `setup-buildx`, `scripts/compose-check.sh`, **ein** Multi-Arch-Build (`linux/amd64,linux/arm64`) aus dem `gobin`-Kontext als OCI-Archiv, amd64 per `skopeo` in den Daemon (Version-/Commit-Prüfung), Größenbericht, amd64 als Artefakt | 15 |
 | `smoke` | `image` erfolgreich | amd64-Artefakt laden, Container-Smoke-Test (18.5) | 8 |
-| `e2e` | `image` erfolgreich | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go-lint`/`web` | 25 |
+| `e2e` | `image` erfolgreich | Playwright gegen das gebaute Image (18.4) in vier Shards (WebKit zweigeteilt) – wartet **nicht** auf `go-lint`/`web-check` | 25 |
 | `pdfa` | `image` erfolgreich | Validator-Job (18.6) | 20 |
 | `scan` | `image` erfolgreich | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 10 |
 | `backup` | backup | Compose-Rendering (`compose-config.sh`) und Litestream-Restore als UID 65532 (O16) – ohne Image-Artefakt | 10 |
@@ -1217,7 +1218,7 @@ changes ─┬─► go-lint ───────────┐
 | `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 3 |
 | `publish-edge` | Push auf `main`, nach `ci-ok`, mit `gobin`-Artefakt | Multi-Arch-Push `:edge` + `:sha-<kurz>` aus demselben `gobin`-Kontext (kein zweiter Compile), signiert und attestiert wie ein Release, danach Prüfung, dass `:edge` auf den gebauten Digest zeigt | 15 |
 
-Laufzeitbudget (warm): `web` ~60 s → `go-build` ~60–90 s → `image` ~20–40 s → `e2e` ~90 s parallel zu `pdfa`/`scan` → ≈ 4–5 min; `go-test` (~120 s) und die übrigen Go-Jobs laufen parallel zum Image-Pfad.
+Laufzeitbudget (warm): `build` ~60–130 s (SPA + zwei Binaries) → `image` ~20–40 s → `e2e` ~80 s parallel zu `pdfa`/`scan` → ≈ 4–5 min; `go-test` (~120 s), `web-check` und die übrigen Go-Jobs laufen parallel zum Image-Pfad.
 
 ### 18.3 Security in der CI
 
@@ -1229,7 +1230,7 @@ Laufzeitbudget (warm): `web` ~60 s → `go-build` ~60–90 s → `image` ~20–4
 ### 18.4 E2E und Screenshot-Durchlauf
 
 - Umgebung (`scripts/e2e-up.sh`): das geladene Image `vc-reisekosten:ci`, `mock-oauth2-server` (OIDC mit konfigurierbarem `groups`-Claim), MinIO für einen S3-Lauf (eigener Playwright-Projekt-Durchlauf mit `STORAGE_BACKEND=s3`). Playwright läuft im Container `mcr.microsoft.com/playwright:v1.64.0-noble` (Browser vorinstalliert, kein Download).
-- Projekte: `desktop` (Chromium 1280×800), `mobile` (Chromium, Pixel-7-Emulation 412×915) und `mobile-webkit` (iPhone-Emulation). Dieselben Projekte und dieselbe Umgebung laufen auf Pull Requests und auf `main`.
+- Projekte: `desktop` (Chromium 1280×800), `mobile` (Chromium, Pixel-7-Emulation 412×915) und `mobile-webkit` (iPhone-Emulation). Als Shards laufen `desktop` und `mobile` ganz und `mobile-webkit` in zwei Teilen (`--shard=1/2`, `--shard=2/2`), weil WebKit rund 1,6-mal so lange braucht. Dieselben Projekte und dieselbe Umgebung laufen auf Pull Requests und auf `main`.
 - **Fachliche Flows**: Passwort-Login, OIDC-Login mit Auto-Provisioning und Admin-Gruppe, Header-Auth (nur von vertrauenswürdiger Quelle), Reise anlegen (Inland, Ausland mit Ortswechseln), Beleg hochladen (Fixture-Foto → Ecken → Bestätigen), KI-Vorschlag gegen einen Mock-Endpunkt, Abrechnung anlegen/prüfen/einreichen, PDF/ZIP herunterladen (Inhalt geprüft), Entsperrung mit Grund, als bezahlt markieren, Sprache umschalten, Satztabellen-Override als Admin.
 - **Screenshot-Durchlauf** (`e2e/tests/seiten.spec.ts`): eine Routenliste mit **jeder Seite** der App (inkl. Leer- und gefüllter Zustände über Seed-Daten). Je Route und Viewport (desktop + mobile): Seite öffnen, auf geladene Hauptüberschrift warten (Assertion „Seite lädt“), **keine** `console.error`- oder `pageerror`-Ereignisse (Test schlägt fehl), auf mobile `document.documentElement.scrollWidth <= window.innerWidth` (**kein horizontales Scrollen**), Full-Page-Screenshot nach `screenshots/<viewport>/<route>.png`. Eine Prüfung stellt sicher, dass jede im Router registrierte Route in der Liste steht.
 - Artefakte: `playwright-report`, `screenshots` (immer hochgeladen, `if: always()`), Export-Beispiele. README-Screenshots werden per `pnpm screenshots:readme` aus dem Artefakt nach `docs/assets/screenshots/` übernommen und per normalem PR committet (kein Bot-Push auf `main`).
@@ -1248,7 +1249,7 @@ Prüft: `/healthz` und `/readyz` grün (readyz prüft DB, Migrationen, Schreibre
 
 ### 18.6 Validator-Job (PDF/A)
 
-Muster „Validator mit Bericht als Artefakt“: Job `pdfa` lädt das Image-Artefakt, erzeugt mit `reisekosten export-sample --out /out` Beispiel-Exporte (Inland, Ausland, PDF-Beleg, XML-E-Rechnung eingebettet, Bewirtung, en), installiert veraPDF 1.30.2 (`setup-java` Temurin 21, Installer gecacht) und validiert gegen PDF/A-3b; Berichte (`verapdf-*.xml/html`) werden immer als Artefakt hochgeladen; Nicht-Konformität lässt den Job fehlschlagen. Zusätzlich: `abrechnung.json` gegen das JSON-Schema.
+Muster „Validator mit Bericht als Artefakt“: Job `pdfa` lädt das Image-Artefakt, erzeugt mit `reisekosten export-sample --out /out` Beispiel-Exporte (Inland, Ausland, PDF-Beleg, XML-E-Rechnung eingebettet, Bewirtung, en), validiert sie gegen PDF/A-3b und lädt den Bericht (`verapdf.xml`) immer als Artefakt hoch. veraPDF kommt als digest-gepinntes Image `verapdf/cli:1.30.2` und bekommt alle Muster in **einem** Aufruf, also einer JVM statt einer pro Muster; Nicht-Konformität (Exit-Code 1) lässt den Job fehlschlagen, ebenso ein leerer Dateisatz (Exit-Code 4). Zusätzlich: `abrechnung.json` gegen das JSON-Schema.
 
 ### 18.7 Release-Fluss (release-please)
 
