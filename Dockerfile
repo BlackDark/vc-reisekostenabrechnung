@@ -15,31 +15,36 @@ COPY web/ web/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --offline --frozen-lockfile --filter web && pnpm --filter web build
 
-# ---- Go: cross-compile without emulation ----
-FROM --platform=$BUILDPLATFORM golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d AS build
+# ---- Go: cross-compile without emulation, or take the CI artifact ----
+# CI passes --build-context gobin=<dir> holding one prebuilt binary per
+# architecture, so the compile happens once in a cached CI job instead of inside
+# every build. Without that context this stage compiles here, which keeps
+# compose and local builds working from source alone. The binary and the data
+# directory are written to /<arch>, which is the layout the context uses.
+FROM --platform=$BUILDPLATFORM golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d AS gobin
 ARG TARGETOS TARGETARCH VERSION=dev COMMIT=unknown
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod go mod download
 COPY . .
 COPY --from=web /src/web/dist internal/webui/dist
-# nodynamic keeps gen2brain/avif and webp on wazero. The default build dlopens libavif and is not static.
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -tags nodynamic -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
-      -o /out/reisekosten ./cmd/reisekosten \
- && mkdir -p /out/data
+    VERSION="$VERSION" COMMIT="$COMMIT" GOOS="$TARGETOS" GOARCH="$TARGETARCH" OUT="/$TARGETARCH" \
+    ./scripts/build-binary.sh
 
 # ---- Typst: static binary from the official multi-arch image ----
 FROM ghcr.io/typst/typst:0.15.1@sha256:032e292249bcd378480cc7c142cfa324b63ef8aadeb88d7e7230320c4c9c422f AS typst
 
 # ---- Runtime: COPY only, so arm64 needs no emulation ----
 FROM gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
+# COPY expands this in the source path, which is how one prebuilt context serves
+# both architectures without an emulated assembly step.
+ARG TARGETARCH
 COPY --from=typst /bin/typst /usr/local/bin/typst
 COPY assets/fonts/ /usr/share/fonts/app/
-COPY --from=build /out/reisekosten /usr/local/bin/reisekosten
-COPY --from=build --chown=65532:65532 /out/data /data
+COPY --from=gobin /${TARGETARCH}/reisekosten /usr/local/bin/reisekosten
+COPY --from=gobin --chown=65532:65532 /${TARGETARCH}/data /data
 USER 65532:65532
 ENV DATA_DIR=/data TYPST_PATH=/usr/local/bin/typst HOME=/tmp
 VOLUME ["/data"]

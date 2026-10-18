@@ -25,25 +25,12 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
-    # GitHub rejects the run at load time unless every permission a nested job
-    # requests is granted here. scan uploads SARIF; publish-edge can push and sign.
-    permissions:
-      contents: read
-      security-events: write
-      packages: write
-      id-token: write
-      attestations: write
-    with:
-      caller: release
-
   publish:
-    needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+      checks: read
       packages: write
       id-token: write
       attestations: write
@@ -64,7 +51,67 @@ jobs:
               ;;
           esac
       - id: rev
-        run: echo "short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          {
+            echo "short=$(git rev-parse --short=7 HEAD)"
+            echo "full=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Require a green CI run for this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The tag points at a commit main CI already verified, so the release
+          # re-runs nothing and publishes only what CI accepted. Check runs are
+          # pruned after the retention window, so an old tag needs a fresh CI run
+          # on its commit before it can be released here.
+          sha="${{ steps.rev.outputs.full }}"
+          verdict=$(gh api --method GET \
+            "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?per_page=100" \
+            --jq '[.check_runs[] | select(.name == "ci-ok")] | sort_by(.started_at) | last | .conclusion')
+          case "$verdict" in
+            success) echo "ci-ok passed for ${{ steps.rev.outputs.short }}" ;;
+            null | "")
+              echo "no ci-ok check run for $sha: run CI on that commit first" >&2
+              exit 1
+              ;;
+            *)
+              echo "ci-ok for $sha is '$verdict'" >&2
+              exit 1
+              ;;
+          esac
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.10.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter web
+      - run: pnpm --filter web build
+      - name: Embed the built SPA
+        run: |
+          rm -rf internal/webui/dist
+          cp -r web/dist internal/webui/dist
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      # The binaries carry the released version, which is why the release builds
+      # them here instead of reusing the edge binaries. Compiling outside BuildKit
+      # keeps the Go cache setup-go restored, and the image only has to copy.
+      - name: Cross-compile the released version for both image platforms
+        env:
+          VERSION: ${{ env.RELEASE_TAG }}
+          COMMIT: ${{ steps.rev.outputs.full }}
+        run: |
+          pids=()
+          for arch in amd64 arm64; do
+            GOOS=linux GOARCH="$arch" OUT="prebuilt/$arch" ./scripts/build-binary.sh &
+            pids+=("$!")
+          done
+          for pid in "${pids[@]}"; do wait "$pid"; done
+      - name: Pack the binaries as one build context
+        run: tar -C prebuilt -cf gobin.tar .
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver: docker-container
@@ -103,8 +150,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           outputs: type=oci,dest=/tmp/image.oci.tar
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          build-contexts: |
+            gobin=./prebuilt
           provenance: false
           sbom: false
       - name: Image size
@@ -131,7 +178,8 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
+          build-contexts: |
+            gobin=./prebuilt
           provenance: mode=max
           sbom: true
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
