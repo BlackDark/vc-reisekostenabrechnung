@@ -79,7 +79,7 @@
 	}
 	const dayGrid = "items-center gap-x-3";
 	const gridStyle = $derived(
-		`grid-template-columns: 8.5rem 7.5rem minmax(9rem,1.4fr) 8.5rem ${"5.75rem ".repeat(
+		`grid-template-columns: 7.5rem 7.5rem minmax(6rem,1fr) 7.5rem ${"5rem ".repeat(
 			colDefs.filter((col) => cols[col.key]).length + 1,
 		)}`,
 	);
@@ -468,7 +468,7 @@
 				</Button>
 			</div>
 			<div class="min-w-0 max-w-full overflow-x-auto">
-			<div class="min-w-[48rem]">
+			<div class="min-w-[56rem]">
 			<div class="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
 				<span class="text-muted-foreground">{m.reise_columns()}:</span>
 				{#each colDefs as col (col.key)}
