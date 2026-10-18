@@ -7,6 +7,7 @@
 	import AusgabeEditor from "$lib/components/ausgabe-editor.svelte";
 	import BelegErfassen from "$lib/components/beleg-erfassen.svelte";
 	import DateField from "$lib/components/date-field.svelte";
+	import DayTypeIcon from "$lib/components/day-type-icon.svelte";
 	import StatCard from "$lib/components/stat-card.svelte";
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
@@ -384,7 +385,7 @@
 								<summary class="cursor-pointer list-none px-3 py-2 marker:content-none [&::-webkit-details-marker]:hidden">
 									<span class="grid {dayGrid}">
 										<span class="font-medium">{formatWhen(day.datum, session.locale, "date")}</span>
-										<span>{dayTypeLabel(tag?.tagesart)}</span>
+										<span class="flex items-center gap-1.5"><DayTypeIcon type={tag?.tagesart} />{dayTypeLabel(tag?.tagesart)}</span>
 										<span class="min-w-0">{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</span>
 										<span class="text-right tabular-nums" data-field="pauschale">{money(tag?.pauschale_cent)}</span>
 										<span class="text-right tabular-nums" data-field="kuerzung">{money(tag?.kuerzung_cent)}</span>
