@@ -19,6 +19,10 @@
 	let error = $state("");
 
 	$effect(() => {
+		if (bis && von && bis < von) bis = von;
+	});
+
+	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
 	});
 
@@ -118,7 +122,7 @@
 		{#if art === "frei"}
 			<label class="grid gap-1 text-sm" for="abrechnung-bis">
 				{m.abrechnung_bis()}
-				<DateField id="abrechnung-bis" type="date" bind:value={bis} required  />
+				<DateField id="abrechnung-bis" type="date" bind:value={bis} min={von} required  />
 			</label>
 		{/if}
 		<label class="grid gap-1 text-sm" for="abrechnung-titel">

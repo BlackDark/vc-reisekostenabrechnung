@@ -8,12 +8,14 @@
 		value = $bindable(""),
 		type = "date",
 		required = false,
+		min,
 		onchange,
 	}: {
 		id?: string;
 		value: string;
 		type?: "date" | "datetime-local";
 		required?: boolean;
+		min?: string;
 		onchange?: (event: Event) => void;
 	} = $props();
 
@@ -35,6 +37,7 @@
 	{id}
 	{type}
 	{required}
+	{min}
 	bind:value
 	{onchange}
 	onclick={openPicker}
