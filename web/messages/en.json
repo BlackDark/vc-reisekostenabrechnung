@@ -142,6 +142,7 @@
 	"reise_columns": "Columns",
 	"reise_total": "Total",
 	"reise_total_hint": "Allowance + lodging",
+	"reise_menu": "Actions",
 	"reise_override": "Override country",
 	"reise_reason": "Reason",
 	"reise_exclude": "Exclude allowance",

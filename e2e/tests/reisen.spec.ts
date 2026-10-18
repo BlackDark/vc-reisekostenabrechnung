@@ -18,6 +18,11 @@ async function login(page: Page) {
 	).toBeVisible();
 }
 
+async function menuAction(page: Page, name: RegExp) {
+	await page.getByRole("button", { name: /Aktionen|Actions/ }).click();
+	await page.getByRole("menuitem", { name }).click();
+}
+
 async function employer(page: Page, name: string) {
 	await page.goto("/arbeitgeber");
 	await page.getByLabel("Name", { exact: true }).fill(name);
@@ -79,9 +84,7 @@ test("multi-day foreign trip", async ({ page }) => {
 	);
 	const here = page.url();
 
-	await page
-		.getByRole("button", { name: /Fahrt erfassen|Add mileage/ })
-		.click();
+	await menuAction(page, /Fahrt erfassen|Add mileage/);
 	await page.locator("#fahrt-start").fill("Hotel");
 	await page.locator("#fahrt-ziel").fill("Kunde");
 	await page.locator("#fahrt-km").fill("12");
@@ -93,9 +96,7 @@ test("multi-day foreign trip", async ({ page }) => {
 	await expect(page.getByText("Hotel – Kunde")).toBeVisible();
 
 	await page.getByRole("tab", { name: /Reisetage|Days/ }).click();
-	await page
-		.getByRole("button", { name: /Vorlage anlegen|New template/ })
-		.click();
+	await menuAction(page, /Vorlage anlegen|New template/);
 	await page.locator("#vorlage-name").fill(`Vorlage ${stamp}`);
 	await page
 		.getByRole("button", { name: /Als Vorlage speichern|Save as template/ })

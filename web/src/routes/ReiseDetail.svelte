@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+	import EllipsisIcon from "@lucide/svelte/icons/ellipsis";
 	import InfoIcon from "@lucide/svelte/icons/info";
 	import { toast } from "svelte-sonner";
 	import { api } from "$lib/api";
@@ -13,6 +14,7 @@
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Button } from "$lib/components/ui/button";
 	import * as Dialog from "$lib/components/ui/dialog";
+	import * as Menu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
 	import * as Sheet from "$lib/components/ui/sheet";
@@ -87,6 +89,7 @@
 	let vorlageOpen = $state(false);
 	let ausgabeOpen = $state(false);
 	let belegeOpen = $state(false);
+	let countryOpen = $state(false);
 
 	const id = $derived(route.params.id ?? "");
 	const lastDatum = $derived(trip?.reisetage.at(-1)?.datum ?? "");
@@ -358,52 +361,38 @@
 	{m.back()}
 </Button>
 {#if trip}
-	{#snippet actions(current: Reise)}
-		<Button
-			variant="outline"
-			size="sm"
-			href={`/reisen/${current.id}/ausgaben/neu`}
-			onclick={(event) => {
-				// The href keeps the standalone form reachable (deep links, non-JS); the
-				// click upgrades it to the side panel below.
-				event.preventDefault();
-				ausgabeOpen = true;
-			}}
-		>
-			{m.ausgabe_new()}
-		</Button>
-		<Button variant="outline" size="sm" type="button" onclick={() => (fahrtOpen = true)}>{m.reise_add_fahrt()}</Button>
-		<Button
-			variant="outline"
-			size="sm"
-			href="/belege/neu"
-			onclick={(event) => {
-				// Deep-link fallback; the click opens the capture in the side panel.
-				event.preventDefault();
-				belegeOpen = true;
-			}}
-		>
-			{m.beleg_new()}
-		</Button>
-		<Button variant="outline" size="sm" type="button" onclick={() => (vorlageOpen = true)}>{m.reise_open_template()}</Button>
-		<Button variant="destructive" size="sm" type="button" onclick={() => askDelete("trip")}>{m.reise_delete()}</Button>
+	{#snippet actions()}
+		<Menu.Root>
+			<Menu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="outline" size="icon" aria-label={m.reise_menu()}>
+						<EllipsisIcon />
+					</Button>
+				{/snippet}
+			</Menu.Trigger>
+			<Menu.Content>
+				<Menu.Item onSelect={() => (ausgabeOpen = true)}>{m.ausgabe_new()}</Menu.Item>
+				<Menu.Item onSelect={() => (fahrtOpen = true)}>{m.reise_add_fahrt()}</Menu.Item>
+				<Menu.Item onSelect={() => (belegeOpen = true)}>{m.beleg_new()}</Menu.Item>
+				<Menu.Item onSelect={() => (vorlageOpen = true)}>{m.reise_open_template()}</Menu.Item>
+				<Menu.Item onSelect={() => (countryOpen = true)}>{m.reise_trip_country()}</Menu.Item>
+				<Menu.Separator class="bg-border my-1 h-px" />
+				<Menu.Item variant="destructive" onSelect={() => askDelete("trip")}>{m.reise_delete()}</Menu.Item>
+			</Menu.Content>
+		</Menu.Root>
 	{/snippet}
 
-	<div class="flex flex-wrap items-start justify-between gap-3">
+	<div class="flex items-start justify-between gap-3">
 		<div class="min-w-0">
-			<h1 class="truncate text-2xl font-semibold tracking-tight">{trip.anlass}</h1>
+			<div class="flex min-w-0 items-center gap-2">
+				<h1 class="truncate text-2xl font-semibold tracking-tight">{trip.anlass}</h1>
+				<StatusBadge status={trip.status} />
+			</div>
 			<p class="text-muted-foreground mt-1 text-sm" data-field="zeitraum">
 				{formatRange(trip.beginn, trip.ende, session.locale, "auto")}
 			</p>
 		</div>
-		<div class="flex flex-wrap items-center gap-2">
-			<StatusBadge status={trip.status} />
-			<div
-				class="flex max-w-full flex-wrap gap-2 max-md:fixed max-md:inset-x-0 max-md:bottom-16 max-md:z-30 max-md:border-t max-md:bg-background/95 max-md:px-3 max-md:py-2"
-			>
-				{@render actions(trip)}
-			</div>
-		</div>
+		{@render actions()}
 	</div>
 
 	{#if calc?.blocker && calc.blocker.length > 0}
@@ -433,40 +422,6 @@
 		</div>
 
 		<Tabs.Content value="days" class="mt-3 min-w-0">
-			<div class="mb-3 flex flex-wrap items-end gap-2">
-				<label class="grid gap-1 text-sm" for="trip-land">
-					{m.reise_trip_country()}
-					<NativeSelect
-						id="trip-land"
-						bind:value={tripLand}
-						onchange={() => {
-							tripSatzort = "";
-							void placesFor(tripLand);
-						}}
-					>
-						<option value=""> </option>
-						{#each lands as item (item.land_iso)}
-							<option value={item.land_iso}>{item.land_name_de}</option>
-						{/each}
-					</NativeSelect>
-				</label>
-				{#if tripLand && places[tripLand]}
-					<label class="grid gap-1 text-sm" for="trip-place">
-						{m.reise_place()}
-						<NativeSelect id="trip-place" bind:value={tripSatzort}>
-							<option value="">im Übrigen</option>
-							{#each places[tripLand] as place (place.satzort)}
-								{#if place.satzort}
-									<option value={place.satzort}>{place.ort_name || place.satzort}</option>
-								{/if}
-							{/each}
-						</NativeSelect>
-					</label>
-				{/if}
-				<Button variant="outline" size="sm" type="button" disabled={!tripLand} onclick={() => void changeTripCountry()}>
-					{m.reise_trip_country_apply()}
-				</Button>
-			</div>
 			<div class="min-w-0 max-w-full overflow-x-auto">
 			<div class="min-w-[56rem]">
 			<div class="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
@@ -678,7 +633,6 @@
 			</ul>
 		</Tabs.Content>
 	</Tabs.Root>
-	<div class="h-28 md:hidden"></div>
 
 	<Dialog.Root bind:open={confirmOpen}>
 		<Dialog.Content>
@@ -692,6 +646,51 @@
 				<Button variant="outline" type="button" onclick={() => (confirmOpen = false)}>{m.cancel()}</Button>
 				<Button variant="destructive" type="button" onclick={() => void confirmDelete()}>{m.reise_delete()}</Button>
 			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
+
+	<Dialog.Root bind:open={countryOpen}>
+		<Dialog.Content>
+			<Dialog.Header>
+				<Dialog.Title>{m.reise_trip_country()}</Dialog.Title>
+			</Dialog.Header>
+			<div class="grid gap-3">
+				<label class="grid gap-1 text-sm" for="trip-land">
+					{m.reise_trip_country()}
+					<NativeSelect
+						id="trip-land"
+						bind:value={tripLand}
+						onchange={() => {
+							tripSatzort = "";
+							void placesFor(tripLand);
+						}}
+					>
+						<option value=""> </option>
+						{#each lands as item (item.land_iso)}
+							<option value={item.land_iso}>{item.land_name_de}</option>
+						{/each}
+					</NativeSelect>
+				</label>
+				{#if tripLand && places[tripLand]}
+					<label class="grid gap-1 text-sm" for="trip-place">
+						{m.reise_place()}
+						<NativeSelect id="trip-place" bind:value={tripSatzort}>
+							<option value="">im Übrigen</option>
+							{#each places[tripLand] as place (place.satzort)}
+								{#if place.satzort}
+									<option value={place.satzort}>{place.ort_name || place.satzort}</option>
+								{/if}
+							{/each}
+						</NativeSelect>
+					</label>
+				{/if}
+				<Button variant="outline" size="sm" type="button" disabled={!tripLand} onclick={async () => {
+						await changeTripCountry();
+						countryOpen = false;
+					}}>
+					{m.reise_trip_country_apply()}
+				</Button>
+			</div>
 		</Dialog.Content>
 	</Dialog.Root>
 
