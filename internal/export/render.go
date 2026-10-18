@@ -774,17 +774,6 @@ func warnText(code string, de bool) string {
 	return code
 }
 
-func stringsOrEmpty(items []string) []string {
-	if items == nil {
-		return []string{}
-	}
-	return items
-}
-
-func line(label string, cents int64) map[string]string {
-	return map[string]string{"label": label, "betrag": euroLabel(cents)}
-}
-
 func ifLang(de bool) string {
 	if de {
 		return "de"
