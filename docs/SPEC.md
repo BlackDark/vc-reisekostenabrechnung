@@ -14,7 +14,7 @@
 ## 0. Entscheidungsübersicht (Interview → Spec)
 
 | Frage | Entscheidung (verbindlich) | Abschnitt |
-|---|---|---|
+| --- | --- | --- |
 | Q1 | Primärfall: Geschäftsführer lässt sich vom Arbeitgeber erstatten (ADR 0001); andere Konstellationen später, Modell verbaut sie nicht | 1, 3.2 (Arbeitgeber.konstellation), 21 |
 | Q2 | Mehrbenutzerfähig, strikt getrennte Daten, Rolle Admin, kein Freigabe-Workflow | 2 |
 | Q3 | Arbeitgeber als eigenes Objekt; einer ist Standard, mehrere möglich | 3.2 |
@@ -33,7 +33,7 @@
 | Q16 | SQLite (WAL, cgo-frei); Schema/Abfragen im gemeinsamen SQL-Subset mit Postgres (ADR 0003) | 3.6, 15 |
 | Q17/Q27 | Svelte 5 + shadcn-svelte + Tailwind 4 als reine Vite-SPA (ADR 0004) | 15 |
 | Q18 | Ein Container, Go liefert SPA aus; API spec-first per OpenAPI | 9, 16 |
-| Q19/Q29 | Beleg-Pipeline: Ecken im Browser, Bereinigung auf dem Server, Farb-AVIF als Archivbeleg, JPEG-Kopie für PDF (ADR 0005, *proposed*) | 5 |
+| Q19/Q29 | Beleg-Pipeline: Ecken im Browser, Bereinigung auf dem Server, Farb-AVIF als Archivbeleg, JPEG-Kopie für PDF (ADR 0005, _proposed_) | 5 |
 | Q20 | Dateispeicher lokales Volume oder S3-kompatibel, nur EU | 12 |
 | Q21/Q30 | Sessions per HttpOnly-Cookie, Argon2id, OIDC mit PKCE, Gruppen-Claims, Header-Auth hinter `TRUSTED_PROXIES`, alles per ENV | 10, 11 |
 | Q22 | Export: Typst-PDF mit Belegen + ZIP (PDF, Originalbelege, CSV, JSON); DATEV später | 7 |
@@ -73,7 +73,7 @@ Qualitätsziele, in dieser Reihenfolge:
 ## 2. Nutzer und Rollen
 
 | Rolle | Darf | Darf nicht |
-|---|---|---|
+| --- | --- | --- |
 | **Nutzer** | eigene Arbeitgeber, Vorlagen, Tätigkeitsstätten, Reisen, Ausgaben, Belege, Fahrten, Vorschüsse, Abrechnungen verwalten; eigene Exporte und eigenes Protokoll sehen; Sprache und KI-Nutzung einstellen; Satztabellen lesen | Daten anderer Nutzer sehen (auch nicht als Admin) |
 | **Admin** | zusätzlich: Nutzer anlegen, deaktivieren, Rollen vergeben, Identitäten verknüpfen; Satztabellen überschreiben, importieren, aktivieren; Admin-Protokoll und Systemstatus sehen; Aufbewahrungsfristen-Bericht | Reisen, Belege, Abrechnungen anderer Nutzer einsehen oder ändern |
 
@@ -124,7 +124,7 @@ Alle Entitäten haben `id`, `erstellt_am`, `geaendert_am`; veränderbare Entitä
 **Nutzer**
 
 | Feld | Typ | Regeln |
-|---|---|---|
+| --- | --- | --- |
 | `anzeigename` | Text | Pflicht |
 | `email` | Text | eindeutig (case-insensitiv), optional bei Header-Auth |
 | `benutzername` | Text | eindeutig; Login-Name für Passwort und Header-Auth |
@@ -142,7 +142,7 @@ Alle Entitäten haben `id`, `erstellt_am`, `geaendert_am`; veränderbare Entitä
 **Arbeitgeber**
 
 | Feld | Typ | Regeln |
-|---|---|---|
+| --- | --- | --- |
 | `nutzer_id` | FK | |
 | `name`, `anschrift` | Text | Pflicht; Briefkopf im Export; Abgleich „Rechnung lautet auf Arbeitgeber“ |
 | `ust_id`, `steuernummer` | Text? | informativ im Export |
@@ -161,7 +161,7 @@ Alle Entitäten haben `id`, `erstellt_am`, `geaendert_am`; veränderbare Entitä
 **Reise**
 
 | Feld | Typ | Regeln |
-|---|---|---|
+| --- | --- | --- |
 | `nutzer_id`, `arbeitgeber_id` | FK | Arbeitgeber Pflicht, Default = Standard |
 | `anlass` | Text | Pflicht, Reisezweck ([R] 7.4) |
 | `projekt` | Text? | Q8 |
@@ -178,7 +178,7 @@ Abgeleiteter Status: `offen` (keine Abrechnung), `in_entwurf` (Abrechnung im Sta
 **Reisetag** (je Kalendertag der Reise genau einer; wird beim Speichern der Reise erzeugt/abgeglichen)
 
 | Feld | Typ | Regeln |
-|---|---|---|
+| --- | --- | --- |
 | `reise_id`, `datum` | FK, Datum | eindeutig je Reise; Datum in Ortszeit |
 | `massgebliches_land_vorschlag` | `land_iso` + `satzort` | berechnet (4.6) |
 | `massgebliches_land_manuell` | `land_iso` + `satzort`? | Überschreibung, nur mit `begruendung` |
@@ -193,7 +193,7 @@ Abgeleiteter Status: `offen` (keine Abrechnung), `in_entwurf` (Abrechnung im Sta
 **Ausgabe**
 
 | Feld | Typ | Regeln |
-|---|---|---|
+| --- | --- | --- |
 | `reise_id` | FK | Pflicht (Q10) |
 | `kostenart` | Enum | `fahrtkosten`\|`verpflegung`\|`uebernachtung`\|`reisenebenkosten`\|`bewirtung` |
 | `datum` | Datum | Leistungs-/Belegdatum, muss in [Reisebeginn − 30 Tage, Reiseende + 30 Tage] liegen (Vorabbuchungen, nachträgliche Rechnungen) |
@@ -218,7 +218,7 @@ Abgeleiteter Status: `offen` (keine Abrechnung), `in_entwurf` (Abrechnung im Sta
 **Beleg**
 
 | Feld | Typ | Regeln |
-|---|---|---|
+| --- | --- | --- |
 | `nutzer_id` | FK | |
 | `belegnummer` | Text | `JJJJ-NNNN`, fortlaufend je Nutzer und Jahr der Bestätigung, wird bei Bestätigung vergeben, nie wiederverwendet (GoBD Rz. 77, [R] 7.2) |
 | `typ` | Enum | `foto`\|`pdf`\|`e_rechnung_xml`\|`e_rechnung_hybrid` (ZUGFeRD-PDF) |
@@ -237,7 +237,7 @@ Abgeleiteter Status: `offen` (keine Abrechnung), `in_entwurf` (Abrechnung im Sta
 **Satztabelle** (je Kalenderjahr)
 
 | Feld | Inhalt 2024 / 2025 / 2026 | Quelle |
-|---|---|---|
+| --- | --- | --- |
 | `jahr`, `status` | `entwurf`\|`aktiv`; ausgelieferte Jahre sind `aktiv` | |
 | `quelle` | BMF-Schreiben (Datum, Fundstelle) | [R] 2.1 |
 | `vma_inland_24h` | 2800 | [R] 1.1 |
@@ -263,7 +263,7 @@ Abgeleiteter Status: `offen` (keine Abrechnung), `in_entwurf` (Abrechnung im Sta
 **Abrechnung**
 
 | Feld | Typ | Regeln |
-|---|---|---|
+| --- | --- | --- |
 | `nutzer_id`, `arbeitgeber_id` | FK | alle enthaltenen Reisen haben diesen Arbeitgeber |
 | `abrechnungsnummer` | Text? | `<Präfix>-JJJJ-NNN`, beim ersten Einreichen vergeben, fortlaufend je Nutzer und Arbeitgeber |
 | `zeitraum_art` | Enum | `tag`\|`woche`\|`monat`\|`quartal`\|`frei` |
@@ -284,7 +284,7 @@ Abgeleiteter Status: `offen` (keine Abrechnung), `in_entwurf` (Abrechnung im Sta
 ### 3.3 Invarianten
 
 | # | Invariante |
-|---|---|
+| --- | --- |
 | I1 | Jede Ausgabe und jede Fahrt gehört zu genau einer Reise (Q10); jede Reise gehört genau einem Nutzer und einem Arbeitgeber dieses Nutzers. |
 | I2 | Ein Nutzer sieht und ändert nur eigene Objekte; jede Store-Abfrage ist mit `nutzer_id` parametrisiert (keine Abfrage ohne Mandantenfilter, per Test erzwungen, 20). |
 | I3 | Genau ein nicht archivierter Arbeitgeber je Nutzer ist Standard, sobald mindestens ein nicht archivierter existiert. Sind alle archiviert, gibt es keinen Standard. |
@@ -314,7 +314,7 @@ stateDiagram-v2
 ```
 
 | Übergang | Vorbedingung | Wirkung |
-|---|---|---|
+| --- | --- | --- |
 | anlegen | Zeitraum gültig | Vorschlag aller **offenen** Reisen des Arbeitgebers mit Enddatum im Zeitraum + aller unverrechneten Vorschüsse des Arbeitgebers mit Datum ≤ `bis` |
 | einreichen | keine Blocker (8), alle Warnungen quittiert, mind. 1 Reise | Reisen gesperrt; Abrechnungsnummer (beim ersten Mal); Snapshot; Job „Export erstellen“ (Version n+1). Der Abrechnungsstatus wechselt erst auf Eingereicht, wenn der Export fertig ist; bis dahin bleibt er Entwurf mit gesetztem Job-Merkmal `einreichung_laeuft` (kein eigener Status, Glossar kennt nur drei); schlägt der Export fehl, wird die Sperre zurückgenommen und der Fehler angezeigt |
 | Entsperrung | Status `eingereicht`; Grund (≥ 10 Zeichen) | Status `entwurf`; Reisen wieder bearbeitbar; vorhandene Exporte bleiben; Audit-Ereignis `abrechnung.entsperrt` mit Grund; im nächsten Export erscheint ein Protokollabschnitt |
@@ -327,7 +327,7 @@ Wer: nur der Eigentümer-Nutzer. Ein Admin hat keinen Zugriff auf fremde Abrechn
 ### 3.5 Sperren und Unveränderbarkeit im Überblick
 
 | Objekt | Änderbar bis | Danach |
-|---|---|---|
+| --- | --- | --- |
 | Archivbeleg (Belegdateien `archiv`/`original`) | nie (ab Upload bzw. Erzeugung) | Neuaufbereitung vor Bestätigung erzeugt neue Dateien, alte werden verworfen (noch kein Archivbeleg, weil unbestätigt) |
 | Beleg-Metadaten (Zuordnung, Belegtext) | bis Sperre der Reise | Belegtext neue Version statt Änderung |
 | Reise samt Inhalt | bis Einreichen | nur nach Entsperrung |
@@ -356,14 +356,14 @@ Alle Regeln gelten für die Konstellation `arbeitgebererstattung` (ADR 0001). F�
 
 ### 4.2 Reisetage und Tagesart
 
-Sei *D* die Folge der Kalenderdaten vom lokalen Datum von `reise.beginn` (in dessen Zone) bis zum lokalen Datum von `reise.ende` (in dessen Zone), *N* = |*D*|. „Auswärtige Übernachtung“ liegt vor, wenn mindestens ein Reisetag außer dem letzten `unterkunft ∈ {beleg, pauschale, gestellt, verkehrsmittel}` hat (Nachtreisen zählen, BMF-RK 2020 Rz. 51, [R] 2.3).
+Sei _D_ die Folge der Kalenderdaten vom lokalen Datum von `reise.beginn` (in dessen Zone) bis zum lokalen Datum von `reise.ende` (in dessen Zone), _N_ = |_D_|. „Auswärtige Übernachtung“ liegt vor, wenn mindestens ein Reisetag außer dem letzten `unterkunft ∈ {beleg, pauschale, gestellt, verkehrsmittel}` hat (Nachtreisen zählen, BMF-RK 2020 Rz. 51, [R] 2.3).
 
 | Fall | Tagesart je Reisetag |
-|---|---|
-| *N* = 1 | `eintaegig` |
-| *N* ≥ 2, auswärtige Übernachtung | erster Tag `anreisetag`, letzter `abreisetag`, dazwischen `zwischentag` |
-| *N* = 2, keine Übernachtung | beide `ueber_nacht` (4.4) |
-| *N* ≥ 3, keine Übernachtung | Validierungsfehler `uebernachtung_fehlt` |
+| --- | --- |
+| _N_ = 1 | `eintaegig` |
+| _N_ ≥ 2, auswärtige Übernachtung | erster Tag `anreisetag`, letzter `abreisetag`, dazwischen `zwischentag` |
+| _N_ = 2, keine Übernachtung | beide `ueber_nacht` (4.4) |
+| _N_ ≥ 3, keine Übernachtung | Validierungsfehler `uebernachtung_fehlt` |
 
 Der letzte Reisetag hat immer `unterkunft = keine`. **Abwesenheit** eines Kalendertags = Minuten des Intervalls [`beginn`, `ende`] innerhalb dieses Tages in Ortszeit; bei eintägigen Reisen = `ende − beginn` (absolute Zeit). Schwelle „mehr als 8 Stunden“ = strikt > 480 Minuten ([R] 1.1).
 
@@ -374,7 +374,7 @@ Maßgeblich ist die Abwesenheit von Wohnung **und** erster Tätigkeitsstätte, n
 ### 4.4 Verpflegungspauschale je Reisetag (vor Mahlzeitenkürzung)
 
 | Tagesart | Inland | Ausland (maßgebliches Land, 4.6) | Quelle |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `eintaegig`, Abwesenheit > 8 h | `vma_inland_8h` (14 €) | `vma_8h` des Landes/Orts | § 9 Abs. 4a S. 3 Nr. 3, S. 5 EStG; [R] 1.1, 2.1 |
 | `eintaegig`, ≤ 8 h | 0 | 0 | [R] 1.1 |
 | `anreisetag`, `abreisetag` (stundenunabhängig) | `vma_inland_8h` (14 €) | `vma_8h` | § 9 Abs. 4a S. 3 Nr. 2 EStG |
@@ -385,25 +385,25 @@ Danach in dieser Reihenfolge: 4.5 (mehrere Reisen am Tag) → 4.7 (Mahlzeitenkü
 
 ### 4.5 Mehrere Reisen am selben Kalendertag
 
-Je Nutzer und Kalendertag *t* gibt es **höchstens eine** Verpflegungspauschale ([R] 1.2). Betrachtet werden alle Reisen des Nutzers, die *t* berühren, über alle Arbeitgeber (O2). Der Schalter steht in `internal/berechnung`: `EineVerpflegungspauschaleProKalendertag` ist `true`, `VerpflegungScope()` liefert `nutzer`. `false` würde je Arbeitgeber eine eigene Pauschale am selben Tag zulassen; der Rechenkern ab M3 liest nur diese Stelle.
+Je Nutzer und Kalendertag _t_ gibt es **höchstens eine** Verpflegungspauschale ([R] 1.2). Betrachtet werden alle Reisen des Nutzers, die _t_ berühren, über alle Arbeitgeber (O2). Der Schalter steht in `internal/berechnung`: `EineVerpflegungspauschaleProKalendertag` ist `true`, `VerpflegungScope()` liefert `nutzer`. `false` würde je Arbeitgeber eine eigene Pauschale am selben Tag zulassen; der Rechenkern ab M3 liest nur diese Stelle.
 
-1. **Kandidaten**: (a) der Tagesbetrag jeder einzelnen Reise nach 4.4; (b) Zusammenrechnung: Summe der Abwesenheiten aller `eintaegig`- und `ueber_nacht`-Anteile an *t*; > 8 h → 8-h-Satz.
-2. **Land** für (b): Ist an *t* irgendeine Reise im Ausland, gilt das Ausland (R 9.6 Abs. 3 S. 3 LStR), und zwar das Land der am spätesten endenden Auslandsreise an *t* (letzter Tätigkeitsort im Ausland).
+1. **Kandidaten**: (a) der Tagesbetrag jeder einzelnen Reise nach 4.4; (b) Zusammenrechnung: Summe der Abwesenheiten aller `eintaegig`- und `ueber_nacht`-Anteile an _t_; > 8 h → 8-h-Satz.
+2. **Land** für (b): Ist an _t_ irgendeine Reise im Ausland, gilt das Ausland (R 9.6 Abs. 3 S. 3 LStR), und zwar das Land der am spätesten endenden Auslandsreise an _t_ (letzter Tätigkeitsort im Ausland).
 3. **Tagespauschale** = Maximum der Kandidaten (Rückreisetag + neue Reise → nur die höhere, BMF-Auslandsschreiben 2026 S. 2).
-4. **Mahlzeiten** des Tages = Vereinigung der gestellten Mahlzeiten aller Reisetage an *t*; Kürzung nach 4.7 auf die Tagespauschale.
-5. **Zuordnung**: Restbetrag *R* = Tagesergebnis − Summe der für *t* bereits in **gesperrten** Reisen gewährten Beträge (aus deren Snapshot). *R* wird der **offenen oder im Entwurf befindlichen Reise mit dem spätesten Ende** an *t* zugeordnet; alle anderen erhalten für *t* 0 mit Hinweis `H-TAG-VERRECHNET` („Pauschale für 12.06.2026 bei Reise ‚Salzburg‘ berücksichtigt“). Ist *R* < 0, Ergebnis 0 und Warnung W12.
+4. **Mahlzeiten** des Tages = Vereinigung der gestellten Mahlzeiten aller Reisetage an _t_; Kürzung nach 4.7 auf die Tagespauschale.
+5. **Zuordnung**: Restbetrag _R_ = Tagesergebnis − Summe der für _t_ bereits in **gesperrten** Reisen gewährten Beträge (aus deren Snapshot). _R_ wird der **offenen oder im Entwurf befindlichen Reise mit dem spätesten Ende** an _t_ zugeordnet; alle anderen erhalten für _t_ 0 mit Hinweis `H-TAG-VERRECHNET` („Pauschale für 12.06.2026 bei Reise ‚Salzburg‘ berücksichtigt“). Ist _R_ < 0, Ergebnis 0 und Warnung W12.
 
 Damit ist das Ergebnis unabhängig davon, in welcher Reihenfolge Reisen erfasst oder abgerechnet werden.
 
 ### 4.6 Maßgebliches Land
 
-Für jeden Reisetag *t* wird ein Vorschlag berechnet; eine manuelle Überschreibung braucht eine Begründung und wird protokolliert. Regeln in Prioritätsreihenfolge ([R] 2.3):
+Für jeden Reisetag _t_ wird ein Vorschlag berechnet; eine manuelle Überschreibung braucht eine Begründung und wird protokolliert. Regeln in Prioritätsreihenfolge ([R] 2.3):
 
 1. **Manuelle Überschreibung** → diese.
-2. **Langstreckenflug**: Für jeden Ortswechsel mit `verkehrsmittel = flug` mit Abflugdatum *a* (Ortszeit Abflug) und Landedatum *l* (Ortszeit Landung): erstreckt sich der Flug über mehr als zwei Kalendertage (*l* − *a* ≥ 2), gilt für alle *t* mit *a* < *t* < *l* `flug_zwischentage_land` (Österreich). Zwischenlandungen zählen nur, wenn sie als eigener Ortswechsel mit `zwischenlandung_mit_uebernachtung` erfasst sind (R 9.6 Abs. 3 S. 4 Nr. 1 LStR).
+2. **Langstreckenflug**: Für jeden Ortswechsel mit `verkehrsmittel = flug` mit Abflugdatum _a_ (Ortszeit Abflug) und Landedatum _l_ (Ortszeit Landung): erstreckt sich der Flug über mehr als zwei Kalendertage (_l_ − _a_ ≥ 2), gilt für alle _t_ mit _a_ < _t_ < _l_ `flug_zwischentage_land` (Österreich). Zwischenlandungen zählen nur, wenn sie als eigener Ortswechsel mit `zwischenlandung_mit_uebernachtung` erfasst sind (R 9.6 Abs. 3 S. 4 Nr. 1 LStR).
 3. **Schiff**: Für Tage strikt zwischen Einschiffung (Abfahrtsdatum) und Ausschiffung (Ankunftsdatum) gilt `schiff_land` (Luxemburg); am Ein- und Ausschiffungstag der jeweilige Hafenort (R 9.6 Abs. 3 S. 4 Nr. 2 LStR).
-4. **Grundregel**: der Ort des letzten Ortswechsels, dessen `ankunft` vor 24:00 Uhr Ortszeit von *t* liegt (bei Flug: Landung); gibt es keinen, der Ausgangsort (Inland) (§ 9 Abs. 4a S. 5 Hs. 2 EStG).
-5. **Rückreise und Ausland am selben Tag**: Liegt der Ort nach Regel 4 im Inland und ist *t* (a) der `abreisetag` bzw. `eintaegig` einer Reise mit Tätigkeitsort im Ausland oder (b) ein Tag, an dem sich der Nutzer an einem ausländischen Tätigkeitsort aufgehalten hat, gilt der **letzte Tätigkeitsort im Ausland** (§ 9 Abs. 4a S. 5 Hs. 2 EStG; BMF-Auslandsschreiben 2026 S. 1; R 9.6 Abs. 3 S. 3 LStR).
+4. **Grundregel**: der Ort des letzten Ortswechsels, dessen `ankunft` vor 24:00 Uhr Ortszeit von _t_ liegt (bei Flug: Landung); gibt es keinen, der Ausgangsort (Inland) (§ 9 Abs. 4a S. 5 Hs. 2 EStG).
+5. **Rückreise und Ausland am selben Tag**: Liegt der Ort nach Regel 4 im Inland und ist _t_ (a) der `abreisetag` bzw. `eintaegig` einer Reise mit Tätigkeitsort im Ausland oder (b) ein Tag, an dem sich der Nutzer an einem ausländischen Tätigkeitsort aufgehalten hat, gilt der **letzte Tätigkeitsort im Ausland** (§ 9 Abs. 4a S. 5 Hs. 2 EStG; BMF-Auslandsschreiben 2026 S. 1; R 9.6 Abs. 3 S. 3 LStR).
 6. **Satzort**: Hat die Satztabelle für das Land einen Eintrag für den Satzort (z. B. Paris, Genf, New York City), gilt er, sonst „im Übrigen“ bzw. das ganze Land. Fehlt das Land, gilt die Ersatzzuordnung (`ersatzlaender`), danach Luxemburg ([R] 2.2).
 
 Prüffälle: BMF-RK 2020 Bsp. 37/38 (G08), Langstreckenflug (G10), Straßburg/Kopenhagen (G09).
@@ -412,7 +412,7 @@ Prüffälle: BMF-RK 2020 Bsp. 37/38 (G08), Langstreckenflug (G10), Straßburg/Ko
 
 **[K≠]** Nur bei `arbeitgebererstattung` (und später `werbungskosten`), nicht bei `betriebsausgaben` (BMF 23.12.2014 Rz. 12, [R] 1.4).
 
-Für den Tag *t* mit Tagespauschale *P* > 0 und 24-h-Satz *S* des maßgeblichen Landes (Inland: `vma_inland_24h`):
+Für den Tag _t_ mit Tagespauschale _P_ > 0 und 24-h-Satz _S_ des maßgeblichen Landes (Inland: `vma_inland_24h`):
 
 ```
 K_frueh = gestellt ? max(0, S × kuerzung_fruehstueck_pct − zuzahlung_frueh) : 0       // 20 %
@@ -424,12 +424,12 @@ Ergebnis = max(0, P − K_frueh − K_mittag − K_abend)
 - Basis ist immer der **24-h-Satz** des für den Tag maßgeblichen Landes, auch am An-/Abreisetag und unabhängig davon, in welchem Land die Mahlzeit gestellt wurde (§ 9 Abs. 4a S. 8 EStG; BMF-Auslandsschreiben 2026 S. 2; [R] 1.4).
 - Zuzahlung des Nutzers mindert den Kürzungsbetrag der jeweiligen Mahlzeit (§ 9 Abs. 4a S. 10 EStG).
 - Ob die Mahlzeit tatsächlich eingenommen wurde, ist unerheblich (BMF-RK 2020 Rz. 75; BFH VI R 16/18). Snacks (Chips, Riegel, unbelegte Backwaren) sind keine Mahlzeit (Rz. 74). Diese Hinweise stehen in der UI am Häkchen.
-- *P* = 0 und Mahlzeit gestellt → keine Kürzung, aber Hinweis `H-SACHBEZUG` mit den Sachbezugswerten des Jahres (z. B. 2026: Frühstück 2,37 €, Mittag/Abend 4,57 €), weil die Mahlzeit dann Arbeitslohn sein kann ([R] 1.4).
+- _P_ = 0 und Mahlzeit gestellt → keine Kürzung, aber Hinweis `H-SACHBEZUG` mit den Sachbezugswerten des Jahres (z. B. 2026: Frühstück 2,37 €, Mittag/Abend 4,57 €), weil die Mahlzeit dann Arbeitslohn sein kann ([R] 1.4).
 
 **Automatische Vorschläge** (gesetzt mit `mahlzeit_quelle`, vom Nutzer abwählbar, Abwahl protokolliert):
 
 | Auslöser | Vorschlag | Begründung |
-|---|---|---|
+| --- | --- | --- |
 | Übernachtungs-Ausgabe mit `fruehstueck_enthalten` | Frühstück gestellt am Folgetag jeder abgedeckten Nacht | BMF-RK 2020 Bsp. 65/66: erstattet der Arbeitgeber das Frühstück mit, wird die Pauschale gekürzt ([R] 4) |
 | Ausgabe Kostenart Verpflegung mit `mahlzeit` | diese Mahlzeit gestellt am Reisetag des Ausgabedatums | Erstattet der Arbeitgeber die Mahlzeit und lautet die Rechnung auf ihn oder ist sie eine Kleinbetragsrechnung, ist sie vom Arbeitgeber veranlasst (BMF-RK 2020 Rz. 64)¹ |
 | Ausgabe Kostenart Bewirtung | Mahlzeit (Mittag/Abend nach Uhrzeit, wählbar) gestellt | Kürzung entfällt nur, wenn der Arbeitnehmer die Mahlzeit selbst veranlasst **und** trägt (BMF-RK 2020 Rz. 75)¹ |
@@ -442,7 +442,7 @@ Ergebnis = max(0, P − K_frueh − K_mittag − K_abend)
 Je Nacht (Feld `unterkunft` des Reisetags davor):
 
 | `unterkunft` | Erstattung | Regel |
-|---|---|---|
+| --- | --- | --- |
 | `beleg` | tatsächliche Kosten = Σ `betrag_eur` der Übernachtungs-Ausgaben, die diese Nacht abdecken (inkl. City-Tax, Kreditkartengebühr bei Fremdwährung) | § 9 Abs. 1 S. 3 Nr. 5a EStG; BMF-RK 2020 Rz. 117 ([R] 4) |
 | `pauschale` | **[K≠]** Übernachtungspauschale: Inland `uebernachtung_inland_pauschale` (20 €), Ausland `uebernachtung` des Landes/Orts, an dem übernachtet wird (Ort nach 4.6 Regel 4) | R 9.7 Abs. 3 LStR; BMF-RK 2020 Rz. 128 ([R] 2.2, 4) – nur Arbeitgebererstattung |
 | `gestellt`, `verkehrsmittel`, `keine` | 0 | Pauschale ausgeschlossen, wenn die Unterkunft gestellt wurde |
@@ -483,7 +483,7 @@ Je Nacht (Feld `unterkunft` des Reisetags davor):
 ### 4.12 Bewirtung
 
 - Erstattung: 100 % von `betrag_eur` (Auslagenersatz). Trinkgeld als eigener Steueranteil mit Satz 0, maschinell auf der Rechnung oder vom Empfänger quittiert ([R] 6.6).
-- Ausweis im Export (für die Buchhaltung des Arbeitgebers): Bemessungsgrundlage *B* = Σ `netto_eur` (DE-Anteile) + Σ `brutto_eur` (ausländische und 0-%-Anteile); **abziehbar** = round(*B* × `bewirtung_abzug_pct`) = 70 %, **nicht abziehbar** = *B* − abziehbar; **Vorsteuer** = Σ `steuer_eur` der DE-Anteile zu 100 % (§ 4 Abs. 5 S. 1 Nr. 2 EStG; § 15 Abs. 1a S. 2 UStG; [R] 6.4, 6.6).
+- Ausweis im Export (für die Buchhaltung des Arbeitgebers): Bemessungsgrundlage _B_ = Σ `netto_eur` (DE-Anteile) + Σ `brutto_eur` (ausländische und 0-%-Anteile); **abziehbar** = round(_B_ × `bewirtung_abzug_pct`) = 70 %, **nicht abziehbar** = _B_ − abziehbar; **Vorsteuer** = Σ `steuer_eur` der DE-Anteile zu 100 % (§ 4 Abs. 5 S. 1 Nr. 2 EStG; § 15 Abs. 1a S. 2 UStG; [R] 6.4, 6.6).
 - Pflichtangaben (Blocker B03, wenn fehlend): Anlass, mindestens ein Teilnehmer außer dem Nutzer, Ort, Tag (= `datum`), Höhe; bei > 250 € Name des Bewirtenden; Bestätigung des Nutzers (`bestaetigt_am` = digitaler Eigenbeleg mit elektronisch aufgezeichnetem Zeitpunkt, verknüpft mit der Rechnung, BMF 19.11.2025 Rn. 19–22). Checkbox „maschinell erstellter, TSE-gesicherter Beleg“ (Rn. 13–15) → fehlt sie, Warnung W06.
 - Die eigene Mahlzeit des Nutzers wird als gestellt vorgeschlagen (4.7).
 - Bewirtung ausschließlich eigener Arbeitnehmer ist keine Bewirtung im Sinne dieser Regel ([R] 6.6) → UI-Hinweis.
@@ -494,12 +494,12 @@ Tatsächliche Kosten mit Beleg (Gepäck, berufliche Telekommunikation, Parken, M
 
 ### 4.14 Dreimonatsfrist (Warnung, kein Automatismus)
 
-Q14/Q26 verlangen eine Warnung, keine automatische Kürzung. Heuristik je Tätigkeitsstätte *s* ([R] 1.3):
+Q14/Q26 verlangen eine Warnung, keine automatische Kürzung. Heuristik je Tätigkeitsstätte _s_ ([R] 1.3):
 
-1. Alle Reisetage, an denen *s* aufgesucht wurde, chronologisch.
+1. Alle Reisetage, an denen _s_ aufgesucht wurde, chronologisch.
 2. Aufteilen in **Serien**: Eine Lücke von mindestens 28 Tagen beendet eine Serie (Neubeginn nach vier Wochen Unterbrechung, § 9 Abs. 4a S. 7 EStG).
-3. Innerhalb einer Serie beginnt die Frist in der ersten ISO-Woche mit ≥ 3 Tagen an *s* (BMF-RK 2020 Rz. 55); Fristende = Fristbeginn + 3 Monate − 1 Tag.
-4. Reisetage nach Fristende in derselben Serie, in Wochen mit ≥ 3 Tagen an *s*, erhalten Warnung W03 mit Aktion „Verpflegungspauschale für diese Reisetage ausschließen“ (setzt `verpflegung_ausgeschlossen` mit Grund, protokolliert).
+3. Innerhalb einer Serie beginnt die Frist in der ersten ISO-Woche mit ≥ 3 Tagen an _s_ (BMF-RK 2020 Rz. 55); Fristende = Fristbeginn + 3 Monate − 1 Tag.
+4. Reisetage nach Fristende in derselben Serie, in Wochen mit ≥ 3 Tagen an _s_, erhalten Warnung W03 mit Aktion „Verpflegungspauschale für diese Reisetage ausschließen“ (setzt `verpflegung_ausgeschlossen` mit Grund, protokolliert).
 5. Nicht angewendet für Ortswechsel mit Verkehrsmittel Flug/Schiff als Tätigkeitsort (nicht ortsfest, Rz. 56) – v1: Tätigkeitsstätten sind immer ortsfest.
 
 ### 4.15 Erstattungsbetrag, Vorschuss, Auszahlung
@@ -519,7 +519,7 @@ Auszahlungsbetrag < 0  → „Rückzahlung an Arbeitgeber“
 Ablage: `internal/berechnung/testdata/golden/G??-*.yaml` (Eingabe: Reise(n), Ortswechsel, Reisetag-Angaben, Ausgaben, Fahrten, Satztabellen-Jahre aus den ausgelieferten Daten, bei G16 Kurs-Fixture; Erwartung: Reisetage mit Tagesart, Land, Pauschale, Kürzungen, Ergebnis, Summen je Kostenart, Hinweis-/Warnungscodes). Der Test läuft in `go test` und wird bei Änderungen am Kern im CI erzwungen. Alle Beträge in EUR; Zeiten Europe/Berlin, sofern nicht anders angegeben.
 
 | ID | Fall | Eingabe (Kurzform) | Erwartung | Quelle |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | G01 | Eintägig Inland mit Mittagessen | Di 10.03.2026 07:00–17:30, Mittag gestellt | 14,00 − 11,20 = **2,80** | BMF-RK 2020 Rz. 73 ff. ([R] 1.4) |
 | G02 | Eintägig ≤ 8 h | 10.03.2026 08:00–15:45 (7,75 h), Mittag gestellt | **0,00**; Hinweis H-SACHBEZUG 4,57 € | [R] 1.1, 1.4 |
 | G03 | Mehrtägig Inland, Hotel inkl. Frühstück | Mo 13.04.2026 08:00 – Mi 15.04.2026 18:00; Hotel 178,00 (2 Nächte, Frühstück enthalten, 7 %) | Mo 14,00 · Di 28,00 − 5,60 = 22,40 · Mi 14,00 − 5,60 = 8,40 → Verpflegung **44,80**, Übernachtung **178,00**, gesamt **222,80** (= Herausrechnen: 166,80 + 56,00) | BMF-RK 2020 Bsp. 65/66 ([R] 4) |
@@ -536,7 +536,7 @@ Ablage: `internal/berechnung/testdata/golden/G??-*.yaml` (Eingabe: Reise(n), Ort
 | G14 | Kilometerpauschale | Pkw 142 km hin und zurück (2026); Motorrad 38 km einfach | 284 × 0,30 = 85,20; 38 × 0,20 = 7,60 → **92,80** | [R] 3.1 |
 | G15 | Hotelbeleg mit mehreren Sätzen, ein Beleg für zwei Ausgaben (2026) | Beleg 133,17: Ausgabe Übernachtung 121,27 = 7 % 117,70 (Übernachtung 107,00 + Frühstücksspeisen 10,70) + 19 % 3,57 (Getränke); Ausgabe Reisenebenkosten Parken 11,90 (19 %); Frühstück enthalten | 7 %: netto 110,00 / USt 7,70; 19 %: 3,00/0,57 und 10,00/1,90; Vorsteuer **10,17**; Frühstück am Folgetag gestellt | [R] 6.1 |
 | G16 | Fremdwährung | Taxi New York USD 48,50, Beleg Sa 12.09.2026; Fixture EZB Fr 11.09.: 1,1650 | Kurs vom 11.09., **41,63 €**; Variante `belastung` 42,37 € → Kurs **1,144678** dokumentiert | GoBD Rz. 77, [R] 8 |
-| G17 | Bewirtung | Do 12.03.2026 (Zwischentag Inland): Speisen 160,50 (7 %), Getränke 59,50 (19 %), Trinkgeld 18,00 | Erstattung **238,00**; *B* 218,00 → abziehbar **152,60**, nicht abziehbar **65,40**; Vorsteuer **20,00**; Abend gestellt → Tag 28,00 − 11,20 = **16,80** | [R] 6.6; BMF-RK 2020 Rz. 75 |
+| G17 | Bewirtung | Do 12.03.2026 (Zwischentag Inland): Speisen 160,50 (7 %), Getränke 59,50 (19 %), Trinkgeld 18,00 | Erstattung **238,00**; _B_ 218,00 → abziehbar **152,60**, nicht abziehbar **65,40**; Vorsteuer **20,00**; Abend gestellt → Tag 28,00 − 11,20 = **16,80** | [R] 6.6; BMF-RK 2020 Rz. 75 |
 | G18 | Jahreswechsel | Di 30.12.2025 – Fr 02.01.2026 Amsterdam (Ankunft 30.12. 18:00) | 30.12. 32 (2025) · 31.12. 47 (2025) · 01.01. 58 (2026) · 02.01. 39 (2026) → **176,00** | Satztabelle nach Datum ([R] 2.4, 9.3) |
 | G19 | Vorschuss | Erstattungsbetrag 412,40; Vorschuss 300,00 bzw. 500,00 | Auszahlung **112,40** bzw. **−87,60** (Rückzahlung) | Glossar „Vorschuss“ |
 | G20 | Dreimonatsfrist | Tätigkeitsstätte „Kunde X“, ab Mo 05.01.2026 jede Woche Mo–Mi; keine Unterbrechung | Fristende 04.04.2026; Reisetage ab Mo 06.04. → **W03**; nach 4 Wochen Pause neue Frist | § 9 Abs. 4a S. 6–7 EStG; BMF-RK 2020 Rz. 54–55 |
@@ -545,7 +545,7 @@ Ergänzend: Property-Tests (Go `testing/quick` bzw. Fuzzing) für Invarianten I4
 
 ## 5. Belege
 
-### 5.1 Pipeline (ADR 0005, Status *proposed*)
+### 5.1 Pipeline (ADR 0005, Status _proposed_)
 
 ```
 Foto (Kamera/Datei) ─► [Browser] Ecken erkennen (lazy geladenes Modul) ─► Nutzer korrigiert Ecken (immer angeboten)
@@ -562,7 +562,7 @@ PDF / XML (E-Rechnung) / ZUGFeRD: unverändert als `original` (Empfangsformat), 
 Quellen und Messwerte: [K] TL;DR, 3, 5. Das rohe Kamerabild verlässt das Gerät nie; die Erfassungs-JPEG wird nach Bestätigung **30 Tage** aufbewahrt (Karenz, falls die Normalisierung etwas verschluckt hat, [K] 5) und dann gelöscht (Job, protokolliert). Ableitungen (`vorschau`, `export_jpeg`) sind jederzeit aus dem Archivbeleg neu erzeugbar und nicht GoBD-relevant.
 
 | Schritt | Ort | Umsetzung |
-|---|---|---|
+| --- | --- | --- |
 | Aufnahme | Browser | `<input type="file" accept="image/*" capture="environment">` (iOS + Android), mehrere Seiten je Beleg (Vorder-/Rückseite, [K] 6); Desktop: Datei-Dialog, Drag & Drop, Einfügen aus Zwischenablage |
 | Eckenerkennung | Browser, Web Worker | eigene leichte Implementierung (verkleinern, Helligkeit − Sättigung, Otsu, größte Kontur, Viereck; wenige KB). OpenCV.js nur, wenn der Praxistest das verlangt ([K] 5.1, 6). Wird erst beim Öffnen der Kamera geladen |
 | Ecken-Editor | Browser | vier ziehbare Griffe mit Lupe; Profilwahl bon/A4 (automatisch nach Seitenverhältnis > 1,6, umschaltbar) |
@@ -629,7 +629,7 @@ RK-2026-007_v1/
 **CSV-Format**: UTF-8 mit BOM, Trennzeichen `;`, Dezimalkomma, Datum ISO `JJJJ-MM-TT`, Beträge in Euro mit zwei Nachkommastellen, Kopfzeile mit den folgenden Spaltennamen (stabil, versioniert über `LIESMICH.txt`). Englische Exporte behalten die Spaltennamen (maschinenlesbar), übersetzen aber Werte wie Kostenart nicht.
 
 | Datei | Spalten |
-|---|---|
+| --- | --- |
 | `ausgaben.csv` | `abrechnungsnummer; reise_nr; reise_anlass; projekt; ausgabe_id; belegnummern; datum; kostenart; verkehrsmittel; leistender; beschreibung; rechnungsart; rechnung_auf_arbeitgeber; waehrung; betrag_beleg; kurs; kurs_quelle; kurs_datum; betrag_eur; anteil_nr; ust_land; ust_satz; netto_eur; ust_eur; brutto_eur; vorsteuerfaehig; bewirtung_abziehbar_eur; bewirtung_nicht_abziehbar_eur` |
 | `reisetage.csv` | `abrechnungsnummer; reise_nr; datum; tagesart; abwesenheit_std; land_iso; satzort; satz_24h_eur; pauschale_eur; kuerzung_fruehstueck_eur; kuerzung_mittag_eur; kuerzung_abend_eur; zuzahlungen_eur; verpflegung_eur; unterkunft; uebernachtungspauschale_eur; regel_ids; hinweise` |
 | `fahrten.csv` | `abrechnungsnummer; reise_nr; datum; start; ziel; zweck; fahrzeugart; km; hin_und_zurueck; km_gesamt; satz_eur_km; betrag_eur` |
@@ -667,7 +667,7 @@ RK-2026-007_v1/
 Warnungen sind berechnet (nicht gespeichert), erscheinen an Reise/Ausgabe, auf der Startseite („Zu erledigen“) und in der Prüfung vor dem Einreichen. Blocker verhindern das Einreichen; Warnungen müssen quittiert werden und erscheinen dann im Export.
 
 | Code | Art | Bedingung | Text (de, gekürzt) |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | B01 | Blocker | Beleg einer Ausgabe nicht bestätigt (`zur_bestaetigung`/`in_aufbereitung`/`fehlgeschlagen`) | „Beleg 2026-0042 ist noch nicht bestätigt.“ |
 | B02 | Blocker | Steueranteile ergeben nicht den Betrag (I5) | „Summe der Steueranteile ≠ Betrag.“ |
 | B03 | Blocker | Bewirtung ohne Pflichtangaben oder Bestätigung (4.12) | „Bewirtung: Anlass/Teilnehmer/Bestätigung fehlt.“ |
@@ -699,7 +699,7 @@ Warnungen sind berechnet (nicht gespeichert), erscheinen an Reise/Ausgabe, auf d
 - Asynchrone Vorgänge (Belegaufbereitung, KI, Export) liefern `202` mit Job-Status am Objekt; die SPA pollt (1 s, exponentiell bis 5 s). Server-Sent Events sind optional (Später).
 
 | Ressource | Endpunkte |
-|---|---|
+| --- | --- |
 | Auth | `GET /auth/config` (aktive Methoden, OIDC-Button-Text) · `POST /auth/login` · `POST /auth/logout` · `GET /auth/oidc/start` · `GET /auth/oidc/callback` · `POST /auth/setup` (Ersteinrichtung) · `GET /auth/me` · `PUT /auth/passwort` |
 | Profil | `GET /me` · `PATCH /me` (Anzeigename, Sprache, Personalnummer, `ki_erlaubt`) · `GET /me/sessions` · `DELETE /me/sessions/{id}` |
 | Arbeitgeber | `GET/POST /arbeitgeber` · `GET/PATCH /arbeitgeber/{id}` · `POST /arbeitgeber/{id}/logo` |
@@ -789,7 +789,7 @@ Append-only-Tabelle mit Hash-Kette (3.2), in derselben Transaktion wie die Ände
 Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich als `<NAME>_FILE` (Pfad, z. B. Docker Secret). Ungültige Kombinationen beenden den Start mit klarer Fehlermeldung (z. B. alle Login-Methoden aus, S3 ohne EU-Standort). `reisekosten config check` prüft eine Konfiguration ohne Start.
 
 | Variable | Default | Beschreibung |
-|---|---|---|
+| --- | --- | --- |
 | **Allgemein** | | |
 | `APP_BASE_URL` | – (**Pflicht**) | Öffentliche URL, z. B. `https://reisekosten.example.de`; OIDC-Redirect, CSRF-Origin, Links |
 | `LISTEN_ADDR` | `:8080` | HTTP-Listen-Adresse (TLS terminiert der Reverse Proxy) |
@@ -899,7 +899,7 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 
 ### 12.4 Aufbewahrung und Löschung
 
-- **Frist**: Belege und Exporte einer Abrechnung werden mindestens bis zum 31.12. des Jahres *J* + `aufbewahrung_jahre` (8, [R] 7.1) aufbewahrt, wobei *J* = späteres Jahr aus Belegdatum und Einreichung (Fristbeginn Ende des Kalenderjahres, § 147 Abs. 4 AO). Exporte und Protokoll sind Buchungsbelege des Arbeitgebers. Die Verfahrensdokumentation (Repo) hat 10 Jahre ([R] 7.2).
+- **Frist**: Belege und Exporte einer Abrechnung werden mindestens bis zum 31.12. des Jahres _J_ + `aufbewahrung_jahre` (8, [R] 7.1) aufbewahrt, wobei _J_ = späteres Jahr aus Belegdatum und Einreichung (Fristbeginn Ende des Kalenderjahres, § 147 Abs. 4 AO). Exporte und Protokoll sind Buchungsbelege des Arbeitgebers. Die Verfahrensdokumentation (Repo) hat 10 Jahre ([R] 7.2).
 - Nie eingereichte Reisen/Belege: gleiche Frist ab Belegdatum (konservativ).
 - **Keine automatische Löschung**: Ein monatlicher Job erstellt den Fristen-Bericht; ein Admin löscht nach Bestätigung des Hinweises auf Ablaufhemmung (§ 147 Abs. 3 S. 5 AO) für Daten des eigenen Kontos bzw. auf ausdrückliche Anforderung eines Nutzers. Gelöscht werden Dateien und Inhalte; Metadaten (Belegnummer, SHA-256, Löschzeitpunkt, Grund) bleiben im Protokoll.
 - **Deaktivierte Nutzer**: Daten bleiben bis Fristablauf; danach Löschung über denselben Prozess (DSGVO-Löschpflicht nach Ablauf der Aufbewahrung, [R] 9.16).
@@ -926,7 +926,7 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 - **Terminologie de → en** (verbindlich für die englische UI):
 
 | Deutsch (Glossar) | Englisch | Deutsch (Glossar) | Englisch |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Reise | Business trip | Abrechnung | Expense claim |
 | Reisetag | Travel day | Abrechnungszeitraum | Claim period |
 | Ausgabe | Expense | Abrechnungsstatus Entwurf/Eingereicht/Bezahlt | Draft/Submitted/Paid |
@@ -947,7 +947,7 @@ Alle Einstellungen per ENV (Q21/Q30). Jede geheime Variable gibt es zusätzlich 
 Versionen aus [S] 5, ergänzt um am 08.10.2026 abgefragte Pakete (†). Renovate hält sie aktuell (19); beim Scaffolding gilt jeweils die dann neueste stabile Version.
 
 | Bereich | Komponente | Version |
-|---|---|---|
+| --- | --- | --- |
 | Backend | Go | 1.27.2 (Image `golang:1.27.2-trixie`) |
 | | HTTP | `net/http` ServeMux (Go-Muster-Routing), `http.CrossOriginProtection`, `log/slog` |
 | | SQLite-Treiber | `modernc.org/sqlite` v1.60.1 (cgo-frei, ADR 0003) |
@@ -977,7 +977,7 @@ Versionen aus [S] 5, ergänzt um am 08.10.2026 abgefragte Pakete (†). Renovate
 | | PDF/A-Validierung | veraPDF 1.30.2 † (CI-Job) |
 | Container | Basis | `gcr.io/distroless/static-debian13:nonroot` (per Digest gepinnt) |
 | | Backup | Litestream 0.5.17 (`litestream/litestream:0.5.17-scratch`) |
-| CI | Actions | `actions/checkout` v7.0.1, `actions/setup-go` v7.0.0, `actions/setup-node` v7.1.0, `pnpm/action-setup` v6.1.0, `actions/cache` v6.1.0, `actions/upload-artifact` v7.0.2 †, `actions/setup-java` v6.0.1 †, `dorny/paths-filter` v4.0.3, `golangci/golangci-lint-action` v9.3.0, `docker/setup-buildx-action` v4.4.1, `docker/build-push-action` v7.4.0, `docker/metadata-action` v6.2.0, `docker/login-action` v4.6.0, `reproducible-containers/buildkit-cache-dance` v3.4.0 †, `sigstore/cosign-installer` v4.1.2, `actions/attest-build-provenance` v4.2.2, `anchore/sbom-action` v0.24.3 †, `aquasecurity/trivy-action` v0.36.0 †, `github/codeql-action` v4 (Bundle 2.27.2) †, `googleapis/release-please-action` v5.0.0 † – alle per SHA gepinnt (Renovate) |
+| CI | Actions | `actions/checkout` v7.0.1, `actions/setup-go` v7.0.0, `actions/setup-node` v7.1.0, `pnpm/action-setup` v6.1.0, `actions/cache` v6.1.0, `actions/upload-artifact` v7.0.2 †, `actions/setup-java` v6.0.1 †, `dorny/paths-filter` v4.0.3, `golangci/golangci-lint-action` v9.3.0, `docker/setup-buildx-action` v4.4.1, `docker/build-push-action` v7.4.0, `docker/metadata-action` v6.2.0, `docker/login-action` v4.6.0, `sigstore/cosign-installer` v4.1.2, `actions/attest-build-provenance` v4.2.2, `anchore/sbom-action` v0.24.3 †, `aquasecurity/trivy-action` v0.36.0 †, `github/codeql-action` v4 (Bundle 2.27.2) †, `googleapis/release-please-action` v5.0.0 † – alle per SHA gepinnt (Renovate) |
 
 **Nicht** verwendet: ESLint/Prettier (Q24), Bun (Q33), SvelteKit (ADR 0004; `@vite-pwa/sveltekit` unterstützt Kit 3 nicht, [S] 1.4), QEMU (17), Docker Hub, MkDocs.
 
@@ -1051,8 +1051,8 @@ COPY web/ web/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --offline --frozen-lockfile --filter web && pnpm --filter web build
 
-# ---- Go: Cross-Compile ohne Emulation ----
-FROM --platform=$BUILDPLATFORM golang:1.27.2-trixie@sha256:<digest> AS build
+# ---- Go: Cross-Compile ohne Emulation, oder als vorgebautes CI-Artefakt ----
+FROM --platform=$BUILDPLATFORM golang:1.27.2-trixie@sha256:<digest> AS gobin
 ARG TARGETOS TARGETARCH VERSION=dev COMMIT=unknown
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -1061,20 +1061,19 @@ COPY . .
 COPY --from=web /src/web/dist internal/webui/dist
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -tags nodynamic -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
-      -o /out/reisekosten ./cmd/reisekosten \
- && mkdir -p /out/data
+    VERSION="$VERSION" COMMIT="$COMMIT" GOOS="$TARGETOS" GOARCH="$TARGETARCH" OUT="/$TARGETARCH" \
+    ./scripts/build-binary.sh
 
 # ---- Typst: statisches Binary aus dem offiziellen Multi-Arch-Image ([S] 4.4) ----
 FROM ghcr.io/typst/typst:0.15.1@sha256:<digest> AS typst
 
 # ---- Laufzeit: nur COPY, kein RUN → keine Emulation für arm64 ----
 FROM gcr.io/distroless/static-debian13:nonroot@sha256:<digest>
+ARG TARGETARCH
 COPY --from=typst /bin/typst /usr/local/bin/typst
 COPY assets/fonts/ /usr/share/fonts/app/
-COPY --from=build /out/reisekosten /usr/local/bin/reisekosten
-COPY --from=build --chown=65532:65532 /out/data /data
+COPY --from=gobin /${TARGETARCH}/reisekosten /usr/local/bin/reisekosten
+COPY --from=gobin --chown=65532:65532 /${TARGETARCH}/data /data
 USER 65532:65532
 ENV DATA_DIR=/data TYPST_PATH=/usr/local/bin/typst
 VOLUME ["/data"]
@@ -1085,8 +1084,9 @@ CMD ["serve"]
 ```
 
 - Multi-Arch Pflicht (Q23): `docker buildx build --platform linux/amd64,linux/arm64` auf **einem** amd64-Runner; SPA einmal, Go je Arch per Cross-Compile, Typst/distroless per `COPY` der passenden Arch ([S] 4.1). Kein QEMU, keine nativen ARM-Runner.
-- Layer-Cache `type=gha` (`cache-from`/`cache-to`, `mode=max`); die `RUN --mount=type=cache`-Verzeichnisse (pnpm-Store, Go-Modul- und Build-Cache) werden mit `reproducible-containers/buildkit-cache-dance` zwischen CI-Läufen in den Actions-Cache gesichert ([S] 4.1).
-- `.dockerignore`: `.git`, `node_modules`, `**/dist`, `docs/research`, `e2e`, Testartefakte.
+- **Vorgebaute Binaries statt Compiler im Build**: CI und Release legen je Arch ein Binary unter `<arch>/reisekosten` (samt leerem `<arch>/data`) ab und übergeben das Verzeichnis als `--build-context gobin=<dir>`. Die Laufzeitstufe wählt ihres über `ARG TARGETARCH` in `COPY` aus, deshalb läuft im Multi-Arch-Build kein Compiler und kein `RUN`, und ein Arch-Binary kann nicht in der falschen Plattform landen. Ohne diesen Kontext kompiliert die `gobin`-Stufe selbst (lokal, Compose), damit ein Quellbaum genügt.
+- `scripts/build-binary.sh` ist die einzige Quelle für Build-Tags, `-trimpath` und `-ldflags`; die `gobin`-Stufe, der CI-Job `go-build` und der Release rufen es mit `VERSION`/`COMMIT`/`GOOS`/`GOARCH`/`OUT` auf. Der Image-Build der CI braucht deshalb keinen `type=gha`-Layer-Cache und kein `buildkit-cache-dance`; die `RUN --mount=type=cache`-Verzeichnisse bleiben auf den lokalen Pfad beschränkt.
+- `.dockerignore`: `.git`, `node_modules`, `**/dist`, `docs/research`, `e2e`, Testartefakte; `scripts/` ist ausgenommen, mit Ausnahme von `scripts/build-binary.sh`, das der lokale Build-Pfad aufruft.
 - Migrationen laufen beim `serve`-Start (idempotent, mit Sperre); `reisekosten migrate` separat möglich.
 - `/tmp` muss beschreibbar sein (Typst-Arbeitsverzeichnis, Uploads) → `tmpfs` bei read-only Root-FS.
 
@@ -1163,20 +1163,20 @@ Optionale Variablen (z. B. `TRUSTED_PROXIES`, `OIDC_*`) kommen über `env_file`;
 
 ## 18. CI/CD (GitHub Actions)
 
-Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-Laufzeit ≈ 3 Minuten** (Wanduhr) bei warmem Cache; nie ein ungetestetes Image veröffentlichen.
+Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-Laufzeit ≈ 5 Minuten** (Wanduhr) bei warmem Cache; nie ein ungetestetes Image veröffentlichen. Kritischer Pfad: `web` → `go-build` → `image` → `e2e`.
 
 ### 18.1 Grundregeln
 
 - Alle Actions per Commit-SHA gepinnt (Renovate `helpers:pinGitHubActionDigests`), minimale `permissions` je Workflow/Job (Default `contents: read`).
-- **Concurrency**: `group: ci-${{ inputs.caller || github.event_name }}-${{ github.ref }}`, `cancel-in-progress: ${{ inputs.caller == '' }}` → ein neuer Push bricht nur direkte Läufe (PR, `main`, `workflow_dispatch`) ab; ein per `workflow_call` gestarteter Lauf läuft zu Ende. Der Gruppenname trennt Aufrufer und Event, deshalb blockiert ein Release-Lauf seinen Aufrufer nicht.
+- **Concurrency**: `group: ci-${{ github.event_name }}-${{ github.ref }}`, `cancel-in-progress: true` → ein neuer Push bricht den vorherigen Lauf auf demselben Ref ab. Der Event im Gruppennamen trennt einen manuellen Lauf von einem Push auf `main`, damit `workflow_dispatch` den Push-Lauf nicht abbricht.
 - **Jeder Job hat `timeout-minutes`** (Werte in 18.2).
-- **Pfadfilter** mit `dorny/paths-filter` im Job `changes` statt `paths-ignore` am Trigger: der Workflow läuft immer, überflüssige Jobs werden übersprungen, und der Aggregator `ci-ok` ist trotzdem grün (sonst blockiert ein fehlender Pflicht-Check reine Doku-PRs). Auf `main`, bei `workflow_dispatch` und `workflow_call` laufen alle Jobs.
-- **Ein Dockerfile** für lokal, CI und Release; CI und Release teilen den `type=gha`-Cache-Scope, der Release-Build ist daher fast nur Cache-Treffer.
+- **Pfadfilter** mit `dorny/paths-filter` im Job `changes` statt `paths-ignore` am Trigger: der Workflow läuft immer, überflüssige Jobs werden übersprungen, und der Aggregator `ci-ok` ist trotzdem grün (sonst blockiert ein fehlender Pflicht-Check reine Doku-PRs). Pull Requests vergleichen gegen den Merge-Base, Pushes gegen ihren eigenen Commit-Bereich (`fetch-depth: 0`); ein reiner Doku- oder CI-Commit auf `main` startet deshalb weder Go-Compile noch Image-Build noch E2E-Shards. Bei `workflow_dispatch` laufen alle Jobs.
+- **Ein Dockerfile** für lokal, CI und Release. CI und Release kompilieren je Plattform _außerhalb_ von BuildKit (Job `go-build` bzw. Release-Job) und geben die Binaries als `--build-context gobin` hinein; der Image-Build selbst ist reines `COPY`. Der Release baut die Binaries mit `VERSION=$RELEASE_TAG` neu, deshalb trägt das Release-Image seine Version und nicht die des `edge`-Laufs.
 - Branch-Schutz/Ruleset auf `main`: PR Pflicht, Squash-Merge, Pflicht-Check **„CI ok“**, PR-Titel im Conventional-Commits-Format (Job `pr-titel`, Shell-Regex, nur bei PRs), keine Force-Pushes.
 
 ### 18.2 `ci.yml`
 
-Trigger: `pull_request`, `push` auf `main`, `workflow_dispatch`, `workflow_call`.
+Trigger: `pull_request`, `push` auf `main`, `workflow_dispatch`.
 
 ```
 changes ─┬─► go-lint ───────────┐
@@ -1184,28 +1184,28 @@ changes ─┬─► go-lint ───────────┐
          ├─► go-test ───────────┤
          ├─► go-vuln ───────────┤
          ├─► codegen ───────────┤
-         ├─► web ───────────────┤
          ├─► backup ────────────┤
          ├─► actionlint ────────┤
          ├─► pr-titel ──────────┤
-         └─► image ─┬─► smoke ──┤
-                    ├─► e2e ────┤
-                    ├─► pdfa ───┤
-                    └─► scan ───┴─► ci-ok ─► publish-edge (nur Push auf `main`)
+         └─► web ─► go-build ─► image ─┬─► smoke ──┤
+                                       ├─► e2e ─────┤
+                                       ├─► pdfa ────┤
+                                       └─► scan ────┴─► ci-ok ─► publish-edge (nur Push auf `main`)
 ```
 
 `ci-ok` läuft mit `if: always()` und besteht, wenn jedes Job-Ergebnis in `needs` `success` oder `skipped` ist.
 
 | Job | Läuft wenn | Inhalt | Timeout |
-|---|---|---|---|
-| `changes` | immer | Filter mit `dorny/paths-filter`, auf Nicht-PR-Events alle `true`: `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `tools/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`, `tools/**`) | 3 |
+| --- | --- | --- | --- |
+| `changes` | immer | Filter mit `dorny/paths-filter`: bei `workflow_dispatch` alle `true`, sonst der Diff des PRs bzw. des Pushes: `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `tools/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`, `tools/**`) | 3 |
 | `go-lint` | go | `golangci-lint-action` (v2.14.0) | 10 |
 | `go-test` | go | Typst und poppler für die Golden-Tests (4.16), MinIO für die Storage-Contract-Tests (3.6), `go test -race -shuffle=on -coverprofile ./...` | 20 |
 | `go-vuln` | go | `govulncheck` (v1.8.0, im Actions-Cache) über alle Pakete | 10 |
 | `codegen` | go | `pnpm install --frozen-lockfile`, `scripts/codegen-check.sh` (sqlc, oapi-codegen, openapi-typescript → `git diff --exit-code`), `scripts/postgres-probe.sh` (sqlc-Engine `postgresql`, 3.6) | 10 |
 | `toolchain-parity` | toolchain | `scripts/mise-check.sh`: `mise.toml` gegen die Dateien, aus denen CI ihre Versionen liest | 5 |
-| `web` | web | `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 12 |
-| `image` | image | `setup-buildx`, `buildkit-cache-dance` (pnpm-Store, Go-Caches), `scripts/compose-check.sh`, **ein** Multi-Arch-Build (`linux/amd64,linux/arm64`) als OCI-Archiv, amd64 per `skopeo` in den Daemon (Commit-Label-Prüfung), Größenbericht, amd64 als Artefakt | 25 |
+| `web` | web, go oder image | `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich, `vitest run --coverage`, `vite build` + Bundle-Budget (13), danach `web/dist` als Artefakt für `go-build` | 12 |
+| `go-build` | go oder image | SPA-Artefakt in `internal/webui/dist`, `scripts/build-binary.sh` für `linux/amd64` und `linux/arm64` (parallel, Go-Cache von `setup-go`), beide Arch-Verzeichnisse als `gobin`-Artefakt | 15 |
+| `image` | image | `setup-buildx`, `scripts/compose-check.sh`, **ein** Multi-Arch-Build (`linux/amd64,linux/arm64`) aus dem `gobin`-Kontext als OCI-Archiv, amd64 per `skopeo` in den Daemon (Version-/Commit-Prüfung), Größenbericht, amd64 als Artefakt | 15 |
 | `smoke` | `image` erfolgreich | amd64-Artefakt laden, Container-Smoke-Test (18.5) | 8 |
 | `e2e` | `image` erfolgreich | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go-lint`/`web` | 25 |
 | `pdfa` | `image` erfolgreich | Validator-Job (18.6) | 20 |
@@ -1214,9 +1214,9 @@ changes ─┬─► go-lint ───────────┐
 | `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 3 |
 | `actionlint` | ci | `actionlint` (v1.7.12, geprüfte Prüfsumme) über alle Workflows, dazu `go test ./scripts/workflowperm ./scripts/ghrepo` | 5 |
 | `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 3 |
-| `publish-edge` | nur Push auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert und attestiert wie ein Release, danach Prüfung, dass `:edge` auf den gebauten Digest zeigt | 15 |
+| `publish-edge` | Push auf `main`, nach `ci-ok`, mit `gobin`-Artefakt | Multi-Arch-Push `:edge` + `:sha-<kurz>` aus demselben `gobin`-Kontext (kein zweiter Compile), signiert und attestiert wie ein Release, danach Prüfung, dass `:edge` auf den gebauten Digest zeigt | 15 |
 
-Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go-test` (~120 s) und `web` (~90 s) → ≈ 3 min.
+Laufzeitbudget (warm): `web` ~60 s → `go-build` ~60–90 s → `image` ~20–40 s → `e2e` ~90 s parallel zu `pdfa`/`scan` → ≈ 4–5 min; `go-test` (~120 s) und die übrigen Go-Jobs laufen parallel zum Image-Pfad.
 
 ### 18.3 Security in der CI
 
@@ -1264,14 +1264,21 @@ Squash-Merges mit Conventional Commits auf main
         └─ nach Merge des Release-PR: legt Tag vX.Y.Z und Release als Entwurf an (`draft: true`, `force-tag-creation: true`)
              └─ Tag-Push durch GITHUB_TOKEN startet ebenfalls nichts → `gh workflow run release.yml --ref vX.Y.Z`
 release.yml (workflow_dispatch auf dem Tag; zusätzlich push: tags v* für manuell gesetzte Tags)
-  1. ci:       uses: ./.github/workflows/ci.yml  (komplette CI auf dem Tag – nie ungetestet veröffentlichen)
-  2. publish:  needs ci → Multi-Arch-Build (Cache-Treffer), Trivy, Push nach ghcr.io/blackdark/vc-reisekostenabrechnung
+  1. gate:     kein `ci:`-Aufruf mehr. `gh api --method GET .../commits/<sha>/check-runs` verlangt ein grünes
+               `ci-ok` für den getaggten Commit. Der Tag zeigt auf den Release-PR-Merge auf `main`, der dort
+               bereits geprüft wurde. Check-Runs verfallen mit der Aufbewahrung; ist keins mehr da, muss CI
+               erst wieder auf diesem Commit laufen.
+  2. publish:  SPA bauen, `scripts/build-binary.sh` mit `VERSION=$RELEASE_TAG` für beide Plattformen,
+               Multi-Arch-Build aus dem `gobin`-Kontext (Archiv für Größe und Trivy, dann der Push)
                Tags x.y.z, x.y, (x ab 1.0), latest, sha-<kurz>; provenance+SBOM-Attestierung; cosign keyless; attest-build-provenance
   3. release:  needs publish → Release-Notes ergänzen um Abschnitt „Container-Image“ mit allen Tags, Digest (sha256:…),
                Plattformen, Image-Größe je Plattform (komprimiert), `docker pull …@sha256:…` und `cosign verify`-Befehl; SBOM als Asset; Entwurf veröffentlichen (`--draft=false`)
 ```
 
-- Nur `GITHUB_TOKEN`, **kein PAT**. Voraussetzung (Eduard, einmalig): *Settings → Actions → General → Workflow permissions →* „**Allow GitHub Actions to create and approve pull requests**“ aktivieren (release-please erstellt sonst keinen PR). `release-please.yml` braucht `contents: write`, `pull-requests: write`, `actions: write` (für `gh workflow run`).
+- Das Gate ersetzt den früheren kompletten CI-Lauf auf dem Tag; veröffentlicht wird damit genau der Stand, den die `main`-CI akzeptiert hat.
+- Die Binaries tragen `VERSION=$RELEASE_TAG`, deshalb meldet das Release-Image seine Version (früher lief der Build ohne `build-args` und meldete `dev`).
+
+- Nur `GITHUB_TOKEN`, **kein PAT**. Voraussetzung (Eduard, einmalig): _Settings → Actions → General → Workflow permissions →_ „**Allow GitHub Actions to create and approve pull requests**“ aktivieren (release-please erstellt sonst keinen PR). `release-please.yml` braucht `contents: write`, `pull-requests: write`, `actions: write` (für `gh workflow run`).
 - release-please-Konfiguration: `release-type: simple`, `bump-minor-pre-major: true`, `changelog-sections` deutsch beschriftet, `extra-files` für `web/package.json`; Startversion `0.1.0`.
 - Schlägt `release.yml` fehl, bleibt das Release ein Entwurf und es gibt kein Image; Wiederholung per `gh workflow run release.yml --ref vX.Y.Z`.
 - Ob `draft` + `force-tag-creation` in release-please-action v5 wie beschrieben zusammenspielen, wird in M1 verifiziert (offener Punkt); Fallback: Release normal anlegen, `release.yml` ergänzt Notes erst nach erfolgreichem Publish und markiert Fehlschläge im Release-Text.
@@ -1289,7 +1296,7 @@ Kurz und **englisch** (Vorgabe des Owners; deutsche Fachbegriffe bleiben): Banne
 `renovate.json5` im Repo-Root (Q28), Renovate als GitHub-App. Politik:
 
 | Thema | Regel |
-|---|---|
+| --- | --- |
 | Basis | `config:best-practices` (recommended + Digest-Pinning für Docker und Actions, Dev-Deps pinnen, Abandonment-Erkennung, npm-Mindestalter, wöchentliche Lockfile-Pflege) + `:semanticCommits` (passt zu release-please) |
 | Zeitplan | montags 00–06 Uhr Europe/Berlin; Sicherheitsupdates jederzeit (Label `security`, kein Automerge) |
 | Lieferkette | `minimumReleaseAge: 3 days` für alle Datenquellen, `internalChecksFilter: strict` |
@@ -1305,7 +1312,7 @@ Die Datei wurde mit `renovate-config-validator --strict` (Renovate 44.148.1) gep
 ## 20. Teststrategie
 
 | Ebene | Werkzeug | Inhalt | Gate |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Rechenkern | Go-Tests, Golden-YAML, Fuzz/Property | 4.16 G01–G20, Invarianten | 100 % der Golden-Tests; Coverage `internal/berechnung` ≥ 95 % |
 | Domäne/Store | Go-Tests mit echter SQLite in `t.TempDir()` | Invarianten I1–I14, Statusübergänge, Sperren, Mandantentrennung (jede Repository-Methode wird mit fremder `nutzer_id` aufgerufen und muss leer/404 liefern) | Pflicht |
 | Migrationen | Go-Tests | leer → aktuell; Vorversion mit Daten → aktuell | Pflicht |
@@ -1325,7 +1332,7 @@ Testdaten: Belegfotos aus [K] (frei lizenzierte Commons-Bilder + synthetische) a
 ## 21. Später-Liste (nicht v1)
 
 | Thema | Herkunft |
-|---|---|
+| --- | --- |
 | Offline-Erfassung (Reisen/Belege lokal zwischenspeichern, später hochladen; IndexedDB + Background Sync) | Q5 |
 | Automatische Kilometerberechnung per Routing-Dienst | Q26 |
 | E-Rechnung-Parsing (XRechnung/ZUGFeRD-XML → Felder, menschenlesbare Darstellung im PDF) | Q26 |
@@ -1347,7 +1354,7 @@ Testdaten: Belegfotos aus [K] (frei lizenzierte Commons-Bilder + synthetische) a
 ## 22. Offene Punkte
 
 | # | Punkt | Vorschlag / nächster Schritt | Wer |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | O1 | **Kürzung bei erstatteter eigener Verpflegung und bei Bewirtung** (4.7) stützt sich auf BMF-RK 2020 Rz. 64/75 aus einer IHK-Zusammenfassung, nicht auf [R] | Recherche [R] 1.4 um Rz. 64–75 und 77–86 (Wortlaut) ergänzen, vor M3 | offen (Wortlaut; PDF via Webfetch nicht parsebar) |
 | O2 | **Eine Pauschale je Tag über mehrere Arbeitgeber** (4.5) | Entschieden in M2: eine Verpflegungspauschale je Kalendertag über alle Arbeitgeber. Schalter `EineVerpflegungspauschaleProKalendertag` in `internal/berechnung` (`true`); `false` stellt auf eine Pauschale je Arbeitgeber um, ohne die Tagesregel zu verteilen. Bestätigung durch Eduard steht aus ([Roadmap](roadmap.md)) | Eduard |
 | O3 | **PDF/A-3b**: Typst 0.15.1 kann in PDF/A-Modi keine PDFs als Bild einbetten → PDF-Belege werden gerastert (300 ppi, JPEG) und das Original als eingebettete Datei (PDF/A-3, Beziehung `source`) mitgeliefert. Der CI-Job `pdfa` prüft die Muster-Exporte mit veraPDF 1.30.2 | Rasterung kostet Vektortext im sichtbaren Teil (Original bleibt eingebettet und im ZIP). Abweichung zu Q22 („Belege als angehängte Seiten“) nur in der Technik, nicht im Ergebnis | erledigt |
