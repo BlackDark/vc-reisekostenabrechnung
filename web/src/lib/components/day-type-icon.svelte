@@ -4,8 +4,8 @@
 	import MoonIcon from "@lucide/svelte/icons/moon";
 	import PlaneLandingIcon from "@lucide/svelte/icons/plane-landing";
 	import PlaneTakeoffIcon from "@lucide/svelte/icons/plane-takeoff";
-	import { dayTypeLabel } from "$lib/labels";
 
+	
 	let { type }: { type: string | undefined } = $props();
 
 	const Icon = $derived(
@@ -18,4 +18,4 @@
 	);
 </script>
 
-<Icon class="text-muted-foreground size-4 shrink-0" aria-label={dayTypeLabel(type)} role="img" />
+<Icon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
