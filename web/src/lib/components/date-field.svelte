@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { type DateValue, parseDate } from "@internationalized/date";
 	import CalendarIcon from "@lucide/svelte/icons/calendar";
+	import { untrack } from "svelte";
 	import { Button } from "$lib/components/ui/button";
 	import { Calendar } from "$lib/components/ui/calendar";
 	import { Input } from "$lib/components/ui/input";
 	import * as Popover from "$lib/components/ui/popover";
+	import { today } from "$lib/dates";
 	import { m } from "$lib/paraglide/messages.js";
 
 	let {
@@ -20,6 +22,8 @@
 		required?: boolean;
 		onchange?: (event: Event) => void;
 	} = $props();
+
+	if (!value) value = untrack(() => (type === "datetime-local" ? today("08:00") : today()));
 
 	let open = $state(false);
 	let picked = $state<DateValue | undefined>(undefined);

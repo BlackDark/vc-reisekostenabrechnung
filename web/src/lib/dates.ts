@@ -41,3 +41,11 @@ export function formatRange(
 ): string {
 	return `${formatWhen(from, locale, mode)} – ${formatWhen(to, locale, mode)}`;
 }
+
+/** Browser-local today as YYYY-MM-DD, optionally with a HH:MM time. */
+export function today(time?: string): string {
+	const now = new Date();
+	const pad = (n: number) => String(n).padStart(2, "0");
+	const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+	return time ? `${day}T${time}` : day;
+}
