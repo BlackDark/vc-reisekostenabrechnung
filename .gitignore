@@ -22,6 +22,6 @@ scratch/
 cache-mount/
 *.out
 internal/webui/dist/*
-!internal/webui/dist/index.html
+!internal/webui/dist/.gitkeep
 
 out/
