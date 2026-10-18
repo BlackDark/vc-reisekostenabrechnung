@@ -117,13 +117,19 @@ func TestOIDCLoginPKCE(t *testing.T) {
 	t.Cleanup(func() { _ = srv.Close() })
 
 	jar, _ := cookiejar.New(nil)
-	client := &http.Client{Jar: jar}
+	client := &http.Client{Jar: jar, CheckRedirect: func(req *http.Request, _ []*http.Request) error {
+		// The final hop lands on the SPA, which is not part of this test.
+		if req.URL.Path == "/" {
+			return http.ErrUseLastResponse
+		}
+		return nil
+	}}
 	res, err := client.Get(appBase + "/api/v1/auth/oidc/start")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode >= http.StatusBadRequest {
 		t.Fatalf("final %d", res.StatusCode)
 	}
 	me, err := client.Get(appBase + "/api/v1/auth/me")

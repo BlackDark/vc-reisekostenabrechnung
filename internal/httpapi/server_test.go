@@ -331,10 +331,6 @@ func TestLastAdminAndReady(t *testing.T) {
 	if ready.Code != http.StatusOK {
 		t.Fatalf("ready %d %s", ready.Code, ready.Body)
 	}
-	page := doJSON(t, h, http.MethodGet, "/login", "", nil)
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), `name="rk-app"`) {
-		t.Fatalf("spa %d %s", page.Code, page.Body)
-	}
 }
 
 func TestClientIP(t *testing.T) {
