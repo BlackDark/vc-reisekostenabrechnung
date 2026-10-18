@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/BlackDark/vc-reisekostenabrechnung/compare/v1.1.0...v1.1.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* close the 2026-10-17 audit findings ([#59](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/59)) ([0d239c7](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/0d239c7c561303208658659d6c0566f76d64b00e))
+
 ## [1.1.0](https://github.com/BlackDark/vc-reisekostenabrechnung/compare/v1.0.0...v1.1.0) (2026-10-16)
 
 
