@@ -730,6 +730,8 @@ Downloads (Belege, Exporte) liefern `Content-Disposition: attachment` (Ausnahme:
 - Cookie `__Host-rk_session`: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`. Mit `COOKIE_SECURE=false` (nur lokale Entwicklung/Smoke-Test über http) heißt das Cookie `rk_session` ohne `Secure`, weil Browser `__Host-`-Cookies sonst verwerfen.
 - Leerlauf-Timeout `SESSION_IDLE_TIMEOUT` (Default 7 Tage), absolute Laufzeit `SESSION_LIFETIME` (Default 30 Tage); Token-Rotation bei Login und Rechteänderung; Logout löscht die Session serverseitig und sendet `Clear-Site-Data: "cache", "storage"` (leert auch Service-Worker-Caches).
 - Nutzer sehen ihre aktiven Sessions (Gerät, letzte Nutzung) und können sie beenden. Deaktivieren eines Nutzers beendet alle seine Sessions.
+- Die Weiterleitungsadresse lautet `belege+<SHA-256 des Tokens>@MAIL_FORWARD_DOMAIN`; die Adresse selbst ist damit kein API-Credential mehr. Adressen aus älteren Versionen (Klartext-Token) funktionieren weiter, bis der Nutzer ein neues Token anlegt.
+- Die Tabelle `session` speichert nur `SHA-256` des Tokens (`token_hash`), wie `api_token` es hält; das Klartext-Token liegt allein im Cookie, damit ein Lesezugriff auf die DB keine gültige Session liefert. Sessions aus älteren Versionen enden mit Migration `00016`.
 
 ### 10.2 Passwort-Login
 
@@ -949,7 +951,7 @@ Versionen aus [S] 5, ergänzt um am 08.10.2026 abgefragte Pakete (†). Renovate
 | Backend | Go | 1.27.2 (Image `golang:1.27.2-trixie`) |
 | | HTTP | `net/http` ServeMux (Go-Muster-Routing), `http.CrossOriginProtection`, `log/slog` |
 | | SQLite-Treiber | `modernc.org/sqlite` v1.60.1 (cgo-frei, ADR 0003) |
-| | SQL-Codegen / Migrationen | `sqlc` v1.31.1 / `pressly/goose/v3` v3.28.0 (als `tool`-Direktiven in `go.mod`) |
+| | SQL-Codegen / Migrationen | `sqlc` v1.31.1 / `pressly/goose/v3` v3.28.0 (als `tool`-Direktiven im eigenen Modul `tools/`) |
 | | OpenAPI | `oapi-codegen/v2` v2.8.0, `oapi-codegen/runtime` v1.7.0 |
 | | Auth | `coreos/go-oidc/v3` v3.21.0, `golang.org/x/oauth2` v0.37.0, `golang.org/x/crypto` v0.57.0 (argon2), `alexedwards/scs/v2` v2.9.0 |
 | | Rate-Limit | `golang.org/x/time` v0.16.0 † |
@@ -1004,6 +1006,7 @@ vc-reisekostenabrechnung/
 ├─ db/migrations/              goose-SQL (gemeinsames SQLite/Postgres-Subset)
 ├─ db/queries/                 sqlc-Abfragen
 ├─ sqlc.yaml
+├─ tools/                      eigenes Go-Modul mit den tool-Direktiven (sqlc, goose, oapi-codegen)
 ├─ api/openapi.yaml            Quelle der API (spec-first)
 ├─ api/schemas/                abrechnung-export-v1.schema.json
 ├─ satztabellen/               laender.csv (BMF-Name ↔ ISO), Inlandswerte je Jahr; Auslandswerte aus docs/research/data/*.csv übernommen
@@ -1089,13 +1092,13 @@ CMD ["serve"]
 
 ### 17.2 docker-compose.yml und .env.example
 
-`deploy/docker-compose.yml` nutzt Pflichtvariablen mit `${VAR:?fehlt}` und enthält **keine** Beispiel-Secrets:
+`deploy/docker-compose.yml` nutzt Pflichtvariablen mit `${VAR:?fehlt}` und enthält **keine** Beispiel-Secrets. `APP_VERSION` ist Pflicht: mit einem Default `latest` würde ein vergessener Wert still einen anderen Stand starten. Secrets liegen als Dateien in `deploy/secrets` und erreichen die App über die `*_FILE`-Variablen; Werte in der Umgebung zeigen `docker inspect` und `/proc/<pid>/environ` jedem, der sie lesen kann. Eine leere Datei bedeutet „nicht gesetzt“; steht zusätzlich der Klartext in `.env`, bricht die App beim Start ab (`<NAME>` und `<NAME>_FILE` gleichzeitig).
 
 ```yaml
 name: reisekosten
 services:
   app:
-    image: ghcr.io/blackdark/vc-reisekostenabrechnung:${APP_VERSION:-latest}
+    image: ghcr.io/blackdark/vc-reisekostenabrechnung:${APP_VERSION:?fehlt – veröffentlichte Version setzen, z. B. v1.1.0}
     restart: unless-stopped
     read_only: true
     user: "65532:65532"
@@ -1106,12 +1109,36 @@ services:
     env_file: .env
     environment:
       APP_BASE_URL: ${APP_BASE_URL:?fehlt – öffentliche URL setzen}
+      INITIAL_ADMIN_PASSWORD_FILE: /run/secrets/initial_admin_password
+      OIDC_CLIENT_SECRET_FILE: /run/secrets/oidc_client_secret
+      S3_SECRET_ACCESS_KEY_FILE: /run/secrets/s3_secret_access_key
+      MAIL_IMAP_PASSWORD_FILE: /run/secrets/mail_imap_password
+      AI_API_KEY_FILE: /run/secrets/ai_api_key
+    secrets:
+      - initial_admin_password
+      - oidc_client_secret
+      - s3_secret_access_key
+      - mail_imap_password
+      - ai_api_key
     volumes: ["data:/data"]
+secrets:
+  initial_admin_password:
+    file: ./secrets/initial_admin_password
+  oidc_client_secret:
+    file: ./secrets/oidc_client_secret
+  s3_secret_access_key:
+    file: ./secrets/s3_secret_access_key
+  mail_imap_password:
+    file: ./secrets/mail_imap_password
+  ai_api_key:
+    file: ./secrets/ai_api_key
 volumes:
   data:
 ```
 
-Litestream liegt in einer **eigenen Override-Datei** `deploy/docker-compose.backup.yml`, weil Compose `${VAR:?…}` auch für inaktive Profile auswertet – ein Profil `backup` in derselben Datei würde ohne Litestream-Variablen den Start verhindern:
+`docker compose` hängt `file:`-Secrets als Bind-Mount ein, deshalb müssen die Dateien für UID 65532 lesbar sein (`0644`), während das Verzeichnis `deploy/secrets` `0700` bleibt und andere Konten auf dem Host aussperrt.
+
+Litestream liegt in einer **eigenen Override-Datei** `deploy/docker-compose.backup.yml`; ein Deploy ohne Backup lädt sie nicht:
 
 ```yaml
 # docker compose -f docker-compose.yml -f docker-compose.backup.yml up -d
@@ -1124,10 +1151,10 @@ services:
     user: "65532:65532"   # gleiche UID wie die App (WAL-/Metadateien unter /data)
     cap_drop: [ALL]
     environment:
-      LITESTREAM_ACCESS_KEY_ID: ${LITESTREAM_ACCESS_KEY_ID:?fehlt}
-      LITESTREAM_SECRET_ACCESS_KEY: ${LITESTREAM_SECRET_ACCESS_KEY:?fehlt}
-      LITESTREAM_REPLICA_URL: ${LITESTREAM_REPLICA_URL:?fehlt – s3://bucket/pfad (EU)}
-    volumes: ["data:/data", "./litestream.yml:/etc/litestream.yml:ro"]
+      HOME: /tmp
+    # Replica-URL und Zugangsdaten stehen in secrets/litestream.yml, nicht in der
+    # Umgebung; Vorlage ist deploy/litestream.yml.
+    volumes: ["data:/data", "./secrets/litestream.yml:/etc/litestream.yml:ro"]
 ```
 
 Optionale Variablen (z. B. `TRUSTED_PROXIES`, `OIDC_*`) kommen über `env_file`; die App prüft beim Start Abhängigkeiten (z. B. `HEADER_AUTH_ENABLED=true` ohne `TRUSTED_PROXIES` → Startabbruch). Ein CI-Schritt prüft beide Dateien mit `docker compose config` gegen eine `.env` aus `.env.example`.
@@ -1141,7 +1168,7 @@ Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-
 ### 18.1 Grundregeln
 
 - Alle Actions per Commit-SHA gepinnt (Renovate `helpers:pinGitHubActionDigests`), minimale `permissions` je Workflow/Job (Default `contents: read`).
-- **Concurrency**: `group: ci-${{ github.event_name }}-${{ github.ref }}`, `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` → nur PR-Läufe werden durch neue Pushes abgebrochen, Läufe auf `main`, Tags und Releases laufen immer zu Ende. Aufgerufene Workflows (`workflow_call`) nutzen ein anderes Präfix als der Aufrufer (kein Deadlock).
+- **Concurrency**: `group: ci-${{ inputs.caller || github.event_name }}-${{ github.ref }}`, `cancel-in-progress: ${{ inputs.caller == '' }}` → ein neuer Push bricht nur direkte Läufe (PR, `main`, `workflow_dispatch`) ab; ein per `workflow_call` gestarteter Lauf läuft zu Ende. Der Gruppenname trennt Aufrufer und Event, deshalb blockiert ein Release-Lauf seinen Aufrufer nicht.
 - **Jeder Job hat `timeout-minutes`** (Werte in 18.2).
 - **Pfadfilter** mit `dorny/paths-filter` im Job `changes` statt `paths-ignore` am Trigger: der Workflow läuft immer, überflüssige Jobs werden übersprungen, und der Aggregator `ci-ok` ist trotzdem grün (sonst blockiert ein fehlender Pflicht-Check reine Doku-PRs). Auf `main`, bei `workflow_dispatch` und `workflow_call` laufen alle Jobs.
 - **Ein Dockerfile** für lokal, CI und Release; CI und Release teilen den `type=gha`-Cache-Scope, der Release-Build ist daher fast nur Cache-Treffer.
@@ -1152,33 +1179,44 @@ Repo: `github.com/BlackDark/vc-reisekostenabrechnung` (öffentlich). Ziel: **PR-
 Trigger: `pull_request`, `push` auf `main`, `workflow_dispatch`, `workflow_call`.
 
 ```
-changes ─┬─► go ────────┐
-         ├─► codegen ───┤
-         ├─► web ───────┤
-         ├─► image ──┬──► smoke ──┐
-         │           ├──► e2e ────┤
-         │           ├──► pdfa ───┤
-         │           └──► scan ───┤
-         └─► pr-titel ────────────┴─► ci-ok (if: always(); prüft needs.*.result ∈ {success, skipped})
+changes ─┬─► go-lint ───────────┐
+         ├─► toolchain-parity ──┤
+         ├─► go-test ───────────┤
+         ├─► go-vuln ───────────┤
+         ├─► codegen ───────────┤
+         ├─► web ───────────────┤
+         ├─► backup ────────────┤
+         ├─► actionlint ────────┤
+         ├─► pr-titel ──────────┤
+         └─► image ─┬─► smoke ──┤
+                    ├─► e2e ────┤
+                    ├─► pdfa ───┤
+                    └─► scan ───┴─► ci-ok ─► publish-edge (nur Push auf `main`)
 ```
+
+`ci-ok` läuft mit `if: always()` und besteht, wenn jedes Job-Ergebnis in `needs` `success` oder `skipped` ist.
 
 | Job | Läuft wenn | Inhalt | Timeout |
 |---|---|---|---|
-| `changes` | immer | Filter `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `satztabellen/**`, `internal/**`), `web` (`web/**`, `pnpm-lock.yaml`, `biome.json`), `toolchain` (alle Dateien, aus denen `scripts/mise-check.sh` Versionen liest), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `image` (go ∪ web ∪ `Dockerfile`, `assets/**`, `e2e/**`, `deploy/**`) | 2 |
-| `go` | go | `setup-go` (`go-version-file: go.mod`, Cache), `golangci-lint-action` (v2.14.0), `go test -race -shuffle=on -coverprofile` (inkl. Golden-Tests 4.16, Storage-Contract-Tests gegen MinIO-Service-Container), `govulncheck` | 10 |
-| `codegen` | go | `sqlc generate`, `oapi-codegen`, `openapi-typescript` → `git diff --exit-code`; Postgres-Probe: sqlc-Engine `postgresql` in Temp-Verzeichnis generieren und kompilieren (3.6) | 5 |
-| `web` | web | `pnpm/action-setup`, `setup-node` (`node-version-file: .node-version`, `cache: pnpm`), `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich de/en, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 10 |
-| `image` | image | `setup-buildx`, `buildkit-cache-dance` (pnpm-Store, Go-Caches), `build-push-action` **ohne Push** für `linux/amd64,linux/arm64` (beweist Multi-Arch), danach `linux/amd64` mit `load: true` (Cache-Treffer), `docker save \| zstd` → Artefakt `image-amd64` | 10 |
-| `smoke` | image | Container-Smoke-Test (18.5) | 5 |
-| `e2e` | image | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go`/`web` | 10 |
-| `pdfa` | image | Validator-Job (18.6) | 5 |
-| `scan` | image | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 5 |
+| `changes` | immer | Filter mit `dorny/paths-filter`, auf Nicht-PR-Events alle `true`: `go` (`**/*.go`, `go.*`, `db/**`, `api/**`, `internal/**`, `satztabellen/**`, `docs/research/data/**`, `tools/**`, `.golangci.yml`), `web` (`web/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `package.json`, `biome.json`, `scripts/check-i18n.mjs`, `scripts/bundle-budget.mjs`), `toolchain` (`mise.toml`, `.node-version`, `go.mod`, `package.json`, `Dockerfile`, `e2e/package.json`, `scripts/mise-check.sh`, `.github/workflows/ci.yml`), `backup` (`deploy/**`, `scripts/compose-config.sh`, `scripts/litestream-smoke.sh`), `ci` (`.github/workflows/**`, `scripts/workflowperm/**`, `scripts/ghrepo/**`), `image` (go ∪ web ∪ `Dockerfile`, `.dockerignore`, `assets/**`, `e2e/**`, `deploy/**`, `scripts/**`, `tools/**`) | 3 |
+| `go-lint` | go | `golangci-lint-action` (v2.14.0) | 10 |
+| `go-test` | go | Typst und poppler für die Golden-Tests (4.16), MinIO für die Storage-Contract-Tests (3.6), `go test -race -shuffle=on -coverprofile ./...` | 20 |
+| `go-vuln` | go | `govulncheck` (v1.8.0, im Actions-Cache) über alle Pakete | 10 |
+| `codegen` | go | `pnpm install --frozen-lockfile`, `scripts/codegen-check.sh` (sqlc, oapi-codegen, openapi-typescript → `git diff --exit-code`), `scripts/postgres-probe.sh` (sqlc-Engine `postgresql`, 3.6) | 10 |
+| `toolchain-parity` | toolchain | `scripts/mise-check.sh`: `mise.toml` gegen die Dateien, aus denen CI ihre Versionen liest | 5 |
+| `web` | web | `pnpm install --frozen-lockfile`, `biome ci`, `svelte-check`, i18n-Schlüsselvergleich, `vitest run --coverage`, `vite build` + Bundle-Budget (13) | 12 |
+| `image` | image | `setup-buildx`, `buildkit-cache-dance` (pnpm-Store, Go-Caches), `scripts/compose-check.sh`, **ein** Multi-Arch-Build (`linux/amd64,linux/arm64`) als OCI-Archiv, amd64 per `skopeo` in den Daemon (Commit-Label-Prüfung), Größenbericht, amd64 als Artefakt | 25 |
+| `smoke` | `image` erfolgreich | amd64-Artefakt laden, Container-Smoke-Test (18.5) | 8 |
+| `e2e` | `image` erfolgreich | Playwright gegen das gebaute Image (18.4) – wartet **nicht** auf `go-lint`/`web` | 25 |
+| `pdfa` | `image` erfolgreich | Validator-Job (18.6) | 20 |
+| `scan` | `image` erfolgreich | Trivy-Image-Scan (`scanners: vuln`, `severity: CRITICAL,HIGH`, `limit-severities-for-sarif: true`, `ignore-unfixed: true`, Exit-Code 1) + SARIF-Upload in Code Scanning | 10 |
 | `backup` | backup | Compose-Rendering (`compose-config.sh`) und Litestream-Restore als UID 65532 (O16) – ohne Image-Artefakt | 10 |
-| `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 2 |
-| `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 2 |
-| `publish-edge` | nur `push` auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert wie Release | 10 |
+| `pr-titel` | PR | Conventional-Commits-Regex auf den PR-Titel (release-please liest die Squash-Commits) | 3 |
+| `actionlint` | ci | `actionlint` (v1.7.12, geprüfte Prüfsumme) über alle Workflows, dazu `go test ./scripts/workflowperm ./scripts/ghrepo` | 5 |
+| `ci-ok` | immer | Aggregator = einziger Pflicht-Check | 3 |
+| `publish-edge` | nur Push auf `main`, nach `ci-ok` | Multi-Arch-Push `:edge` + `:sha-<kurz>` nach ghcr (gleicher Build, Cache), signiert und attestiert wie ein Release, danach Prüfung, dass `:edge` auf den gebauten Digest zeigt | 15 |
 
-Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go` (~120 s) und `web` (~90 s) → ≈ 3 min.
+Laufzeitbudget (warm): `image` ~60–90 s, danach `e2e` ~90 s parallel zu `go-test` (~120 s) und `web` (~90 s) → ≈ 3 min.
 
 ### 18.3 Security in der CI
 
@@ -1258,7 +1296,7 @@ Kurz und **englisch** (Vorgabe des Owners; deutsche Fachbegriffe bleiben): Banne
 | Automerge | nur nach grüner CI (Plattform-Automerge, Pflicht-Check „CI ok“): devDependencies patch/minor, GitHub-Actions digest/patch/minor, Docker-Digest-Refreshes, Lockfile-Pflege; nie Major, nie Pre-1.0-Minor |
 | Gruppen | node (Image + `.node-version`), Go-Toolchain (`go.mod` + `golang`-Image), `golang.org/x/*`, Codegen (sqlc, goose, oapi-codegen, openapi-typescript/-fetch), Svelte-Ökosystem, Vite/Vitest/PWA, Tailwind, Playwright (npm + Docker-Image gleich), Docker-Actions, Typst (eigene PR mit Label `export`, kein Automerge) |
 | Grenzen | TypeScript `<7` bis `svelte-check` TS 7 kann (ADR 0004); Node `<25` (LTS-Linie 24) |
-| Go | `gomod` inkl. `tool`-Direktiven (sqlc, goose, oapi-codegen); `postUpdateOptions: gomodTidy, gomodUpdateImportPaths` |
+| Go | `gomod` für das Hauptmodul und `tools/go.mod` inkl. `tool`-Direktiven (sqlc, goose, oapi-codegen); `postUpdateOptions: gomodTidy, gomodUpdateImportPaths` |
 | Versionen in Dateien | Presets `customManagers:dockerfileVersions`, `githubActionsVersions`, `makefileVersions`, `biomeVersions` für `# renovate: datasource=… depName=…`-Kommentare (z. B. `ARG PNPM_VERSION`, `golangci-lint`-Version im Workflow, veraPDF-Version) und das `$schema` in `biome.json`; Typst, distroless, golang, node, Litestream, Playwright, mock-oauth2-server als Image-Referenzen direkt über die Dockerfile-/Compose-Manager |
 | Ausschlüsse | `docs/research/**` (Spikes mit eigenen `package.json`) |
 

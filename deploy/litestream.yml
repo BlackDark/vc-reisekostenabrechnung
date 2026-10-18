@@ -1,4 +1,10 @@
+# Vorlage für secrets/litestream.yml. Die Datei enthält die Zugangsdaten der
+# Replica und bleibt darum im secrets-Verzeichnis (Modus 0700), nicht in der
+# Container-Umgebung; Compose hängt sie read-only ein. Der Container läuft als UID
+# 65532 und muss die Datei lesen können, also Modus 0644 wie die übrigen Secrets.
 dbs:
   - path: /data/reisekosten.db
     replicas:
-      - url: ${LITESTREAM_REPLICA_URL}
+      - url: s3://bucket/pfad
+        access-key-id: BITTE-AUSFUELLEN
+        secret-access-key: BITTE-AUSFUELLEN

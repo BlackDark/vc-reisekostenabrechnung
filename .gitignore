@@ -17,6 +17,7 @@ tmp/
 .DS_Store
 .env
 deploy/.env
+deploy/secrets/
 scratch/
 cache-mount/
 *.out

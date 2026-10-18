@@ -14,41 +14,16 @@ import (
 	"time"
 
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/api"
-	"github.com/BlackDark/vc-reisekostenabrechnung/internal/auth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/belegpipe"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/id"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/mailauth"
 	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store"
-	"github.com/BlackDark/vc-reisekostenabrechnung/internal/store/sqlitedb"
 )
 
 const maxMailAttachments = 20
 
 func nowRFC3339() string {
 	return time.Now().UTC().Format(time.RFC3339)
-}
-
-// requireIngestActor resolves the Nutzer for mail intake from a bearer mail:ingest
-// token or the session cookie. A mail:ingest token files attachments only; every
-// other endpoint still requires the session.
-func (a *App) requireIngestActor(w http.ResponseWriter, r *http.Request) (sqlitedb.Nutzer, bool) {
-	zero := sqlitedb.Nutzer{}
-	if h := r.Header.Get("Authorization"); strings.HasPrefix(h, "Bearer ") {
-		plain := strings.TrimSpace(strings.TrimPrefix(h, "Bearer "))
-		tok, err := a.store.FindActiveToken(r.Context(), auth.HashAPIToken(plain))
-		if err != nil || tok.Scope != store.TokenScopeMailIngest {
-			writeProblem(w, http.StatusUnauthorized, "ungueltiges_token", "Invalid token", "")
-			return zero, false
-		}
-		n, err := a.store.GetNutzer(r.Context(), tok.NutzerID)
-		if err != nil || !n.Aktiv {
-			writeProblem(w, http.StatusUnauthorized, "ungueltiges_token", "Invalid token", "")
-			return zero, false
-		}
-		_ = a.store.TouchToken(r.Context(), tok.ID, nowRFC3339())
-		return n, true
-	}
-	return a.requireUser(w, r)
 }
 
 // classifyOne sniffs and validates a single file and returns its upload kind,
@@ -128,11 +103,10 @@ func (a *App) extractMailAttachments(msg *mail.Message) [][]byte {
 // PostEingangMail parses a raw email and files each attachment as a Beleg in the
 // caller's Belegeingang; the original .eml is archived for provenance (GoBD) and
 // each duplicate attachment is skipped by checksum. This is the consume half of
-// email intake (design note options a/c); an IMAP poller or webhook feeds it.
-// Not in this slice (documented follow-ups): per-user sender allowlist and
-// SPF/DKIM verification, a Beleg source field, and the IMAP poller itself.
+// email intake (design note options a/c). Sender verification and the Nutzer
+// lookup happen in ingestMailFor, and the IMAP poller feeds this endpoint.
 func (a *App) PostEingangMail(w http.ResponseWriter, r *http.Request) {
-	n, ok := a.requireIngestActor(w, r)
+	n, ok := a.requireTokenActor(w, r, store.TokenScopeMailIngest)
 	if !ok {
 		return
 	}

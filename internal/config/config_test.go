@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -109,4 +111,36 @@ func contains(s, sub string) bool {
 		}
 	}
 	return false
+}
+
+// The deploy hands each secret in as a file and sets the matching *_FILE variable,
+// so the file's value must survive the newline an editor or printf leaves behind.
+func TestLoadReadsSecretFromFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "imap")
+	if err := os.WriteFile(path, []byte("aus-der-datei\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("APP_BASE_URL", "http://127.0.0.1:9")
+	t.Setenv("MAIL_IMAP_HOST", "imap.example.com")
+	t.Setenv("MAIL_IMAP_USERNAME", "belege@example.com")
+	t.Setenv("MAIL_FORWARD_DOMAIN", "belege.example")
+	t.Setenv("MAIL_IMAP_PASSWORD_FILE", path)
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Mail.IMAPPassword != "aus-der-datei" {
+		t.Fatalf("password %q", cfg.Mail.IMAPPassword)
+	}
+}
+
+// A plaintext value left in .env next to the mounted file must stop the start
+// instead of silently winning or being ignored.
+func TestLoadRefusesSecretValueAndFileTogether(t *testing.T) {
+	t.Setenv("APP_BASE_URL", "http://127.0.0.1:9")
+	t.Setenv("S3_SECRET_ACCESS_KEY", "aus-der-umgebung")
+	t.Setenv("S3_SECRET_ACCESS_KEY_FILE", filepath.Join(t.TempDir(), "s3"))
+	if _, err := Load(); err == nil {
+		t.Fatal("expected error")
+	}
 }

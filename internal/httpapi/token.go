@@ -90,7 +90,10 @@ func (a *App) PostMeToken(w http.ResponseWriter, r *http.Request) {
 		Id: tok.ID, Name: tok.Name, Scope: tok.Scope, CreatedAt: apiTime(tok.ErstelltAm), Token: plain,
 	}
 	if scope == store.TokenScopeMailIngest && a.cfg.Mail.ForwardDomain != "" {
-		addr := "belege+" + plain + "@" + a.cfg.Mail.ForwardDomain
+		// The address ends up in mail servers, mailboxes and logs, so it carries
+		// the stored hash and not the token: whoever reads the address gains the
+		// ability to send mail, but cannot call the API with it.
+		addr := "belege+" + hash + "@" + a.cfg.Mail.ForwardDomain
 		view.ForwardingAddress = &addr
 	}
 	writeJSON(w, http.StatusCreated, view)
@@ -114,15 +117,15 @@ func (a *App) DeleteMeToken(w http.ResponseWriter, r *http.Request, id api.Id) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// requireUploadActor resolves the Nutzer for a receipt upload from either a
-// bearer API token (scope belege:upload) or the session cookie. A token grants
-// upload only; every other endpoint still requires the session.
-func (a *App) requireUploadActor(w http.ResponseWriter, r *http.Request) (sqlitedb.Nutzer, bool) {
+// requireTokenActor resolves the Nutzer from a bearer API token of the given
+// scope or from the session cookie. A token authorizes only the endpoints that
+// ask for its scope; every other endpoint still requires the session.
+func (a *App) requireTokenActor(w http.ResponseWriter, r *http.Request, scope string) (sqlitedb.Nutzer, bool) {
 	zero := sqlitedb.Nutzer{}
 	if h := r.Header.Get("Authorization"); strings.HasPrefix(h, "Bearer ") {
 		plain := strings.TrimSpace(strings.TrimPrefix(h, "Bearer "))
-		tok, err := a.store.FindActiveToken(r.Context(), auth.HashAPIToken(plain))
-		if err != nil || tok.Scope != store.TokenScopeUpload {
+		tok, err := a.store.FindActiveToken(r.Context(), auth.HashBearer(plain))
+		if err != nil || tok.Scope != scope {
 			writeProblem(w, http.StatusUnauthorized, "ungueltiges_token", "Invalid token", "")
 			return zero, false
 		}
@@ -131,7 +134,7 @@ func (a *App) requireUploadActor(w http.ResponseWriter, r *http.Request) (sqlite
 			writeProblem(w, http.StatusUnauthorized, "ungueltiges_token", "Invalid token", "")
 			return zero, false
 		}
-		_ = a.store.TouchToken(r.Context(), tok.ID, time.Now().UTC().Format(time.RFC3339))
+		_ = a.store.TouchToken(r.Context(), tok.ID, nowRFC3339())
 		return n, true
 	}
 	return a.requireUser(w, r)

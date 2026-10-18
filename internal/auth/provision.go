@@ -1,6 +1,9 @@
 package auth
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+)
 
 // Access decides how an external identity is attached to a Nutzer.
 // Members of the admin group are treated as allowed.
@@ -48,8 +51,7 @@ func ParseGroups(raw []byte) ([]string, bool) {
 }
 
 func unmarshalStringList(s string, dst *[]string) error {
-	// Local wrapper keeps encoding/json out of the hot import cycle for tests.
-	return jsonUnmarshal([]byte(s), dst)
+	return json.Unmarshal([]byte(s), dst)
 }
 
 // trimNonEmpty trims each entry and drops the ones that end up empty, so a list

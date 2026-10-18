@@ -43,7 +43,7 @@ type Querier interface {
 	DeleteReise(ctx context.Context, arg DeleteReiseParams) (int64, error)
 	DeleteReisetag(ctx context.Context, arg DeleteReisetagParams) error
 	DeleteSatzOverrides(ctx context.Context, jahr int64) error
-	DeleteSession(ctx context.Context, token string) error
+	DeleteSession(ctx context.Context, tokenHash string) error
 	DeleteSessionByPublicID(ctx context.Context, arg DeleteSessionByPublicIDParams) error
 	DeleteSessionsForNutzer(ctx context.Context, nutzerID *string) error
 	DeleteSteueranteile(ctx context.Context, ausgabeID string) error
@@ -82,7 +82,7 @@ type Querier interface {
 	GetReise(ctx context.Context, arg GetReiseParams) (Reise, error)
 	GetReisetag(ctx context.Context, arg GetReisetagParams) (Reisetag, error)
 	GetSatztabelle(ctx context.Context, jahr int64) (Satztabelle, error)
-	GetSession(ctx context.Context, token string) (Session, error)
+	GetSession(ctx context.Context, tokenHash string) (Session, error)
 	GetTaetigkeitsstaette(ctx context.Context, arg GetTaetigkeitsstaetteParams) (Taetigkeitsstaette, error)
 	GetUstMonatskurs(ctx context.Context, arg GetUstMonatskursParams) (UstMonatskur, error)
 	GetVorlage(ctx context.Context, arg GetVorlageParams) (Vorlage, error)

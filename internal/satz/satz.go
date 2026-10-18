@@ -351,10 +351,7 @@ func (y *Year) Satz(land, satzort string) (Hit, error) {
 		key = y.retarget(resolved, key)
 	}
 	row, exact := y.byLand[resolved][key]
-	if exact && key != "" {
-		return y.hit(row, wegOr(weg, WegExakt), land), nil
-	}
-	if exact && key == "" {
+	if exact {
 		return y.hit(row, wegOr(weg, WegExakt), land), nil
 	}
 	fallback, ok := y.byLand[resolved][""]
@@ -495,9 +492,8 @@ func ParseImport(r io.Reader, jahr int) ([]Row, []LineError) {
 			VMA24h: vma24, VMA8h: vma8, Uebernachtung: ueb,
 		}
 		id := iso + "|" + row.Satzort
-		if prev, ok := seen[id]; ok {
+		if _, ok := seen[id]; ok {
 			errs = append(errs, LineError{Zeile: line, Feld: "satzort", Code: "doppelt"})
-			_ = prev
 		}
 		seen[id] = line
 		rows = append(rows, row)
@@ -511,77 +507,57 @@ func ParseImport(r io.Reader, jahr int) ([]Row, []LineError) {
 	return rows, nil
 }
 
-// SetInlandField writes one override onto a copy of the domestic rates.
-func SetInlandField(in *Inland, feld string, n int64) bool {
+// inlandFieldPtr resolves an override name to the field it addresses, so
+// SetInlandField and InlandField share one list of names.
+func inlandFieldPtr(in *Inland, feld string) *int64 {
 	switch feld {
 	case "vma_inland_24h":
-		in.VMA24h = n
+		return &in.VMA24h
 	case "vma_inland_8h":
-		in.VMA8h = n
+		return &in.VMA8h
 	case "kuerzung_fruehstueck_pct":
-		in.KuerzungFruehstueckPct = n
+		return &in.KuerzungFruehstueckPct
 	case "kuerzung_hauptmahlzeit_pct":
-		in.KuerzungHauptmahlzeitPct = n
+		return &in.KuerzungHauptmahlzeitPct
 	case "uebernachtung_inland_pauschale":
-		in.Uebernachtung = n
+		return &in.Uebernachtung
 	case "km_kraftwagen":
-		in.KmKraftwagen = n
+		return &in.KmKraftwagen
 	case "km_anderes_motorfahrzeug":
-		in.KmAnderes = n
+		return &in.KmAnderes
 	case "sachbezug_fruehstueck":
-		in.SachbezugFruehstueck = n
+		return &in.SachbezugFruehstueck
 	case "sachbezug_hauptmahlzeit":
-		in.SachbezugHauptmahlzeit = n
+		return &in.SachbezugHauptmahlzeit
 	case "uebliche_mahlzeit_grenze":
-		in.UeblicheMahlzeit = n
+		return &in.UeblicheMahlzeit
 	case "kleinbetragsgrenze":
-		in.Kleinbetrag = n
+		return &in.Kleinbetrag
 	case "bewirtung_abzug_pct":
-		in.BewirtungAbzug = n
+		return &in.BewirtungAbzug
 	case "aufbewahrung_jahre":
-		in.AufbewahrungJahre = n
-	default:
+		return &in.AufbewahrungJahre
+	}
+	return nil
+}
+
+// SetInlandField writes one override onto a copy of the domestic rates.
+func SetInlandField(in *Inland, feld string, n int64) bool {
+	p := inlandFieldPtr(in, feld)
+	if p == nil {
 		return false
 	}
+	*p = n
 	return true
 }
 
 // InlandField reads one domestic rate.
 func InlandField(in Inland, feld string) (int64, bool) {
-	cp := in
-	if !SetInlandField(&cp, feld, 0) {
+	p := inlandFieldPtr(&in, feld)
+	if p == nil {
 		return 0, false
 	}
-	switch feld {
-	case "vma_inland_24h":
-		return in.VMA24h, true
-	case "vma_inland_8h":
-		return in.VMA8h, true
-	case "kuerzung_fruehstueck_pct":
-		return in.KuerzungFruehstueckPct, true
-	case "kuerzung_hauptmahlzeit_pct":
-		return in.KuerzungHauptmahlzeitPct, true
-	case "uebernachtung_inland_pauschale":
-		return in.Uebernachtung, true
-	case "km_kraftwagen":
-		return in.KmKraftwagen, true
-	case "km_anderes_motorfahrzeug":
-		return in.KmAnderes, true
-	case "sachbezug_fruehstueck":
-		return in.SachbezugFruehstueck, true
-	case "sachbezug_hauptmahlzeit":
-		return in.SachbezugHauptmahlzeit, true
-	case "uebliche_mahlzeit_grenze":
-		return in.UeblicheMahlzeit, true
-	case "kleinbetragsgrenze":
-		return in.Kleinbetrag, true
-	case "bewirtung_abzug_pct":
-		return in.BewirtungAbzug, true
-	case "aufbewahrung_jahre":
-		return in.AufbewahrungJahre, true
-	default:
-		return 0, false
-	}
+	return *p, true
 }
 
 func trimAll(in []string) []string {

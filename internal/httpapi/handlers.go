@@ -300,18 +300,28 @@ func (a *App) GetMeSessions(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
 		return
 	}
-	token := a.sessions.Token(r.Context())
+	hash := a.sessionTokenHash(r)
 	out := make([]api.Session, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, api.Session{
 			Id:            row.OeffentlichID,
-			Aktuell:       token != "" && row.Token == token,
+			Aktuell:       hash != "" && row.TokenHash == hash,
 			Ip:            row.Ip,
 			UserAgent:     row.UserAgent,
 			LetzteNutzung: row.LetzteNutzung,
 		})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": out})
+}
+
+// sessionTokenHash hashes the token in the request's cookie so it can be
+// compared with the stored hash of a session row. It returns "" when the request
+// carries no session token, which matches no row.
+func (a *App) sessionTokenHash(r *http.Request) string {
+	if token := a.sessions.Token(r.Context()); token != "" {
+		return auth.HashBearer(token)
+	}
+	return ""
 }
 
 func (a *App) DeleteMeSession(w http.ResponseWriter, r *http.Request, id string) {
@@ -326,11 +336,11 @@ func (a *App) DeleteMeSession(w http.ResponseWriter, r *http.Request, id string)
 	}
 	var current bool
 	found := false
-	token := a.sessions.Token(r.Context())
+	hash := a.sessionTokenHash(r)
 	for _, row := range rows {
 		if row.OeffentlichID == id {
 			found = true
-			current = row.Token == token
+			current = row.TokenHash == hash
 			break
 		}
 	}
@@ -464,16 +474,7 @@ func (a *App) PatchAdminNutzer(w http.ResponseWriter, r *http.Request, id string
 		hash = &h
 	}
 	updated, err := a.store.UpdateAdmin(r.Context(), id, version, aktiv, istAdmin, hash, a.actor(r, admin))
-	if errors.Is(err, store.ErrLastAdmin) {
-		writeProblem(w, http.StatusConflict, "letzter_admin", "The last Admin cannot be removed", "")
-		return
-	}
-	if errors.Is(err, store.ErrConflict) {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-		return
-	}
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeNutzer(w, http.StatusOK, updated)

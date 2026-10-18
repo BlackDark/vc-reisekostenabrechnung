@@ -1,4 +1,5 @@
-// Package berechnung holds calculation policy that later milestones implement.
+// Package berechnung turns a Reise and its Ausgaben into the reimbursement
+// result: Pauschalen, meal deductions, mileage, foreign currency and VAT.
 package berechnung
 
 // EineVerpflegungspauschaleProKalendertag is open question O2.

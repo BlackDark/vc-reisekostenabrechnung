@@ -91,7 +91,7 @@ func (a *App) GetBelegDuplikate(w http.ResponseWriter, r *http.Request, params a
 }
 
 func (a *App) PostBelege(w http.ResponseWriter, r *http.Request) {
-	n, ok := a.requireUploadActor(w, r)
+	n, ok := a.requireTokenActor(w, r, store.TokenScopeUpload)
 	if !ok {
 		return
 	}

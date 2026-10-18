@@ -17,11 +17,27 @@ func NewAPIToken() (plain, hashHex string, err error) {
 		return "", "", err
 	}
 	plain = base64.RawURLEncoding.EncodeToString(raw)
-	return plain, HashAPIToken(plain), nil
+	return plain, HashBearer(plain), nil
 }
 
-// HashAPIToken hashes a presented token for lookup against the stored hash.
-func HashAPIToken(plain string) string {
-	sum := sha256.Sum256([]byte(plain))
+// HashBearer hashes a bearer secret for lookup against the stored hash. API
+// tokens and session tokens both carry 256 bits of entropy, so SHA-256 is enough
+// to keep a reader of the database from using what it finds.
+func HashBearer(secret string) string {
+	sum := sha256.Sum256([]byte(secret))
 	return hex.EncodeToString(sum[:])
+}
+
+// IsHash reports whether s has the shape of a stored bearer hash, which lets a
+// reader tell a value that was hashed at rest from one that was not.
+func IsHash(s string) bool {
+	if len(s) != 2*sha256.Size {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
 }

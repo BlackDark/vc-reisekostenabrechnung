@@ -11,11 +11,11 @@ import (
 )
 
 const deleteSession = `-- name: DeleteSession :exec
-DELETE FROM session WHERE token = ?1
+DELETE FROM session WHERE token_hash = ?1
 `
 
-func (q *Queries) DeleteSession(ctx context.Context, token string) error {
-	_, err := q.db.ExecContext(ctx, deleteSession, token)
+func (q *Queries) DeleteSession(ctx context.Context, tokenHash string) error {
+	_, err := q.db.ExecContext(ctx, deleteSession, tokenHash)
 	return err
 }
 
@@ -43,14 +43,14 @@ func (q *Queries) DeleteSessionsForNutzer(ctx context.Context, nutzerID *string)
 }
 
 const getSession = `-- name: GetSession :one
-SELECT token, data, expiry, nutzer_id, user_agent, ip, oeffentlich_id, erstellt_am, letzte_nutzung FROM session WHERE token = ?1
+SELECT token_hash, data, expiry, nutzer_id, user_agent, ip, oeffentlich_id, erstellt_am, letzte_nutzung FROM session WHERE token_hash = ?1
 `
 
-func (q *Queries) GetSession(ctx context.Context, token string) (Session, error) {
-	row := q.db.QueryRowContext(ctx, getSession, token)
+func (q *Queries) GetSession(ctx context.Context, tokenHash string) (Session, error) {
+	row := q.db.QueryRowContext(ctx, getSession, tokenHash)
 	var i Session
 	err := row.Scan(
-		&i.Token,
+		&i.TokenHash,
 		&i.Data,
 		&i.Expiry,
 		&i.NutzerID,
@@ -64,7 +64,7 @@ func (q *Queries) GetSession(ctx context.Context, token string) (Session, error)
 }
 
 const listSessionsByNutzer = `-- name: ListSessionsByNutzer :many
-SELECT token, data, expiry, nutzer_id, user_agent, ip, oeffentlich_id, erstellt_am, letzte_nutzung FROM session
+SELECT token_hash, data, expiry, nutzer_id, user_agent, ip, oeffentlich_id, erstellt_am, letzte_nutzung FROM session
 WHERE nutzer_id = ?1 AND expiry > ?2
 ORDER BY letzte_nutzung DESC
 `
@@ -84,7 +84,7 @@ func (q *Queries) ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNu
 	for rows.Next() {
 		var i Session
 		if err := rows.Scan(
-			&i.Token,
+			&i.TokenHash,
 			&i.Data,
 			&i.Expiry,
 			&i.NutzerID,
@@ -109,12 +109,12 @@ func (q *Queries) ListSessionsByNutzer(ctx context.Context, arg ListSessionsByNu
 
 const upsertSession = `-- name: UpsertSession :exec
 INSERT INTO session (
-  token, data, expiry, nutzer_id, user_agent, ip, oeffentlich_id, erstellt_am, letzte_nutzung
+  token_hash, data, expiry, nutzer_id, user_agent, ip, oeffentlich_id, erstellt_am, letzte_nutzung
 ) VALUES (
   ?1, ?2, ?3, ?4, ?5,
   ?6, ?7, ?8, ?9
 )
-ON CONFLICT (token) DO UPDATE SET
+ON CONFLICT (token_hash) DO UPDATE SET
   data = excluded.data,
   expiry = excluded.expiry,
   nutzer_id = COALESCE(excluded.nutzer_id, session.nutzer_id),
@@ -124,7 +124,7 @@ ON CONFLICT (token) DO UPDATE SET
 `
 
 type UpsertSessionParams struct {
-	Token         string
+	TokenHash     string
 	Data          string
 	Expiry        time.Time
 	NutzerID      *string
@@ -137,7 +137,7 @@ type UpsertSessionParams struct {
 
 func (q *Queries) UpsertSession(ctx context.Context, arg UpsertSessionParams) error {
 	_, err := q.db.ExecContext(ctx, upsertSession,
-		arg.Token,
+		arg.TokenHash,
 		arg.Data,
 		arg.Expiry,
 		arg.NutzerID,

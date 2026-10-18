@@ -125,16 +125,7 @@ func (a *App) PatchArbeitgeber(w http.ResponseWriter, r *http.Request, id api.Id
 		return
 	}
 	row, err := a.store.UpdateArbeitgeber(r.Context(), n.ID, id, version, in, a.actor(r, n))
-	if errors.Is(err, store.ErrConflict) {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-		return
-	}
-	if errors.Is(err, store.ErrNotFound) {
-		writeProblem(w, http.StatusNotFound, "nicht_gefunden", "Arbeitgeber not found", "")
-		return
-	}
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeObject(w, http.StatusOK, row.Version, toArbeitgeber(row))
@@ -198,15 +189,7 @@ func (a *App) PostArbeitgeberLogo(w http.ResponseWriter, r *http.Request, id api
 	row, err := a.store.SetLogo(r.Context(), n.ID, id, version, mime, body, key, a.actor(r, n))
 	if err != nil {
 		_ = files.Remove(a.fileRoot(), key)
-		if errors.Is(err, store.ErrNotFound) {
-			writeProblem(w, http.StatusNotFound, "nicht_gefunden", "Arbeitgeber not found", "")
-			return
-		}
-		if errors.Is(err, store.ErrConflict) {
-			writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-			return
-		}
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+		writeStoreErr(w, err)
 		return
 	}
 	writeObject(w, http.StatusOK, row.Version, toArbeitgeber(row))
@@ -285,16 +268,7 @@ func (a *App) PatchTaetigkeitsstaette(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 	row, err := a.store.UpdateTaetigkeit(r.Context(), n.ID, id, version, in, a.actor(r, n))
-	if errors.Is(err, store.ErrNotFound) {
-		writeProblem(w, http.StatusNotFound, "nicht_gefunden", "Tätigkeitsstätte not found", "")
-		return
-	}
-	if errors.Is(err, store.ErrConflict) {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-		return
-	}
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	writeObject(w, http.StatusOK, row.Version, toTaetigkeit(row))
@@ -380,20 +354,7 @@ func (a *App) PatchSatztabelle(w http.ResponseWriter, r *http.Request, jahr api.
 		return
 	}
 	_, err := a.store.OverrideSatztabelle(r.Context(), jahr, version, land, ort, body.Feld, body.NeuerWert, grund, a.actor(r, admin))
-	if errors.Is(err, store.ErrNotFound) {
-		writeProblem(w, http.StatusNotFound, "nicht_gefunden", "Rate not found", "")
-		return
-	}
-	if errors.Is(err, store.ErrInvalid) {
-		writeProblem(w, http.StatusUnprocessableEntity, "validierung", "Unknown field", "")
-		return
-	}
-	if errors.Is(err, store.ErrConflict) {
-		writeProblem(w, http.StatusPreconditionFailed, "version", "Version conflict", "")
-		return
-	}
-	if err != nil {
-		writeProblem(w, http.StatusInternalServerError, "intern", "Internal error", "")
+	if writeStoreErr(w, err) {
 		return
 	}
 	view, ok := a.yearView(w, r, jahr)

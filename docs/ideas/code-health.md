@@ -598,6 +598,25 @@ Recorded so nobody re-opens them.
   ([#54](https://github.com/BlackDark/vc-reisekostenabrechnung/pull/54)) the image build is
   the only place in pull request CI that compiles for arm64.
 
+## Left from the 2026-10-17 audit
+
+Two findings of that pass were left deliberately. Neither is a defect, and each one needs a
+decision that a code cleanup cannot make:
+
+- **CI-6, the second multi-platform build on `main`.** The `image` job builds amd64 and arm64
+  into an OCI archive; `publish-edge` builds both platforms again with `push: true`. The
+  archive already holds both platforms, so the rebuild adds no artifact, only runner minutes.
+  What it buys is that the published digest comes from a build that the run scanned, signed
+  and attested, that the push happens only after `ci-ok` cleared `scan`, and that no
+  pull-request run can reach the registry. Reusing the archive instead means either publishing
+  from `image` before `scan` has cleared the image, or moving the provenance, the attestation
+  and the digest check onto a `skopeo copy` of the archive. SPEC 18.2 documents the split as
+  it stands.
+- **DEP-1, no license file.** Nothing in the repository grants a right or states terms, so a
+  self-hosted user has none. The fix is to add the intended license and its SPDX identifier;
+  which license that is belongs to the maintainer, not to a cleanup. `docs/SPEC.md` already
+  lists `LICENSE` in the layout and waits for the file.
+
 ## Suggested order
 
 1. 1.1 and 1.2 (behaviour fixes, no design work), each with its own test.

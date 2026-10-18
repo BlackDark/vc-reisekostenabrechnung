@@ -30,7 +30,7 @@ func TestApiTokenLifecycle(t *testing.T) {
 	if tok.TokenHash != hash || tok.TokenHash == plain {
 		t.Fatalf("token hash must be the stored hash, not the plaintext")
 	}
-	if _, err := s.FindActiveToken(ctx, auth.HashAPIToken(plain)); err != nil {
+	if _, err := s.FindActiveToken(ctx, auth.HashBearer(plain)); err != nil {
 		t.Fatalf("active lookup by real hash: %v", err)
 	}
 	if _, err := s.FindActiveToken(ctx, "deadbeef"); !errorsIs(err, ErrNotFound) {

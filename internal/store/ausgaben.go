@@ -427,24 +427,11 @@ func (s *Store) RememberRates(ctx context.Context, rates []fx.Rate) error {
 	})
 }
 
-// Rates lists cached daily rates for one currency.
+// Rates lists the cached daily rates of one currency. The calculation looks a
+// rate up per expense line and only ever wants the line's own currency, so asking
+// per currency keeps a run from reading the whole table, which holds a row per
+// currency and business day and grows with both.
 func (s *Store) Rates(ctx context.Context, waehrung string) ([]fx.Rate, error) {
-	rows, err := s.readQ().ListWechselkurse(ctx, waehrung)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]fx.Rate, 0, len(rows))
-	for _, row := range rows {
-		out = append(out, fx.Rate{Waehrung: row.Waehrung, Datum: row.Datum, Kurs: row.Kurs})
-	}
-	return out, nil
-}
-
-// RatesFor lists the cached daily rates of one currency. The calculation looks a
-// rate up per expense line and only ever wants the line's own currency, so a
-// caller that needs several reads once per currency instead of reading the whole
-// table; the table holds a row per currency and business day and grows with both.
-func (s *Store) RatesFor(ctx context.Context, waehrung string) ([]fx.Rate, error) {
 	rows, err := s.readQ().ListWechselkurse(ctx, waehrung)
 	if err != nil {
 		return nil, err
@@ -708,15 +695,14 @@ func berechnungEUR(part, eur, betrag int64) int64 {
 	if betrag <= 0 {
 		return 0
 	}
-	n, _, _ := splitRound(part*eur, betrag)
-	return n
+	return roundedDiv(part*eur, betrag)
 }
 
-func splitRound(n, d int64) (int64, int64, bool) {
+func roundedDiv(n, d int64) int64 {
 	if d == 0 {
-		return 0, 0, false
+		return 0
 	}
-	return (n + d/2) / d, 0, true
+	return (n + d/2) / d
 }
 
 func verkehrAusgabeOK(s string) bool {
