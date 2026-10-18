@@ -70,7 +70,7 @@
 		{/each}
 	</ul>
 {/if}
-<form class="mt-6 grid gap-3" onsubmit={save}>
+<form class="mt-6 grid max-w-xl gap-3" onsubmit={save}>
 	<fieldset class="grid gap-3" disabled={!session.online}>
 		<label class="grid gap-1 text-sm" for="f-vorschuesse-1">
 			{m.reise_employer()}
@@ -80,6 +80,7 @@
 				{/each}
 			</NativeSelect>
 		</label>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="f-vorschuesse-2">
 			{m.vorschuss_datum()}
 			<DateField id="f-vorschuesse-2" type="date" bind:value={datum} required  />
@@ -88,6 +89,7 @@
 			{m.vorschuss_betrag()}
 			<Input id="f-vorschuesse-3" inputmode="decimal" bind:value={betrag} required  />
 		</label>
+</div>
 		<label class="grid gap-1 text-sm" for="vorschuss-notiz">
 			{m.vorschuss_notiz()}
 			<Input id="vorschuss-notiz" bind:value={notiz} />

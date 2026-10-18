@@ -40,18 +40,17 @@
 <Card.Root class="mt-4">
 	<Card.Content class="pt-6">
 		<form
-			class="grid gap-3 sm:grid-cols-2"
 			onsubmit={(event) => {
 				event.preventDefault();
 				void load();
 			}}
 		>
-			<fieldset class="grid gap-3 sm:grid-cols-2" disabled={!session.online}>
-				<Field.Field>
+			<fieldset class="flex flex-wrap items-end gap-3" disabled={!session.online}>
+				<Field.Field class="w-full sm:w-56">
 					<Field.Label for="reise-q">{m.reise_search()}</Field.Label>
 					<Input id="reise-q" bind:value={q} />
 				</Field.Field>
-				<Field.Field>
+				<Field.Field class="w-full sm:w-56">
 					<Field.Label>{m.reise_filter()}</Field.Label>
 					<Combobox
 						bind:value={status}
@@ -65,7 +64,7 @@
 						]}
 					/>
 				</Field.Field>
-				<Button class="sm:col-span-2" type="submit">{m.reise_search()}</Button>
+				<Button type="submit">{m.reise_search()}</Button>
 			</fieldset>
 		</form>
 	</Card.Content>

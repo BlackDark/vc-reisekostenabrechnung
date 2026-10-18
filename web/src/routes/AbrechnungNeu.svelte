@@ -95,7 +95,7 @@
 </script>
 
 <h1 class="text-2xl font-semibold tracking-tight">{m.abrechnung_new()}</h1>
-<form class="mt-4 grid gap-3" onsubmit={save}>
+<form class="mt-4 grid max-w-xl gap-3" onsubmit={save}>
 	<fieldset class="grid gap-3" disabled={!session.online}>
 		<label class="grid gap-1 text-sm" for="abrechnung-ag">
 			{m.reise_employer()}
