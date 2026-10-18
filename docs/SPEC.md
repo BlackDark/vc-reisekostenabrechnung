@@ -1046,6 +1046,7 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 WORKDIR /src
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY web/package.json web/
+COPY e2e/package.json e2e/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch
 COPY web/ web/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
@@ -1075,10 +1076,10 @@ COPY assets/fonts/ /usr/share/fonts/app/
 COPY --from=gobin /${TARGETARCH}/reisekosten /usr/local/bin/reisekosten
 COPY --from=gobin --chown=65532:65532 /${TARGETARCH}/data /data
 USER 65532:65532
-ENV DATA_DIR=/data TYPST_PATH=/usr/local/bin/typst
+ENV DATA_DIR=/data TYPST_PATH=/usr/local/bin/typst HOME=/tmp
 VOLUME ["/data"]
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s --start-period=20s CMD ["/usr/local/bin/reisekosten", "healthcheck"]
+HEALTHCHECK --interval=60s --timeout=5s --start-period=30s CMD ["/usr/local/bin/reisekosten", "healthcheck"]
 ENTRYPOINT ["/usr/local/bin/reisekosten"]
 CMD ["serve"]
 ```
