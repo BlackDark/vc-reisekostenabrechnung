@@ -148,7 +148,7 @@ func demoSnapshot(lang string) Snapshot {
 			Nummer: "RK-2026-007", Version: 1, ZeitraumArt: "monat", Von: "2026-10-01", Bis: "2026-10-31",
 			Titel: "Reisekosten Oktober 2026", Status: "eingereicht", EingereichtAm: "2026-10-09T12:00:00Z",
 			Summen: Summen{
-				VerpflegungCent: 28740, DavonPauschalenCent: 28740, ReisenebenkostenCent: 12500,
+				FahrtkostenCent: 3300, DavonKilometerCent: 3300, VerpflegungCent: 28740, DavonPauschalenCent: 28740, ReisenebenkostenCent: 12500,
 			},
 			ErstattungCent: 41240,
 			Vorschuesse:    []Vorschuss{{ID: "v1", Datum: "2026-10-01", Cent: 30000, Notiz: "Abschlag"}},
@@ -168,10 +168,17 @@ func demoSnapshot(lang string) Snapshot {
 				Datum: "2026-10-01", Tagesart: "anreise", AbwesenheitMin: 960, LandISO: "DE",
 				Satz24hCent: 2800, PauschaleCent: 1400, VerpflegungCent: 1400, Unterkunft: "gestellt",
 				RegelIDs: []string{"TAG-ANREISE"},
+			}, {
+				Datum: "2026-10-02", Tagesart: "abreise", AbwesenheitMin: 600, LandISO: "DE",
+				Satz24hCent: 2800, PauschaleCent: 1400, KuerzungMittagCent: 560, VerpflegungCent: 840, Unterkunft: "keine",
+				RegelIDs: []string{"TAG-ABREISE", "KUERZ-MITTAG"},
 			}},
 			Fahrten: []Fahrt{{
 				Datum: "2026-10-01", Start: "Wohnung", Ziel: "Bahnhof", Fahrzeugart: "kraftwagen",
 				Km: 12, HinUndZurueck: true, KmGesamt: 24, SatzCent: 30, BetragCent: 720,
+			}, {
+				Datum: "2026-10-02", Start: "Bahnhof", Ziel: "Kunde GmbH, Hamburg", Fahrzeugart: "kraftwagen",
+				Km: 86, HinUndZurueck: false, KmGesamt: 86, SatzCent: 30, BetragCent: 2580,
 			}},
 			Ausgaben: []Ausgabe{{
 				ID: "a1", Belegnummern: "2026-0042", Datum: "2026-10-01", Kostenart: "reisenebenkosten",
@@ -183,6 +190,19 @@ func demoSnapshot(lang string) Snapshot {
 				Leistender: "Ada", Beschreibung: "Frühstück", Waehrung: "EUR",
 				BetragCent: 500, BetragEURCent: 500,
 				Anteile: []Anteil{{Nr: 1, Land: "FR", Satz: 1000, NettoCent: 455, UstCent: 45, BruttoCent: 500, Vorsteuer: false}},
+			}, {
+				ID: "a3", Belegnummern: "2026-0045", Datum: "2026-10-01", Kostenart: "uebernachtung",
+				Leistender: "Hotel Alster", Beschreibung: "1 Nacht inkl. Frühstück", Rechnungsart: "rechnung", Waehrung: "EUR",
+				BetragCent: 12900, BetragEURCent: 12900,
+				Anteile: []Anteil{
+					{Nr: 1, Land: "DE", Satz: 700, NettoCent: 10280, UstCent: 720, BruttoCent: 11000, Vorsteuer: true},
+					{Nr: 2, Land: "DE", Satz: 1900, NettoCent: 1597, UstCent: 303, BruttoCent: 1900, Vorsteuer: true},
+				},
+			}, {
+				ID: "a4", Belegnummern: "2026-0046", Datum: "2026-10-02", Kostenart: "reisenebenkosten",
+				Leistender: "Parkhaus Zentrum", Rechnungsart: "kleinbetragsrechnung", Waehrung: "USD",
+				BetragCent: 1200, Kurs: "1.0800", BetragEURCent: 1111,
+				Anteile: []Anteil{{Nr: 1, Land: "US", Satz: 800, NettoCent: 1029, UstCent: 82, BruttoCent: 1111, Vorsteuer: false}},
 			}},
 		}},
 		Belege: []Beleg{{
