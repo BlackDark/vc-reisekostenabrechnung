@@ -269,8 +269,9 @@ async function ensureMileage(page: Page, tripPath: string) {
 	await openTrip(page, tripPath);
 	await page.getByRole("tab", { name: /Fahrten|Mileage/ }).click();
 	if ((await page.getByText("Gare du Nord").count()) > 0) return;
+	await page.getByRole("button", { name: /Aktionen|Actions/ }).click();
 	await page
-		.getByRole("button", { name: /Fahrt erfassen|Add mileage/ })
+		.getByRole("menuitem", { name: /Fahrt erfassen|Add mileage/ })
 		.click();
 	await page.locator("#fahrt-datum").fill("2026-11-17");
 	await page.locator("#fahrt-start").fill("Gare du Nord");
@@ -293,7 +294,10 @@ async function ensureExpense(page: Page, tripPath: string): Promise<string> {
 	if ((await existing.count()) > 0) {
 		return (await existing.first().getAttribute("href")) ?? "";
 	}
-	await page.getByRole("link", { name: /Ausgabe anlegen|Add expense/ }).click();
+	await page.getByRole("button", { name: /Aktionen|Actions/ }).click();
+	await page
+		.getByRole("menuitem", { name: /Ausgabe anlegen|Add expense/ })
+		.click();
 	await page.locator("#ausgabe-kostenart").selectOption("uebernachtung");
 	await page.locator("#ausgabe-datum").fill("2026-11-17");
 	await page.locator("#ausgabe-leistender").fill("Hotel Le Marais");
