@@ -1,4 +1,4 @@
-.PHONY: check test web generate fmt
+.PHONY: check test web generate fmt embed dev dev-reset
 
 TOOLS := $(CURDIR)/tools
 
@@ -23,3 +23,28 @@ generate:
 	go -C $(TOOLS) tool oapi-codegen --config $(CURDIR)/api/oapi-codegen.yaml \
 		-o $(CURDIR)/internal/api/server.gen.go $(CURDIR)/api/openapi.yaml
 	pnpm --filter web codegen
+
+# Local test server: builds the SPA, embeds it and starts the app on :8080.
+# Login: smoke / smoke-password-1. Data lives in tmp/dev-data (see dev-reset).
+DEV_DIR ?= $(CURDIR)/tmp/dev-data
+
+embed:
+	pnpm install --frozen-lockfile
+	pnpm --filter web build
+	rm -rf internal/webui/dist
+	cp -R web/dist internal/webui/dist
+	touch internal/webui/dist/.gitkeep
+
+dev: embed
+	mkdir -p $(DEV_DIR)
+	DATA_DIR=$(DEV_DIR) \
+	INITIAL_ADMIN_USERNAME=smoke \
+	INITIAL_ADMIN_PASSWORD=smoke-password-1 \
+	APP_BASE_URL=http://127.0.0.1:8080 \
+	COOKIE_SECURE=false \
+	LISTEN_ADDR=:8080 \
+	RATE_LIMIT_LOGIN=600/m RATE_LIMIT_LOGIN_ACCOUNT=5000/h RATE_LIMIT_API=50000/m \
+	go run ./cmd/reisekosten serve
+
+dev-reset:
+	rm -rf $(DEV_DIR)
