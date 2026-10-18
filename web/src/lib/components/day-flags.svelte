@@ -29,11 +29,11 @@
 
 <span class="flex items-center gap-1.5">
 	{#each flags as flag (flag.label)}
-		<flag.icon
-			class="size-4 shrink-0 {flag.on ? 'text-primary' : 'text-muted-foreground/30'}"
-			role="img"
-			aria-label={flag.label}
-			data-on={flag.on}
-		/>
+		<span title={flag.label} data-on={flag.on}>
+			<flag.icon
+				class="size-4 shrink-0 {flag.on ? 'text-primary' : 'text-muted-foreground/30'}"
+				aria-hidden="true"
+			/>
+		</span>
 	{/each}
 </span>
