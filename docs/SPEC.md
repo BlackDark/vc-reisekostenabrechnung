@@ -1266,10 +1266,12 @@ Squash-Merges mit Conventional Commits auf main
         └─ nach Merge des Release-PR: legt Tag vX.Y.Z und Release als Entwurf an (`draft: true`, `force-tag-creation: true`)
              └─ Tag-Push durch GITHUB_TOKEN startet ebenfalls nichts → `gh workflow run release.yml --ref vX.Y.Z`
 release.yml (workflow_dispatch auf dem Tag; zusätzlich push: tags v* für manuell gesetzte Tags)
-  1. gate:     kein `ci:`-Aufruf mehr. `gh api --method GET .../commits/<sha>/check-runs` verlangt ein grünes
-               `ci-ok` für den getaggten Commit. Der Tag zeigt auf den Release-PR-Merge auf `main`, der dort
-               bereits geprüft wurde. Check-Runs verfallen mit der Aufbewahrung; ist keins mehr da, muss CI
-               erst wieder auf diesem Commit laufen.
+  1. gate:     kein `ci:`-Aufruf mehr. `gh api --method GET .../commits/<sha>/check-runs` liest den `ci-ok`-Check
+               des getaggten Commits und pollt (15 s, Deadline 15 min), bis er `completed` ist; `success` → weiter,
+               sonst Abbruch. Das Warten ist nötig, weil release-please den Workflow Sekunden nach dem Merge des
+               Release-PR startet, `ci-ok` für genau diesen Commit aber erst Minuten später fertig ist. Der Tag zeigt
+               auf den Release-PR-Merge auf `main`, der dort bereits geprüft wurde. Check-Runs verfallen mit der
+               Aufbewahrung; ist keins mehr da, muss CI erst wieder auf diesem Commit laufen.
   2. publish:  SPA bauen, `scripts/build-binary.sh` mit `VERSION=$RELEASE_TAG` für beide Plattformen,
                Multi-Arch-Build aus dem `gobin`-Kontext (Archiv für Größe und Trivy, dann der Push)
                Tags x.y.z, x.y, (x ab 1.0), latest, sha-<kurz>; provenance+SBOM-Attestierung; cosign keyless; attest-build-provenance
