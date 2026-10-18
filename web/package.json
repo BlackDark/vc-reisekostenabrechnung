@@ -28,7 +28,7 @@
 	},
 	"devDependencies": {
 		"@inlang/plugin-m-function-matcher": "2.3.4",
-		"@inlang/plugin-message-format": "4.4.5",
+		"@inlang/plugin-message-format": "4.5.4",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
 		"@tailwindcss/vite": "4.3.3",
 		"@tsconfig/svelte": "5.0.8",
