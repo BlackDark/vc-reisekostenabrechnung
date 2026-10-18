@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { navLink } from "./nav";
 
 const password = process.env.E2E_PASSWORD || "smoke-password-1";
 
@@ -26,7 +27,7 @@ const png = Buffer.from(
 test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	const stamp = Date.now().toString(36);
 	await login(page);
-	await page.getByRole("link", { name: /Arbeitgeber|Employers/ }).click();
+	await (await navLink(page, /Arbeitgeber|Employers/)).click();
 	await page.getByLabel("Name", { exact: true }).fill(`Beispiel ${stamp}`);
 	await page.getByLabel(/Anschrift|Address/).fill("Hauptstr. 1\n10115 Berlin");
 	await page.getByRole("button", { name: /Anlegen|Create/ }).click();
@@ -44,7 +45,7 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 		page.getByRole("img", { name: `Beispiel ${stamp}` }),
 	).toBeVisible();
 
-	await page.getByRole("link", { name: /Profil|Profile/ }).click();
+	await (await navLink(page, /Profil|Profile/)).click();
 	await expect(
 		page.getByRole("region", { name: /Briefkopf|Letterhead/ }),
 	).toContainText(`Beispiel ${stamp}`);
@@ -52,9 +53,7 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 		page.getByRole("img", { name: `Beispiel ${stamp}` }),
 	).toBeVisible();
 
-	await page
-		.getByRole("link", { name: /Tätigkeitsstätten|Work locations/ })
-		.click();
+	await (await navLink(page, /Tätigkeitsstätten|Work locations/)).click();
 	await page.locator("#st-name").fill(`Kunde ${stamp}`);
 	const land = page.locator("#st-land");
 	await expect
@@ -87,7 +86,7 @@ test("arbeitgeber, tätigkeitsstätte and rate tables", async ({ page }) => {
 	await expect(place).toBeVisible();
 	await expect(place).toContainText(satzort || landISO);
 
-	await page.getByRole("link", { name: /Satztabellen|Rate tables/ }).click();
+	await (await navLink(page, /Satztabellen|Rate tables/)).click();
 	const year2026 = page.getByRole("link", { name: "2026", exact: true });
 	try {
 		await expect(year2026).toBeVisible({ timeout: 10_000 });
