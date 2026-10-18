@@ -46,6 +46,10 @@
 	}
 
 	$effect(() => {
+		if (ende < beginn) ende = beginn;
+	});
+
+	$effect(() => {
 		if (session.ready && !session.nutzer) void navigate("/login");
 	});
 
@@ -216,7 +220,7 @@
 		</label>
 		<label class="grid gap-1 text-sm" for="reise-ende">
 			{m.reise_ende()}
-			<DateField id="reise-ende" type="datetime-local" bind:value={ende} required  />
+			<DateField id="reise-ende" type="datetime-local" bind:value={ende} min={beginn} required  />
 		</label>
 		<label class="grid gap-1 text-sm" for="reise-zone">
 			{m.reise_zone()}
@@ -285,7 +289,7 @@
 					<legend class="text-sm">{m.reise_add_leg()}</legend>
 					<label class="grid gap-1 text-sm" for="f-reiseneu-1">
 						{m.reise_beginn()}
-						<DateField id="f-reiseneu-1" type="datetime-local" bind:value={leg.ankunft} required  />
+						<DateField id="f-reiseneu-1" type="datetime-local" bind:value={leg.ankunft} min={beginn} required  />
 					</label>
 					<label class="grid gap-1 text-sm" for="f-reiseneu-2">
 						{m.reise_country()}
