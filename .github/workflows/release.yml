@@ -27,7 +27,8 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 15 min of waiting for ci-ok plus the build and the push.
+    timeout-minutes: 30
     permissions:
       contents: read
       checks: read
@@ -56,29 +57,44 @@ jobs:
             echo "short=$(git rev-parse --short=7 HEAD)"
             echo "full=$(git rev-parse HEAD)"
           } >> "$GITHUB_OUTPUT"
-      - name: Require a green CI run for this commit
+      - name: Wait for a green CI run on this commit
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # The tag points at a commit main CI already verified, so the release
-          # re-runs nothing and publishes only what CI accepted. Check runs are
-          # pruned after the retention window, so an old tag needs a fresh CI run
-          # on its commit before it can be released here.
+          # re-runs nothing and publishes only what CI accepted. release-please
+          # dispatches this workflow seconds after the release commit reaches
+          # main, while ci-ok for that same commit still needs minutes, so poll
+          # until the check run reports instead of reading an absent verdict.
+          # Check runs are pruned after the retention window, so an old tag needs
+          # a fresh CI run on its commit before it can be released here.
           sha="${{ steps.rev.outputs.full }}"
-          verdict=$(gh api --method GET \
-            "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?per_page=100" \
-            --jq '[.check_runs[] | select(.name == "ci-ok")] | sort_by(.started_at) | last | .conclusion')
-          case "$verdict" in
-            success) echo "ci-ok passed for ${{ steps.rev.outputs.short }}" ;;
-            null | "")
-              echo "no ci-ok check run for $sha: run CI on that commit first" >&2
+          short="${{ steps.rev.outputs.short }}"
+          deadline=$((SECONDS + 900))
+          reported=""
+          while :; do
+            read -r status conclusion <<<"$(gh api --method GET \
+              "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?per_page=100" \
+              --jq '[.check_runs[] | select(.name == "ci-ok")] | sort_by(.started_at) | last
+                     | "\(.status // "none") \(.conclusion // "")"')"
+            if [ -n "$status" ] && [ "$status $conclusion" != "$reported" ]; then
+              reported="$status $conclusion"
+              echo "ci-ok for $short is ${reported% }"
+            fi
+            if [ "$status" = completed ]; then
+              if [ "$conclusion" = success ]; then
+                echo "ci-ok passed for $short"
+                break
+              fi
+              echo "ci-ok for $short concluded '${conclusion:-unknown}'" >&2
               exit 1
-              ;;
-            *)
-              echo "ci-ok for $sha is '$verdict'" >&2
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "ci-ok for $sha is still not completed after 15 minutes" >&2
               exit 1
-              ;;
-          esac
+            fi
+            sleep 15
+          done
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 12.10.1
