@@ -38,6 +38,8 @@
 	let lands = $state<Land[]>([]);
 	let places = $state<Record<string, Place[]>>({});
 	let error = $state("");
+	let tripLand = $state("");
+	let tripSatzort = $state("");
 	let templateName = $state("");
 	let templateSaved = $state("");
 	let fahrtStart = $state("");
@@ -133,6 +135,42 @@
 			params: { path: { jahr: year }, query: { land_iso: iso, limit: 200 } },
 		});
 		places[iso] = res.data?.items ?? [];
+	}
+
+	async function changeTripCountry() {
+		if (!trip || !tripLand) return;
+		error = "";
+		const res = await api.PATCH("/api/v1/reisen/{id}", {
+			params: { path: { id: trip.id }, header: { "If-Match": String(trip.version) } },
+			body: {
+				arbeitgeber_id: trip.arbeitgeber_id,
+				anlass: trip.anlass,
+				projekt: trip.projekt ?? "",
+				beginn: trip.beginn,
+				beginn_zone: trip.beginn_zone,
+				ende: trip.ende,
+				ende_zone: trip.ende_zone,
+				notiz: trip.notiz ?? "",
+				ortswechsel: trip.ortswechsel.map((leg) => ({
+					abfahrt: leg.abfahrt,
+					abfahrt_zone: leg.abfahrt_zone,
+					ankunft: leg.ankunft,
+					ankunft_zone: leg.ankunft_zone,
+					verkehrsmittel: leg.verkehrsmittel,
+					land_iso: tripLand,
+					satzort: tripSatzort,
+					ort: leg.ort ?? "",
+					taetigkeitsstaette_id: leg.taetigkeitsstaette_id ?? "",
+					zwischenlandung_mit_uebernachtung: leg.zwischenlandung_mit_uebernachtung,
+				})),
+			},
+		});
+		if (!res.data) {
+			error = m.save_failed();
+			return;
+		}
+		await load(trip.id);
+		toast.success(m.saved());
 	}
 
 	async function saveDay(day: Day) {
@@ -366,6 +404,40 @@
 		</div>
 
 		<Tabs.Content value="days" class="mt-3 min-w-0">
+			<div class="mb-3 flex flex-wrap items-end gap-2">
+				<label class="grid gap-1 text-sm" for="trip-land">
+					{m.reise_trip_country()}
+					<NativeSelect
+						id="trip-land"
+						bind:value={tripLand}
+						onchange={() => {
+							tripSatzort = "";
+							void placesFor(tripLand);
+						}}
+					>
+						<option value=""> </option>
+						{#each lands as item (item.land_iso)}
+							<option value={item.land_iso}>{item.land_name_de}</option>
+						{/each}
+					</NativeSelect>
+				</label>
+				{#if tripLand && places[tripLand]}
+					<label class="grid gap-1 text-sm" for="trip-place">
+						{m.reise_place()}
+						<NativeSelect id="trip-place" bind:value={tripSatzort}>
+							<option value="">im Übrigen</option>
+							{#each places[tripLand] as place (place.satzort)}
+								{#if place.satzort}
+									<option value={place.satzort}>{place.ort_name || place.satzort}</option>
+								{/if}
+							{/each}
+						</NativeSelect>
+					</label>
+				{/if}
+				<Button variant="outline" size="sm" type="button" disabled={!tripLand} onclick={() => void changeTripCountry()}>
+					{m.reise_trip_country_apply()}
+				</Button>
+			</div>
 			<div class="min-w-0 max-w-full overflow-x-auto">
 			<div class="min-w-[48rem]">
 			<div class="text-muted-foreground grid px-3 text-xs {dayGrid}">
