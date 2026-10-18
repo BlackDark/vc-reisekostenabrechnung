@@ -1,13 +1,7 @@
 <script lang="ts">
-	import { type DateValue, parseDate } from "@internationalized/date";
-	import CalendarIcon from "@lucide/svelte/icons/calendar";
 	import { untrack } from "svelte";
-	import { Button } from "$lib/components/ui/button";
-	import { Calendar } from "$lib/components/ui/calendar";
 	import { Input } from "$lib/components/ui/input";
-	import * as Popover from "$lib/components/ui/popover";
 	import { today } from "$lib/dates";
-	import { m } from "$lib/paraglide/messages.js";
 
 	let {
 		id,
@@ -23,62 +17,25 @@
 		onchange?: (event: Event) => void;
 	} = $props();
 
-	if (!value) value = untrack(() => (type === "datetime-local" ? today("08:00") : today()));
+	if (!value)
+		value = untrack(() =>
+			type === "datetime-local" ? today("08:00") : today(),
+		);
 
-	let open = $state(false);
-	let picked = $state<DateValue | undefined>(undefined);
-
-	function syncFromValue() {
-		const day = value.slice(0, 10);
-		if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
-			picked = undefined;
-			return;
-		}
+	function openPicker(event: Event) {
 		try {
-			picked = parseDate(day);
+			(event.currentTarget as HTMLInputElement).showPicker();
 		} catch {
-			picked = undefined;
+			// showPicker is unsupported or blocked; the native field still works.
 		}
-	}
-
-	function apply(next: DateValue | undefined) {
-		picked = next;
-		if (!next) return;
-		const day = next.toString();
-		if (type === "datetime-local") {
-			const time = value.length >= 16 ? value.slice(11, 16) : "00:00";
-			value = `${day}T${time}`;
-		} else {
-			value = day;
-		}
-		open = false;
 	}
 </script>
 
-<div class="flex items-center gap-2">
-	<Input {id} class="flex-1" {type} {required} bind:value {onchange} />
-	<Popover.Root bind:open>
-		<Popover.Trigger>
-			{#snippet child({ props })}
-				<Button
-					{...props}
-					type="button"
-					variant="outline"
-					size="icon"
-					aria-label={m.calendar_open()}
-					onclick={syncFromValue}
-				>
-					<CalendarIcon />
-				</Button>
-			{/snippet}
-		</Popover.Trigger>
-		<Popover.Content class="w-auto p-0" align="end">
-			<Calendar
-				type="single"
-				bind:value={picked}
-				onValueChange={(next) => apply(next)}
-				locale="de-DE"
-			/>
-		</Popover.Content>
-	</Popover.Root>
-</div>
+<Input
+	{id}
+	{type}
+	{required}
+	bind:value
+	{onchange}
+	onclick={openPicker}
+/>
