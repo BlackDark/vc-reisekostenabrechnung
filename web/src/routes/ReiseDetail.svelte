@@ -53,8 +53,36 @@
 	let tab = $state("days");
 	let confirmOpen = $state(false);
 	let pendingDelete = $state<string | null>(null);
-	const dayGrid =
-		"grid-cols-[8.5rem_7.5rem_minmax(9rem,1.4fr)_8.5rem_repeat(4,5.75rem)] items-center gap-x-3";
+	const COLS_KEY = "reise.dayCols";
+	type ColKey = "pauschale" | "kuerzung" | "uebernachtung";
+	const colDefs: { key: ColKey; label: () => string }[] = [
+		{ key: "pauschale", label: () => m.reise_pauschale() },
+		{ key: "kuerzung", label: () => m.reise_kuerzung() },
+		{ key: "uebernachtung", label: () => m.reise_overnight() },
+	];
+	function loadCols(): Record<ColKey, boolean> {
+		const base = { pauschale: true, kuerzung: true, uebernachtung: true };
+		try {
+			return { ...base, ...JSON.parse(localStorage.getItem(COLS_KEY) ?? "{}") };
+		} catch {
+			return base;
+		}
+	}
+	let cols = $state(loadCols());
+	function toggleCol(key: ColKey) {
+		cols[key] = !cols[key];
+		try {
+			localStorage.setItem(COLS_KEY, JSON.stringify(cols));
+		} catch {
+			// storage unavailable; the choice just lasts for this session
+		}
+	}
+	const dayGrid = "items-center gap-x-3";
+	const gridStyle = $derived(
+		`grid-template-columns: 8.5rem 7.5rem minmax(9rem,1.4fr) 8.5rem ${"5.75rem ".repeat(
+			colDefs.filter((col) => cols[col.key]).length + 1,
+		)}`,
+	);
 	let fahrtOpen = $state(false);
 	let vorlageOpen = $state(false);
 	let ausgabeOpen = $state(false);
@@ -441,15 +469,28 @@
 			</div>
 			<div class="min-w-0 max-w-full overflow-x-auto">
 			<div class="min-w-[48rem]">
-			<div class="text-muted-foreground grid px-3 text-xs {dayGrid}">
+			<div class="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
+				<span class="text-muted-foreground">{m.reise_columns()}:</span>
+				{#each colDefs as col (col.key)}
+					<button
+						type="button"
+						class="border-border rounded-md border px-2 py-0.5 {cols[col.key] ? 'bg-primary text-primary-foreground' : ''}"
+						aria-pressed={cols[col.key]}
+						onclick={() => toggleCol(col.key)}
+					>
+						{col.label()}
+					</button>
+				{/each}
+			</div>
+			<div class="text-muted-foreground grid px-3 text-xs {dayGrid}" style={gridStyle}>
 				<span>{m.reise_day()}</span>
 				<span>{m.reise_tagesart()}</span>
 				<span>{m.reise_land()}</span>
 				<span></span>
-				<span class="text-right">{m.reise_pauschale()}</span>
-				<span class="text-right">{m.reise_kuerzung()}</span>
-				<span class="text-right">{m.reise_overnight()}</span>
-				<span class="text-right">{m.reise_result()}</span>
+				{#if cols.pauschale}<span class="text-right">{m.reise_pauschale()}</span>{/if}
+				{#if cols.kuerzung}<span class="text-right">{m.reise_kuerzung()}</span>{/if}
+				{#if cols.uebernachtung}<span class="text-right">{m.reise_overnight()}</span>{/if}
+				<span class="text-right" title={m.reise_total_hint()}>{m.reise_total()}</span>
 			</div>
 			<Tooltip.Provider delayDuration={200}>
 				<div class="mt-2 grid gap-2">
@@ -458,18 +499,23 @@
 						<article class="bg-card rounded-xl border" data-datum={day.datum}>
 							<details open={index === 0}>
 								<summary class="cursor-pointer list-none px-3 py-2 marker:content-none [&::-webkit-details-marker]:hidden">
-									<span class="grid {dayGrid}">
+									<span class="grid {dayGrid}" style={gridStyle}>
 										<span class="font-medium">{formatWhen(day.datum, session.locale, "date")}</span>
 										<span class="flex items-center gap-1.5"><DayTypeIcon type={tag?.tagesart} />{dayTypeLabel(tag?.tagesart)}</span>
 										<span class="min-w-0">{tag?.land_iso ?? ""} {tag?.satzort ?? ""}</span>
 										<DayFlags {day} />
-										<span class="text-right tabular-nums" data-field="pauschale">{money(tag?.pauschale_cent)}</span>
-										<span class="text-right tabular-nums" data-field="kuerzung">{money(tag?.kuerzung_cent)}</span>
-										<span class="text-right tabular-nums" data-field="uebernachtung">{money(tag?.uebernachtung_cent)}</span>
-										<span class="text-right font-medium tabular-nums">{money(tag?.ergebnis_cent)}</span>
+										{#if cols.pauschale}<span class="text-right tabular-nums" data-field="pauschale">{money(tag?.pauschale_cent)}</span>{/if}
+										{#if cols.kuerzung}<span class="text-right tabular-nums" data-field="kuerzung">{money(tag?.kuerzung_cent)}</span>{/if}
+										{#if cols.uebernachtung}<span class="text-right tabular-nums" data-field="uebernachtung">{money(tag?.uebernachtung_cent)}</span>{/if}
+										<span class="text-right font-medium tabular-nums" data-field="gesamt">{money((tag?.ergebnis_cent ?? 0) + (tag?.uebernachtung_cent ?? 0))}</span>
 									</span>
 								</summary>
 								<div class="grid gap-3 border-t px-3 py-3">
+									<p class="text-muted-foreground flex flex-wrap gap-x-4 text-xs tabular-nums">
+										<span>{m.reise_pauschale()}: {money(tag?.pauschale_cent)}</span>
+										<span>{m.reise_kuerzung()}: {money(tag?.kuerzung_cent)}</span>
+										<span>{m.reise_overnight()}: {money(tag?.uebernachtung_cent)}</span>
+									</p>
 									<fieldset class="flex flex-wrap gap-1.5">
 										<legend class="sr-only">{m.reise_breakfast()}</legend>
 										<label class="border-border has-checked:bg-primary has-checked:text-primary-foreground relative inline-flex items-center rounded-md border px-2.5 py-1 text-xs">
