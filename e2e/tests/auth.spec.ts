@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { navLink } from "./nav";
 
 const password = process.env.E2E_PASSWORD || "smoke-password-1";
 
@@ -49,6 +50,6 @@ test("OIDC login provisions an admin", async ({ page }) => {
 	await expect(
 		page.getByRole("heading", { name: /Reisen|Business trips/ }),
 	).toBeVisible();
-	await expect(page.getByRole("link", { name: /Nutzer|Users/ })).toBeVisible();
+	await expect(await navLink(page, /Nutzer|Users/)).toBeVisible();
 	await noHorizontalScroll(page);
 });
