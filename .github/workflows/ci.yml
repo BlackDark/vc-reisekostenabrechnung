@@ -586,10 +586,15 @@ jobs:
 
   publish-edge:
     needs: ci-ok
-    # Only a direct push to main publishes the edge channel; the push trigger
-    # already restricts the branch. A called run reports the caller's event and
-    # carries inputs.caller, so it never matches.
-    if: github.event_name == 'push' && (inputs.caller || '') == ''
+    # ci-ok aggregates jobs that a push skips (pr-titel is pull_request-only).
+    # GitHub skips any job whose dependency chain holds a skipped job, even when
+    # ci-ok itself succeeded, so the guard needs always(). always() also drops
+    # the implicit success() of needs and lets a cancelled run through, hence the
+    # explicit result and cancellation checks. The event and ref checks keep the
+    # channel off a release-called run, which reports the caller's event.
+    if: |
+      always() && !cancelled() && needs.ci-ok.result == 'success'
+      && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
