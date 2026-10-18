@@ -26,7 +26,8 @@ generate:
 
 # Local test server: builds the SPA, embeds it and starts the app on :8080.
 # Login: smoke / smoke-password-1. Data lives in tmp/dev-data (see dev-reset).
-DEV_DIR ?= $(CURDIR)/tmp/dev-data
+DEVELOP_DIR ?= $(CURDIR)/tmp/dev-data
+TYPST_PATH ?= $(shell mise which typst 2>/dev/null || command -v typst)
 
 embed:
 	pnpm install --frozen-lockfile
@@ -36,15 +37,16 @@ embed:
 	touch internal/webui/dist/.gitkeep
 
 dev: embed
-	mkdir -p $(DEV_DIR)
-	DATA_DIR=$(DEV_DIR) \
+	mkdir -p $(DEVELOP_DIR)
+	DATA_DIR=$(DEVELOP_DIR) \
 	INITIAL_ADMIN_USERNAME=smoke \
 	INITIAL_ADMIN_PASSWORD=smoke-password-1 \
 	APP_BASE_URL=http://127.0.0.1:8080 \
 	COOKIE_SECURE=false \
 	LISTEN_ADDR=:8080 \
+	TYPST_PATH=$(TYPST_PATH) \
 	RATE_LIMIT_LOGIN=600/m RATE_LIMIT_LOGIN_ACCOUNT=5000/h RATE_LIMIT_API=50000/m \
 	go run ./cmd/reisekosten serve
 
 dev-reset:
-	rm -rf $(DEV_DIR)
+	rm -rf $(DEVELOP_DIR)
