@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/BlackDark/vc-reisekostenabrechnung/compare/v1.1.1...v1.1.2) (2026-10-18)
+
+
+### Documentation
+
+* close the release-please draft open point ([#64](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/64)) ([a289352](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/a289352dd3e413c4e2c015e15c8f57f4df570c1f))
+
 ## [1.1.1](https://github.com/BlackDark/vc-reisekostenabrechnung/compare/v1.1.0...v1.1.1) (2026-10-18)
 
 
