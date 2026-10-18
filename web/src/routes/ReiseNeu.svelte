@@ -4,6 +4,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { NativeSelect } from "$lib/components/ui/native-select";
+	import { today } from "$lib/dates";
 	import { m } from "$lib/paraglide/messages.js";
 	import { session } from "$lib/session.svelte";
 	import { navigate, p } from "../router";
@@ -17,8 +18,8 @@
 	let anlass = $state("");
 	let projekt = $state("");
 	let projects = $state<string[]>([]);
-	let beginn = $state("2026-09-07T20:00");
-	let ende = $state("2026-09-10T18:00");
+	let beginn = $state(today("08:00"));
+	let ende = $state(today("18:00"));
 	let zone = $state("Europe/Berlin");
 	let employer = $state("");
 	let employers = $state<Employer[]>([]);
