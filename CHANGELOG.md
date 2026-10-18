@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.2.0](https://github.com/BlackDark/vc-reisekostenabrechnung/compare/v1.1.2...v1.2.0) (2026-10-18)
+
+
+### Features
+
+* **export:** lay out the PDF as tables with tax details ([959071d](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/959071dbba3de22d3865fe83f01476b2bf6b6977))
+* **web:** change the country of the whole trip at once ([e2e21b2](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/e2e21b2b6b2aa22de4144b6c9e41b3f604a1ea4a))
+* **web:** compact buttons and narrower two-column forms on desktop ([2d7cee3](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/2d7cee3718a9cc4122f5c068b9e21e8922308a25))
+* **web:** configurable day columns with a lodging-inclusive total ([0faa970](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/0faa970bc6225194b09495ee5f86b5181da08059))
+* **web:** default date fields to the browser's current date ([ebb8874](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/ebb8874df463863eb9f4a284b174406bc7dee028))
+* **web:** group the sidebar, collapse master data and admin, add a Mehr menu on mobile ([d76345f](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/d76345fc266cd3a6003d404e9eda0e594c299ddf))
+* **web:** keep end dates from preceding start dates ([ba41c6e](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/ba41c6e91f43e413ab56289b701293ddc19bd680))
+* **web:** move trip actions into a menu and the country change into a dialog ([3f133c3](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/3f133c38bd8a573cd26f185107ea8706d062ffba))
+* **web:** open the date picker on field click and drop the calendar button ([0315f5c](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/0315f5c4c2b5e13bfd89a4945e25b4d49fe77e40))
+* **web:** show a day-type icon in the trip day rows ([e30d714](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/e30d714768eb768789a4c76733657ace29929d9e))
+* **web:** show meal, lodging and override icons in the day rows ([fd12f2d](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/fd12f2d3b4a8a0fe411d756ecdbb6a71aebd2b44))
+* **web:** show the lodging allowance in the day rows ([7b2a7d2](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/7b2a7d2d427cb5176167da62bf70c10bd8dd745d))
+
+
+### Bug Fixes
+
+* **web:** fit the day table columns without horizontal scrolling ([f020b4d](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/f020b4d5b4b46e98ad29ca88d2223bf31d9d8195))
+* **web:** keep day icons out of the accessible names ([a377e79](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/a377e7951abca8387f1cf5dc830d1391b0df82c9))
+
+
+### Miscellaneous
+
+* **deps:** update dependency @inlang/plugin-m-function-matcher to v2.3.4 ([#74](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/74)) ([e16c7ef](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/e16c7ef39ab6b02845b435b7e400c504b287b8c4))
+* **deps:** update dependency @inlang/plugin-message-format to v4.5.4 ([#75](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/75)) ([4fd425d](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/4fd425d9903985a88fd121f5973c4136a326380c))
+* **deps:** update dependency jsdom to v30.1.3 ([#71](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/71)) ([87019b6](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/87019b68041385b97b5a91833d4d37fe181424c6))
+* **deps:** update github/codeql-action action to v4.39.0 ([#77](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/77)) ([53c8b3e](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/53c8b3e3987aed8b030d86a9af67abbe70e84724))
+* **deps:** update vite to v5.0.5 ([#72](https://github.com/BlackDark/vc-reisekostenabrechnung/issues/72)) ([1b81293](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/1b812936d6b91bee7e07fd51e7d4d907042e77c2))
+* **export:** drop helpers the table layout no longer uses ([99bc14e](https://github.com/BlackDark/vc-reisekostenabrechnung/commit/99bc14edd681e66d29a6da1e88acd0b1493326d4))
+
 ## [1.1.2](https://github.com/BlackDark/vc-reisekostenabrechnung/compare/v1.1.1...v1.1.2) (2026-10-18)
 
 
