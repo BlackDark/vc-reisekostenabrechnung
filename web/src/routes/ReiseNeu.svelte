@@ -181,7 +181,7 @@
 <h1 class="text-2xl font-semibold tracking-tight">{m.reise_new()}</h1>
 <p class="mt-2 text-sm">{m.reise_zone_hint()}</p>
 {#if templates.length > 0}
-	<label class="mt-4 grid gap-1 text-sm" for="vorlage-apply">
+	<label class="mt-4 grid max-w-2xl gap-1 text-sm" for="vorlage-apply">
 		{m.reise_apply()}
 		<NativeSelect class="w-full" id="vorlage-apply" onchange={applyTemplate}>
 			<option value=""> </option>
@@ -191,8 +191,9 @@
 		</NativeSelect>
 	</label>
 {/if}
-<form class="mt-4 grid gap-3" onsubmit={create}>
+<form class="mt-4 grid max-w-2xl gap-3" onsubmit={create}>
 	<fieldset class="grid gap-3" disabled={!session.online}>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="reise-anlass">
 			{m.reise_anlass()}
 			<Input id="reise-anlass" bind:value={anlass} required  />
@@ -206,6 +207,7 @@
 				{/each}
 			</datalist>
 		</label>
+</div>
 		<label class="grid gap-1 text-sm" for="reise-ag">
 			{m.reise_employer()}
 			<NativeSelect class="w-full" id="reise-ag" bind:value={employer} required>
@@ -214,6 +216,7 @@
 				{/each}
 			</NativeSelect>
 		</label>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="reise-beginn">
 			{m.reise_beginn()}
 			<DateField id="reise-beginn" type="datetime-local" bind:value={beginn} onchange={() => void loadLands()} required  />
@@ -222,6 +225,7 @@
 			{m.reise_ende()}
 			<DateField id="reise-ende" type="datetime-local" bind:value={ende} min={beginn} required  />
 		</label>
+</div>
 		<label class="grid gap-1 text-sm" for="reise-zone">
 			{m.reise_zone()}
 			<Input id="reise-zone" list="zonen" bind:value={zone} required  />
@@ -236,6 +240,7 @@
 			{m.reise_search()}
 			<Input id="land-search" bind:value={landQuery}  />
 		</label>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="leg-land">
 			{m.reise_country()}
 			<NativeSelect class="w-full"
@@ -259,6 +264,8 @@
 				{/each}
 			</NativeSelect>
 		</label>
+</div>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="reise-ort">
 			{m.reise_city()}
 			<Input id="reise-ort" bind:value={ort}  />
@@ -274,6 +281,7 @@
 				<option value="sonstiges">Sonstiges</option>
 			</NativeSelect>
 		</label>
+</div>
 		<label class="grid gap-1 text-sm" for="reise-unterkunft">
 			{m.reise_lodging()}
 			<NativeSelect class="w-full" id="reise-unterkunft" bind:value={unterkunft}>

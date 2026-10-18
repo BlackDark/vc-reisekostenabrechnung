@@ -254,8 +254,9 @@
 	{/if}
 {/if}
 
-<form class="mt-4 grid gap-3" onsubmit={(event) => { event.preventDefault(); void save(); }}>
+<form class="mt-4 grid max-w-2xl gap-3" onsubmit={(event) => { event.preventDefault(); void save(); }}>
 	<fieldset class="grid gap-3" disabled={!session.online}>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="ausgabe-kostenart">
 			{m.ausgabe_kostenart()}
 			<NativeSelect class="w-full" id="ausgabe-kostenart" bind:value={kostenart}>
@@ -270,6 +271,8 @@
 			{m.ausgabe_datum()}
 			<DateField id="ausgabe-datum" type="date" bind:value={datum} required  />
 		</label>
+</div>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="ausgabe-leistender">
 			{m.ausgabe_leistender()}
 			<Input id="ausgabe-leistender" bind:value={leistender}  />
@@ -278,6 +281,8 @@
 			{m.ausgabe_empfaenger()}
 			<Input id="ausgabe-empfaenger" bind:value={empfaenger}  />
 		</label>
+</div>
+<div class="grid gap-3 sm:grid-cols-2">
 		<label class="grid gap-1 text-sm" for="ausgabe-betrag">
 			{m.ausgabe_betrag()}
 			<Input id="ausgabe-betrag" inputmode="decimal" bind:value={betrag} required  />
@@ -291,6 +296,7 @@
 				<option>CHF</option>
 			</NativeSelect>
 		</label>
+</div>
 		<label class="flex items-center gap-2 text-sm">
 			<input type="checkbox" bind:checked={aufArbeitgeber} />
 			{m.ausgabe_employer()}
