@@ -222,8 +222,8 @@ importers:
         version: 7.4.1
     devDependencies:
       '@inlang/plugin-m-function-matcher':
-        specifier: 2.2.17
-        version: 2.2.17
+        specifier: 2.3.4
+        version: 2.3.4
       '@inlang/plugin-message-format':
         specifier: 4.4.5
         version: 4.4.5
@@ -995,8 +995,8 @@ packages:
       vite:
         optional: true
 
-  '@inlang/plugin-m-function-matcher@2.2.17':
-    resolution: {integrity: sha512-KzJuRQiXVRJR48HCqIjx83cOwuvnyvugSl2VrBtPmyW7w5p+ulEGdNCZu2+KvIiOI/Q1HAEWwM/XSpLY9vunMA==}
+  '@inlang/plugin-m-function-matcher@2.3.4':
+    resolution: {integrity: sha512-Jd2ccLjEqyUAj+y54fb/8O1bEREsaHcPOw6PBercVjDMTvcUqAQZ8V/1t5Z0ZmSCuWgof7XxnmBcwgMuf0Xk+A==}
 
   '@inlang/plugin-message-format@4.4.5':
     resolution: {integrity: sha512-g3WpG00mx3Wq/3zulz4uuT+HhdBRB7UMz2hVbfSm+E4RJHXNYyFyvS0elPETX7gEz8yiTd0KbyukZGJHetmkZA==}
@@ -1006,6 +1006,10 @@ packages:
 
   '@inlang/sdk@3.1.0':
     resolution: {integrity: sha512-l8LqeyqLfe00cmDvKY7J6YuCkfWVfgzaNWlB8IAHxWOWqkUAwyG4AhuMYUiBbeA0wM6zdVphPCG2lay/OzTdFg==}
+    engines: {node: '>=20.0.0'}
+
+  '@inlang/sdk@4.0.4':
+    resolution: {integrity: sha512-OJhVSGJa/Ak52WncgqIPHr9TyVJ1DuoublcmtNo9H8apoVn4Dr1DJNxUxawCCc01QmMSg8qoY8GrTV8SVIu1lg==}
     engines: {node: '>=20.0.0'}
 
   '@internationalized/date@3.12.4':
@@ -1036,6 +1040,9 @@ packages:
 
   '@lix-js/sdk@0.19.0':
     resolution: {integrity: sha512-ks7hKZdJGH0APlSLWtFYCXDO3yIoleoPqzLgkZYtMbaiWRN2Ih772tNGGBZFLKbutq6DuNRwcjNkG94KqWRbBA==}
+
+  '@lix-js/sdk@0.20.1':
+    resolution: {integrity: sha512-oscOFP8Cr1My6Wh2KVYC9+aJ1mHs+d7vnD+7PPJaA4L+Y1FR37Sm99SrFGfvUizaj/XtRi2GlDF2IOFt9iXMNQ==}
 
   '@lucide/svelte@1.53.0':
     resolution: {integrity: sha512-RZTHcLAwwjAz+rO1S4IPQSTzDycGZWhSYa0GS3sXAoJ3GTHdBZyHCXutIxJketIAoaIkcmFK5Ucfo2+WBYpKLA==}
@@ -4117,9 +4124,13 @@ snapshots:
       typescript: 6.0.3
       vite: 8.3.4(jiti@2.7.0)(terser@5.51.2)
 
-  '@inlang/plugin-m-function-matcher@2.2.17':
+  '@inlang/plugin-m-function-matcher@2.3.4':
     dependencies:
-      '@inlang/sdk': 3.1.0
+      '@babel/parser': 7.29.9
+      '@inlang/sdk': 4.0.4
+      svelte: 5.57.2
+    transitivePeerDependencies:
+      - '@typescript-eslint/types'
 
   '@inlang/plugin-message-format@4.4.5':
     dependencies:
@@ -4134,6 +4145,13 @@ snapshots:
   '@inlang/sdk@3.1.0':
     dependencies:
       '@lix-js/sdk': 0.19.0
+      '@sinclair/typebox': 0.31.30
+      kysely: 0.28.17
+      uuid: 14.0.2
+
+  '@inlang/sdk@4.0.4':
+    dependencies:
+      '@lix-js/sdk': 0.20.1
       '@sinclair/typebox': 0.31.30
       kysely: 0.28.17
       uuid: 14.0.2
@@ -4169,6 +4187,12 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.6.0
 
   '@lix-js/sdk@0.19.0':
+    dependencies:
+      '@bytecodealliance/jco-transpile': 0.13.0
+      binaryen: 130.0.0
+      fflate: 0.8.3
+
+  '@lix-js/sdk@0.20.1':
     dependencies:
       '@bytecodealliance/jco-transpile': 0.13.0
       binaryen: 130.0.0
