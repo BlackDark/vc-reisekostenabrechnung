@@ -21,7 +21,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 # every build. Without that context this stage compiles here, which keeps
 # compose and local builds working from source alone. The binary and the data
 # directory are written to /<arch>, which is the layout the context uses.
-FROM --platform=$BUILDPLATFORM golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d AS gobin
+FROM --platform=$BUILDPLATFORM golang:1.27.3-trixie@sha256:fbb7ae40b62ff8afe31662df570d39b4f5052ac32b90dae8e60d7657a20a74f4 AS gobin
 ARG TARGETOS TARGETARCH VERSION=dev COMMIT=unknown
 WORKDIR /src
 COPY go.mod go.sum ./
