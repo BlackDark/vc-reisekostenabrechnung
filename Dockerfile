@@ -3,7 +3,7 @@
 # ---- SPA: once on the build platform, architecture-independent ----
 FROM --platform=$BUILDPLATFORM node:24.21.0-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS web
 # renovate: datasource=npm depName=pnpm
-ARG PNPM_VERSION=12.10.1
+ARG PNPM_VERSION=12.15.0
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
 RUN npm install -g pnpm@${PNPM_VERSION}
 WORKDIR /src
