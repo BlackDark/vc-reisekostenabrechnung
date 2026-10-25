@@ -614,7 +614,7 @@ jobs:
           ./actionlint -color
           go test ./scripts/workflowperm ./scripts/ghrepo
 
-  ci-ok:
+  check:
     needs:
       [
         changes,
@@ -670,16 +670,16 @@ jobs:
           PY
 
   publish-edge:
-    needs: [ci-ok, build]
-    # ci-ok aggregates jobs that a push skips (pr-titel is pull_request-only).
+    needs: [check, build]
+    # check aggregates jobs that a push skips (pr-titel is pull_request-only).
     # GitHub skips any job whose dependency chain holds a skipped job, even when
-    # ci-ok itself succeeded, so the guard needs always(). always() also drops
+    # check itself succeeded, so the guard needs always(). always() also drops
     # the implicit success() of needs and lets a cancelled run through, hence the
     # explicit result and cancellation checks. The build job must have run as
     # well: a push that touched no image input has no binaries to publish. The
     # event and ref checks keep the channel off a manual run.
     if: |
-      always() && !cancelled() && needs.ci-ok.result == 'success'
+      always() && !cancelled() && needs.check.result == 'success'
       && needs.build.result == 'success'
       && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
