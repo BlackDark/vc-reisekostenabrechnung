@@ -12,7 +12,7 @@ require (
 	github.com/minio/minio-go/v7 v7.3.0
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/pressly/goose/v3 v3.28.0
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	golang.org/x/crypto v0.58.0
 	golang.org/x/image v0.46.0
 	golang.org/x/oauth2 v0.37.0
