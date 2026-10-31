@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
 # ---- SPA: once on the build platform, architecture-independent ----
-FROM --platform=$BUILDPLATFORM node:24.21.0-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS web
+FROM --platform=$BUILDPLATFORM node:24.22.1-trixie-slim@sha256:89c5244bc22a9bc3287d89ebc7e49b9cb5bb84cd40e6175ac3421d5a9f68b95a AS web
 # renovate: datasource=npm depName=pnpm
 ARG PNPM_VERSION=12.10.1
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
